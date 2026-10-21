@@ -837,7 +837,8 @@
   "https://www.investing.com/news/cryptocurrency-news/eos-climbs-10-in-bullish-trade-4963651",
   "https://www.investing.com/news/stock-market-news/poland-stocks-higher-at-close-of-trade-wig30-up-154-4963652",
   "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html",
-  "https://www.ft.com/content/3d67dfc3-e17c-4580-9797-a6bfa7256be0?syn-25a6b1a6=1"
+  "https://www.ft.com/content/3d67dfc3-e17c-4580-9797-a6bfa7256be0?syn-25a6b1a6=1",
+  "https://www.marketwatch.com/story/elon-musk-promised-a-spacex-share-to-every-kid-in-america-dont-hold-your-breath-d6572cdf?mod=mw_rss_topstories"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -1922,6 +1923,14 @@
     "title": "Islohot ITV politsiyaga maxfiy hujjatli film haqida xabar beradi",
     "summary": "Ziyo Yusufning aytishicha, partiya maslahatchilarining seksistik va irqchi izohlar bildirayotganini ko'rsatadigan dastur ortidagi taktikalar noqonuniy bo'lishi mumkin"
    }
+  },
+  {
+   "title": "Elon Musk promised a SpaceX share to every kid in America — don’t hold your breath",
+   "summary": "Trick or treat? Musk has a long record of saying things have little relation to reality.",
+   "link": "https://www.marketwatch.com/story/elon-musk-promised-a-spacex-share-to-every-kid-in-america-dont-hold-your-breath-d6572cdf?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792597800
   }
  ]
 }
