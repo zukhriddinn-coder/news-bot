@@ -922,7 +922,11 @@
   "https://www.investing.com/news/stock-market-news/gm-targets-eyesoff-autonomous-driving-for-pickupssuvs-4963805",
   "https://www.investing.com/news/stock-market-news/philip-morris-international-options-activity-points-to-institutional-hedging-after-q3-earnings-93CH-4963806",
   "https://www.investing.com/news/company-news/sherwinwilliams-declares-quarterly-dividend-of-080-per-share-93CH-4963807",
-  "https://www.investing.com/news/stock-market-news/ual-options-activity-points-to-bullish-positioning-after-earnings-beat-93CH-4963808"
+  "https://www.investing.com/news/stock-market-news/ual-options-activity-points-to-bullish-positioning-after-earnings-beat-93CH-4963808",
+  "https://www.investing.com/news/commodities-news/chevron-to-sharpen-us-gulf-focus-with-sale-of-older-assets-4963810",
+  "https://www.investing.com/news/stock-market-news/abbott-options-flow-points-to-downside-caution-after-guidance-cut-93CH-4963811",
+  "https://www.investing.com/news/stock-market-news/blackrock-adds-robotics-etf-to-growing-ranks-of-aithemed-products-4963809",
+  "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -3139,6 +3143,38 @@
    "source": "Investing.com",
    "tag": "#StockMarket",
    "time": 1792606144
+  },
+  {
+   "title": "Chevron to sharpen US Gulf focus with sale of older assets",
+   "summary": "",
+   "link": "https://www.investing.com/news/commodities-news/chevron-to-sharpen-us-gulf-focus-with-sale-of-older-assets-4963810",
+   "source": "Investing.com",
+   "tag": "#Commodities",
+   "time": 1792606754
+  },
+  {
+   "title": "Abbott options flow points to downside caution after guidance cut",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/abbott-options-flow-points-to-downside-caution-after-guidance-cut-93CH-4963811",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792606831
+  },
+  {
+   "title": "BlackRock adds robotics ETF to growing ranks of AI-themed products",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/blackrock-adds-robotics-etf-to-growing-ranks-of-aithemed-products-4963809",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792607060
+  },
+  {
+   "title": "Britain regulator ends Home REIT probe, defers to fraud office",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792607444
   }
  ]
 }
