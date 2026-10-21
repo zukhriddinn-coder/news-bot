@@ -1,309 +1,46 @@
-"""
-Trading Laboratory -> News bot
-Checks financial RSS feeds and posts new articles to a Telegram forum topic.
-Runs on GitHub Actions every ~10 minutes (see .github/workflows/news.yml).
-"""
+name: News to Telegram
 
-import html
-import json
-import os
-import re
-import socket
-import time
-import urllib.error
-import urllib.request
-from calendar import timegm
-from datetime import datetime
-from zoneinfo import ZoneInfo
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes
+  workflow_dispatch:          # lets you run it manually with a button
 
-import feedparser
+permissions:
+  contents: write
 
-# ---------------------------------------------------------------------------
-# SETTINGS (you can edit these)
-# ---------------------------------------------------------------------------
+concurrency:
+  group: news-bot             # own queue, does not wait for the price target bot
+  cancel-in-progress: false
 
-FEEDS = [
-    # CNBC
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "tag": "#Markets"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html", "tag": "#Macro"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html", "tag": "#Markets"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/15839069/device/rss/rss.html", "tag": "#Trading"},
-    {"name": "CNBC"            , "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20409666", "tag": "#MarketInsider"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/15839135/device/rss/rss.html", "tag": "#Earnings"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19836768/device/rss/rss.html", "tag": "#Energy"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/10000030/device/rss/rss.html", "tag": "#Oil"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19854910/device/rss/rss.html", "tag": "#Tech"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/28282083/device/rss/rss.html", "tag": "#Options"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19832390/device/rss/rss.html", "tag": "#Asia"},
-    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19794221/device/rss/rss.html", "tag": "#Europe"},
-    # MarketWatch
-    {"name": "MarketWatch"     , "url": "https://feeds.marketwatch.com/marketwatch/topstories", "tag": "#StockMarket"},
-    {"name": "MarketWatch"     , "url": "https://feeds.marketwatch.com/marketwatch/bulletins", "tag": "#Breaking"},
-    # Investing.com
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_25.rss", "tag": "#StockMarket"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_14.rss", "tag": "#Macro"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_95.rss", "tag": "#EconomicData"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1061.rss", "tag": "#AnalystRatings"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1062.rss", "tag": "#Earnings"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1.rss", "tag": "#Forex"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_11.rss", "tag": "#Commodities"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_357.rss", "tag": "#InsiderTrading"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_356.rss", "tag": "#Companies"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1065.rss", "tag": "#InvestmentIdeas"},
-    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_301.rss", "tag": "#Crypto"},
-    # Financial Times
-    {"name": "Financial Times" , "url": "https://www.ft.com/markets?format=rss", "tag": "#Markets"},
-    {"name": "Financial Times" , "url": "https://www.ft.com/global-economy?format=rss", "tag": "#Macro"},
-    {"name": "Financial Times" , "url": "https://www.ft.com/commodities?format=rss", "tag": "#Commodities"},
-    {"name": "Financial Times" , "url": "https://www.ft.com/emerging-markets?format=rss", "tag": "#EmergingMarkets"},
-    {"name": "Financial Times" , "url": "https://www.ft.com/unhedged?format=rss", "tag": "#Unhedged"},
-    {"name": "Financial Times" , "url": "https://www.ft.com/companies?format=rss", "tag": "#Companies"},
-    # Central banks
-    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/press_all.xml", "tag": "#Fed #Macro"},
-    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/press_monetary.xml", "tag": "#Fed #FOMC"},
-    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/speeches_and_testimony.xml", "tag": "#Fed #Speech"},
-    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/s_t_powell.xml", "tag": "#Fed #Powell"},
-    {"name": "ECB"             , "url": "https://www.ecb.europa.eu/rss/press.html", "tag": "#ECB #Macro"},
-]
+jobs:
+  post-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
 
-SUMMARY_LENGTH = 280         # max characters of the short description
-MAX_AGE_HOURS = 12           # ignore articles older than this
-SEEN_FILE = "seen.json"      # remembers which news were already posted
-SEEN_LIMIT = 8000            # how many old links to remember
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
 
-# Daily delivery window (New York time). News are collected all day and posted
-# only inside this window. Anything not posted by WINDOW_END waits for tomorrow.
-MARKET_TZ = "America/New_York"
-WINDOW_START = (15, 30)           # 15:30 New York = 30 min before US market close
-WINDOW_END = (16, 0)              # 16:00 New York = market close, posting stops
-SEND_WEEKDAYS = {0, 1, 2, 3, 4}   # Monday..Friday
-QUEUE_MAX_AGE_HOURS = 96          # drop collected news older than this
-RECHECK_SECONDS = 120             # inside the window: re-check feeds this often
+      - name: Install
+        run: pip install -r requirements.txt
 
-# ---------------------------------------------------------------------------
+      - name: Post news
+        run: python bot.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          THREAD_ID: ${{ secrets.THREAD_ID }}
 
-BOT_TOKEN = re.sub(r"\s+", "", os.environ["BOT_TOKEN"])
-CHAT_ID = re.sub(r"\s+", "", os.environ["CHAT_ID"])
-THREAD_ID = re.sub(r"\s+", "", os.environ["THREAD_ID"])
-if CHAT_ID.isdigit():          # "1987654321" -> "-1001987654321"
-    CHAT_ID = "-100" + CHAT_ID
-
-socket.setdefaulttimeout(20)
-USER_AGENT = "Mozilla/5.0 (compatible; TradingLabNewsBot/1.0)"
-
-
-def load_seen():
-    if not os.path.exists(SEEN_FILE):
-        return {"links": [], "feeds": [], "connected": False}
-    with open(SEEN_FILE, encoding="utf-8") as f:
-        data = json.load(f)
-    data.setdefault("links", [])
-    data.setdefault("feeds", [])
-    data.setdefault("connected", True)
-    return data
-
-
-def save_seen(data):
-    data["links"] = data["links"][-SEEN_LIMIT:]
-    with open(SEEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=1)
-
-
-def clean_text(raw):
-    text = re.sub(r"<[^>]+>", " ", raw or "")
-    text = html.unescape(text)
-    text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > SUMMARY_LENGTH:
-        text = text[:SUMMARY_LENGTH].rsplit(" ", 1)[0].rstrip(".,;:") + "…"
-    return text
-
-
-def entry_time(entry):
-    t = entry.get("published_parsed") or entry.get("updated_parsed")
-    return timegm(t) if t else None
-
-
-def telegram(method, payload):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
-    body = json.dumps(payload).encode("utf-8")
-    for attempt in range(3):
-        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req) as resp:
-                return json.load(resp)
-        except urllib.error.HTTPError as e:
-            info = json.loads(e.read().decode("utf-8") or "{}")
-            wait = info.get("parameters", {}).get("retry_after")
-            if e.code == 429 and wait:
-                time.sleep(wait + 1)
-                continue
-            raise RuntimeError(f"Telegram error {e.code}: {info.get('description')}")
-    raise RuntimeError("Telegram: too many retries")
-
-
-def send_post(text):
-    payload = {
-        "chat_id": CHAT_ID,
-        "message_thread_id": int(THREAD_ID),
-        "text": text,
-        "parse_mode": "HTML",
-        "link_preview_options": {"is_disabled": True},
-    }
-    telegram("sendMessage", payload)
-
-
-def diagnose():
-    """Checks the bot settings and prints the correct IDs to the log."""
-    print("=" * 60)
-    print("TEKSHIRUV (diagnostika)")
-    me = telegram("getMe", {})["result"]
-    print(f"Token ishlayapti. Bot: @{me['username']}")
-    print(f"Siz kiritgan CHAT_ID: {CHAT_ID!r}, THREAD_ID: {THREAD_ID!r}")
-    try:
-        chat = telegram("getChat", {"chat_id": CHAT_ID})["result"]
-        print(f"Guruh topildi: {chat.get('title')}")
-        return True
-    except Exception as exc:
-        print(f"Guruh topilmadi: {exc}")
-
-    print("\nBot ko'rgan guruhlar va bo'limlar:")
-    found = False
-    for upd in telegram("getUpdates", {"allowed_updates": []})["result"]:
-        msg = upd.get("message") or upd.get("my_chat_member") or upd.get("channel_post") or {}
-        chat = msg.get("chat")
-        if not chat or chat.get("type") == "private":
-            continue
-        found = True
-        print(f"  Guruh: {chat.get('title')}  ->  CHAT_ID = {chat['id']}"
-              + (f"   THREAD_ID = {msg['message_thread_id']}" if msg.get("message_thread_id") else ""))
-    if not found:
-        print(f"  Hech narsa topilmadi. @{me['username']} botini guruhga ADMIN qilib qo'shing,")
-        print("  News bo'limiga 'test' deb yozing va workflow'ni qayta ishga tushiring.")
-    print("=" * 60)
-    return False
-
-
-def format_post(item):
-    title = html.escape(item["title"])
-    summary = html.escape(item["summary"])
-    link = html.escape(item["link"], quote=True)
-    parts = [f"<b>{title}</b>"]
-    if summary and summary.lower() != item["title"].lower():
-        parts.append(summary)
-    parts.append(f"{item['tag']}\n🔗 <a href=\"{link}\">Source: {html.escape(item['source'])}</a>")
-    return "\n\n".join(parts)
-
-
-def collect(seen):
-    """Reads all feeds and adds new articles to the queue. Returns how many were added."""
-    seen_links = set(seen["links"])
-    now = time.time()
-    new_items = []
-    for feed in FEEDS:
-        parsed = feedparser.parse(feed["url"], agent=USER_AGENT)
-        if parsed.get("bozo") and not parsed.entries:
-            print(f"WARNING: could not read {feed['name']} ({feed['url']})")
-            continue
-        first_time = feed["url"] not in seen["feeds"]
-        for e in parsed.entries:
-            link = e.get("link")
-            if not link or link in seen_links:
-                continue
-            seen_links.add(link)
-            ts = entry_time(e)
-            if first_time or (ts and now - ts > MAX_AGE_HOURS * 3600):
-                seen["links"].append(link)   # old article: remember, don't post
-                continue
-            new_items.append({
-                "title": clean_text(e.get("title")),
-                "summary": clean_text(e.get("summary") or e.get("description")),
-                "link": link,
-                "source": feed["name"],
-                "tag": feed["tag"],
-                "time": ts or now,
-            })
-        if first_time:
-            seen["feeds"].append(feed["url"])
-            print(f"{feed['name']}: first run, saved {len(parsed.entries)} existing articles")
-
-    # add to the queue, skipping the same story coming from two feeds
-    queue = seen.setdefault("queue", [])
-    titles = {q["title"].lower() for q in queue}
-    added = 0
-    for item in sorted(new_items, key=lambda x: x["time"]):
-        seen["links"].append(item["link"])
-        key = item["title"].lower()
-        if key in titles:
-            continue
-        titles.add(key)
-        queue.append(item)
-        added += 1
-    queue[:] = [q for q in queue if now - q["time"] < QUEUE_MAX_AGE_HOURS * 3600]
-    return added
-
-
-def window():
-    """Returns (now, start, end) in New York time."""
-    now = datetime.now(ZoneInfo(MARKET_TZ))
-    start = now.replace(hour=WINDOW_START[0], minute=WINDOW_START[1], second=0, microsecond=0)
-    end = now.replace(hour=WINDOW_END[0], minute=WINDOW_END[1], second=0, microsecond=0)
-    return now, start, end
-
-
-def in_window():
-    now, start, end = window()
-    return now.weekday() in SEND_WEEKDAYS and start <= now < end
-
-
-def main():
-    seen = load_seen()
-    if not seen["connected"] and not diagnose():
-        raise SystemExit("Sozlamalarni yuqoridagi TEKSHIRUV natijasiga qarab to'g'rilang.")
-    if not seen["connected"]:
-        send_post("✅ <b>News bot connected.</b>\nNew trading, macro and stock market news will appear here.")
-        seen["connected"] = True
-
-    added = collect(seen)
-    queue = seen["queue"]
-    now, start, end = window()
-    print(f"New York time {now:%a %H:%M}. Added {added} news, queue {len(queue)}. "
-          f"Posting window open: {in_window()}")
-    if not in_window() and now.weekday() in SEND_WEEKDAYS and 0 < (start - now).total_seconds() <= 11 * 60:
-        save_seen(seen)
-        print(f"Waiting {(start - now).total_seconds():.0f}s for the posting window to open…")
-        time.sleep((start - now).total_seconds())
-    if not in_window():
-        save_seen(seen)
-        return
-
-    # Inside the window: post the queue, re-check feeds, repeat until the window closes
-    posted = errors = 0
-    while in_window():
-        queue.sort(key=lambda x: x["time"])
-        while queue and in_window():
-            item = queue.pop(0)
-            try:
-                send_post(format_post(item))
-                posted += 1
-            except Exception as exc:
-                errors += 1
-                print(f"ERROR sending '{item['title']}': {exc}")
-            if (posted + errors) % 20 == 0:
-                save_seen(seen)
-            time.sleep(3)
-        if not in_window():
-            break
-        save_seen(seen)
-        now, start, end = window()
-        time.sleep(max(1, min(RECHECK_SECONDS, (end - now).total_seconds())))
-        if in_window():
-            collect(seen)
-
-    save_seen(seen)
-    print(f"Window closed. Posted {posted}, errors {errors}, left for tomorrow {len(queue)}")
-    if errors and not posted:
-        raise SystemExit(1)
-
-
-if __name__ == "__main__":
-    main()
+      - name: Remember posted news
+        if: always()
+        run: |
+          git config user.name "news-bot"
+          git config user.email "news-bot@users.noreply.github.com"
+          git add seen.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Update seen news"
+            git pull --rebase
+            git push
+          fi
