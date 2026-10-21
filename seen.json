@@ -750,7 +750,32 @@
   "https://www.investing.com/news/stock-market-news/ge-vernova-options-signal-57-move-on-oct-28-earnings-93CH-4963496",
   "https://www.investing.com/news/company-news/mi-homes-stock-hits-52week-low-at-11609-usd-93CH-4963497",
   "https://www.investing.com/news/earnings/eastgroup-properties-earnings-on-deck-can-occupancy-offset-supply-93CH-4963498",
-  "https://www.investing.com/news/company-news/moodys-q3-2026-slides-show-strength-despite-forecast-miss-93CH-4963499"
+  "https://www.investing.com/news/company-news/moodys-q3-2026-slides-show-strength-despite-forecast-miss-93CH-4963499",
+  "https://www.investing.com/news/company-news/nextera-energy-q3-2026-slides-97-eps-growth-mixed-results-93CH-4963500",
+  "https://www.investing.com/news/earnings/carpenter-technology-earnings-up-next-can-margins-keep-climbing-93CH-4963501",
+  "https://www.investing.com/news/earnings/hub-group-earnings-loom-as-accounting-woes-cloud-record-intermodal-market-93CH-4963503",
+  "https://www.investing.com/news/company-news/agree-realty-q3-2026-slides-fortress-balance-sheet-cautious-growth-93CH-4963504",
+  "https://www.investing.com/news/earnings/molina-healthcare-earnings-in-focus-as-medicaid-pressures-mount-93CH-4963509",
+  "https://www.investing.com/news/stock-market-news/top-industrial-stocks-broadridge-leads-on-riskadjusted-value-93CH-4963510",
+  "https://www.investing.com/news/stock-market-news/why-is-alphabet-stock-sliding-today-93CH-4963511",
+  "https://www.investing.com/news/stock-market-news/heineken-ordered-to-pay-111-million-in-damages-interest-to-greek-rival-4962551",
+  "https://www.investing.com/news/analyst-ratings/chefs-warehouse-stock-rating-maintained-at-buy-by-stonex-93CH-4963514",
+  "https://www.investing.com/news/analyst-ratings/stonex-reiterates-hold-on-rxo-stock-amid-pending-acquisition-93CH-4963515",
+  "https://www.investing.com/news/analyst-ratings/lionsgate-studios-stock-gains-on-takeover-interest-stonex-says-93CH-4963516",
+  "https://www.investing.com/news/earnings/snapon-faces-quarterly-earnings-test-as-price-targets-fall-93CH-4963518",
+  "https://www.investing.com/news/economic-indicators/crude-oil-inventories-fall-more-than-expected-indicating-strong-demand-93CH-4963519",
+  "https://www.investing.com/news/earnings/medical-properties-earnings-in-focus-as-turnaround-test-looms-93CH-4963520",
+  "https://www.investing.com/news/company-news/amplitude-stock-hits-52week-high-at-1618-93CH-4963521",
+  "https://www.investing.com/news/company-news/aws-to-deploy-3m-optical-technology-in-data-centers-93CH-4963522",
+  "https://www.marketwatch.com/story/time-for-a-micron-mindset-shift-heres-how-to-navigate-the-new-ai-landscape-09395ac8?mod=mw_rss_topstories",
+  "https://www.investing.com/news/earnings/sei-investments-faces-earnings-test-on-margin-sustainability-93CH-4963524",
+  "https://www.investing.com/news/earnings/pultegroup-earnings-in-focus-can-homebuilder-hold-margins-as-rates-surge-93CH-4963526",
+  "https://www.investing.com/news/earnings/expro-earnings-investors-brace-for-margin-test-after-q2-miss-93CH-4963527",
+  "https://www.investing.com/news/stock-market-news/why-is-meta-platforms-stock-rallying-today-93CH-4963528",
+  "https://www.investing.com/news/earnings/globe-life-earnings-up-next-can-profit-growth-offset-revenue-dip-93CH-4963530",
+  "https://www.marketwatch.com/story/colleges-raced-to-build-massive-computer-science-departments-now-the-boom-is-turning-to-bust-692cfe37?mod=mw_rss_topstories",
+  "https://www.marketwatch.com/bulletins/redirect/go?g=4d5179cf-d72f-441f-b766-57359ffb1044&mod=mw_rss_bulletins",
+  "https://www.marketwatch.com/story/money-saving-hacks-to-cope-with-higher-prices-from-our-readers-a092767e?mod=mw_rss_topstories"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -790,5 +815,207 @@
   "https://www.federalreserve.gov/feeds/speeches_and_testimony.xml",
   "https://www.federalreserve.gov/feeds/s_t_powell.xml"
  ],
- "connected": true
+ "connected": true,
+ "queue": [
+  {
+   "title": "NextEra Energy Q3 2026 slides: 9.7% EPS growth, mixed results",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/nextera-energy-q3-2026-slides-97-eps-growth-mixed-results-93CH-4963500",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792592892
+  },
+  {
+   "title": "Carpenter Technology earnings up next: Can margins keep climbing?",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/carpenter-technology-earnings-up-next-can-margins-keep-climbing-93CH-4963501",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792592921
+  },
+  {
+   "title": "Hub Group earnings loom as accounting woes cloud record intermodal market",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/hub-group-earnings-loom-as-accounting-woes-cloud-record-intermodal-market-93CH-4963503",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792592974
+  },
+  {
+   "title": "Agree Realty Q3 2026 slides: fortress balance sheet, cautious growth",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/agree-realty-q3-2026-slides-fortress-balance-sheet-cautious-growth-93CH-4963504",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792592986
+  },
+  {
+   "title": "Molina Healthcare earnings in focus as Medicaid pressures mount",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/molina-healthcare-earnings-in-focus-as-medicaid-pressures-mount-93CH-4963509",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593028
+  },
+  {
+   "title": "Top industrial stocks: Broadridge leads on risk-adjusted value",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/top-industrial-stocks-broadridge-leads-on-riskadjusted-value-93CH-4963510",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792593036
+  },
+  {
+   "title": "Why is Alphabet stock sliding today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-alphabet-stock-sliding-today-93CH-4963511",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792593045
+  },
+  {
+   "title": "Heineken ordered to pay €111 million in damages, interest to Greek rival",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/heineken-ordered-to-pay-111-million-in-damages-interest-to-greek-rival-4962551",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792593056
+  },
+  {
+   "title": "Chefs’ Warehouse stock rating maintained at Buy by StoneX",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/chefs-warehouse-stock-rating-maintained-at-buy-by-stonex-93CH-4963514",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792593068
+  },
+  {
+   "title": "StoneX reiterates Hold on RXO stock amid pending acquisition",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/stonex-reiterates-hold-on-rxo-stock-amid-pending-acquisition-93CH-4963515",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792593069
+  },
+  {
+   "title": "Lionsgate Studios stock gains on takeover interest, StoneX says",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/lionsgate-studios-stock-gains-on-takeover-interest-stonex-says-93CH-4963516",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792593069
+  },
+  {
+   "title": "Snap-On faces quarterly earnings test as price targets fall",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/snapon-faces-quarterly-earnings-test-as-price-targets-fall-93CH-4963518",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593081
+  },
+  {
+   "title": "Crude oil inventories fall more than expected, indicating strong demand",
+   "summary": "",
+   "link": "https://www.investing.com/news/economic-indicators/crude-oil-inventories-fall-more-than-expected-indicating-strong-demand-93CH-4963519",
+   "source": "Investing.com",
+   "tag": "#EconomicData",
+   "time": 1792593127
+  },
+  {
+   "title": "Medical Properties earnings in focus as turnaround test looms",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/medical-properties-earnings-in-focus-as-turnaround-test-looms-93CH-4963520",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593135
+  },
+  {
+   "title": "Amplitude stock hits 52-week high at $16.18",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/amplitude-stock-hits-52week-high-at-1618-93CH-4963521",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792593151
+  },
+  {
+   "title": "AWS to deploy 3M optical technology in data centers",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/aws-to-deploy-3m-optical-technology-in-data-centers-93CH-4963522",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792593154
+  },
+  {
+   "title": "Time for a Micron mindset shift? Here’s how to navigate the new AI landscape.",
+   "summary": "An analyst says Micron investors have gotten used to rapid growth but now have to reorient themselves around the idea that AI is more like a marathon.",
+   "link": "https://www.marketwatch.com/story/time-for-a-micron-mindset-shift-heres-how-to-navigate-the-new-ai-landscape-09395ac8?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792593180
+  },
+  {
+   "title": "SEI Investments faces earnings test on margin sustainability",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/sei-investments-faces-earnings-test-on-margin-sustainability-93CH-4963524",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593189
+  },
+  {
+   "title": "PulteGroup earnings in focus: Can homebuilder hold margins as rates surge?",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/pultegroup-earnings-in-focus-can-homebuilder-hold-margins-as-rates-surge-93CH-4963526",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593242
+  },
+  {
+   "title": "Expro earnings: Investors brace for margin test after Q2 miss",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/expro-earnings-investors-brace-for-margin-test-after-q2-miss-93CH-4963527",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593297
+  },
+  {
+   "title": "Why is Meta Platforms stock rallying today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-meta-platforms-stock-rallying-today-93CH-4963528",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792593305
+  },
+  {
+   "title": "Globe Life earnings up next: Can profit growth offset revenue dip?",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/globe-life-earnings-up-next-can-profit-growth-offset-revenue-dip-93CH-4963530",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792593350
+  },
+  {
+   "title": "Colleges raced to build massive computer-science departments. Now the boom is turning to bust.",
+   "summary": "“Computer science isn’t the ticket to the American dream like people thought it was.”",
+   "link": "https://www.marketwatch.com/story/colleges-raced-to-build-massive-computer-science-departments-now-the-boom-is-turning-to-bust-692cfe37?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792593960
+  },
+  {
+   "title": "Why Micron investors need a new mentality for today's AI trade",
+   "summary": "",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=4d5179cf-d72f-441f-b766-57359ffb1044&mod=mw_rss_bulletins",
+   "source": "MarketWatch",
+   "tag": "#Breaking",
+   "time": 1792594108
+  },
+  {
+   "title": "Money-saving habits to cope with higher prices — from our readers",
+   "summary": "I asked people what they’re doing to make life more affordable today. I’ll definitely be trying some of these.",
+   "link": "https://www.marketwatch.com/story/money-saving-hacks-to-cope-with-higher-prices-from-our-readers-a092767e?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792594140
+  }
+ ]
 }
