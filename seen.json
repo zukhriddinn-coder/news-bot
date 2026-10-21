@@ -836,7 +836,8 @@
   "https://www.investing.com/news/company-news/tufton-assets-shareholders-approve-all-resolutions-at-agm-93CH-4963650",
   "https://www.investing.com/news/cryptocurrency-news/eos-climbs-10-in-bullish-trade-4963651",
   "https://www.investing.com/news/stock-market-news/poland-stocks-higher-at-close-of-trade-wig30-up-154-4963652",
-  "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html"
+  "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html",
+  "https://www.ft.com/content/3d67dfc3-e17c-4580-9797-a6bfa7256be0?syn-25a6b1a6=1"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -884,7 +885,11 @@
    "link": "https://www.investing.com/news/company-news/nextera-energy-q3-2026-slides-97-eps-growth-mixed-results-93CH-4963500",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792592892
+   "time": 1792592892,
+   "uz": {
+    "title": "NextEra Energy Q3 2026 slaydlari: 9,7% EPS o'sishi, aralash natijalar",
+    "summary": ""
+   }
   },
   {
    "title": "Carpenter Technology earnings up next: Can margins keep climbing?",
@@ -892,7 +897,11 @@
    "link": "https://www.investing.com/news/earnings/carpenter-technology-earnings-up-next-can-margins-keep-climbing-93CH-4963501",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792592921
+   "time": 1792592921,
+   "uz": {
+    "title": "Carpenter Technology daromadlari keyingi bosqichda: Marjalar ko'tarilishni davom ettira oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "Hub Group earnings loom as accounting woes cloud record intermodal market",
@@ -900,7 +909,11 @@
    "link": "https://www.investing.com/news/earnings/hub-group-earnings-loom-as-accounting-woes-cloud-record-intermodal-market-93CH-4963503",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792592974
+   "time": 1792592974,
+   "uz": {
+    "title": "Hub Group daromadlari buxgalteriya hisobidagi muammolar bulutli intermodal bozorda qayd etilganligi sababli ko'paymoqda",
+    "summary": ""
+   }
   },
   {
    "title": "Agree Realty Q3 2026 slides: fortress balance sheet, cautious growth",
@@ -908,7 +921,11 @@
    "link": "https://www.investing.com/news/company-news/agree-realty-q3-2026-slides-fortress-balance-sheet-cautious-growth-93CH-4963504",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792592986
+   "time": 1792592986,
+   "uz": {
+    "title": "Qabul qiling Realty Q3 2026 slaydlari: qal'a balansi, ehtiyotkorlik bilan o'sish",
+    "summary": ""
+   }
   },
   {
    "title": "Molina Healthcare earnings in focus as Medicaid pressures mount",
@@ -916,7 +933,11 @@
    "link": "https://www.investing.com/news/earnings/molina-healthcare-earnings-in-focus-as-medicaid-pressures-mount-93CH-4963509",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593028
+   "time": 1792593028,
+   "uz": {
+    "title": "Medicaid bosimi ortib borayotganligi sababli Molina Healthcare daromadlari diqqat markazida",
+    "summary": ""
+   }
   },
   {
    "title": "Top industrial stocks: Broadridge leads on risk-adjusted value",
@@ -924,7 +945,11 @@
    "link": "https://www.investing.com/news/stock-market-news/top-industrial-stocks-broadridge-leads-on-riskadjusted-value-93CH-4963510",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792593036
+   "time": 1792593036,
+   "uz": {
+    "title": "Eng yaxshi sanoat zaxiralari: Broadridge xavf-xatarga moslashtirilgan qiymat bo'yicha yetakchilik qiladi",
+    "summary": ""
+   }
   },
   {
    "title": "Why is Alphabet stock sliding today?",
@@ -932,7 +957,11 @@
    "link": "https://www.investing.com/news/stock-market-news/why-is-alphabet-stock-sliding-today-93CH-4963511",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792593045
+   "time": 1792593045,
+   "uz": {
+    "title": "Nima uchun Alphabet fondi bugungi kunda pasaymoqda?",
+    "summary": ""
+   }
   },
   {
    "title": "Heineken ordered to pay €111 million in damages, interest to Greek rival",
@@ -940,7 +969,11 @@
    "link": "https://www.investing.com/news/stock-market-news/heineken-ordered-to-pay-111-million-in-damages-interest-to-greek-rival-4962551",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792593056
+   "time": 1792593056,
+   "uz": {
+    "title": "Xayneken yunon raqibiga 111 million evro tovon puli to'lashni buyurdi",
+    "summary": ""
+   }
   },
   {
    "title": "Chefs’ Warehouse stock rating maintained at Buy by StoneX",
@@ -948,7 +981,11 @@
    "link": "https://www.investing.com/news/analyst-ratings/chefs-warehouse-stock-rating-maintained-at-buy-by-stonex-93CH-4963514",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792593068
+   "time": 1792593068,
+   "uz": {
+    "title": "Chefs' Warehouse aktsiyalari reytingi Buy by StoneX da saqlanadi",
+    "summary": ""
+   }
   },
   {
    "title": "StoneX reiterates Hold on RXO stock amid pending acquisition",
@@ -956,7 +993,11 @@
    "link": "https://www.investing.com/news/analyst-ratings/stonex-reiterates-hold-on-rxo-stock-amid-pending-acquisition-93CH-4963515",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792593069
+   "time": 1792593069,
+   "uz": {
+    "title": "StoneX sotib olishni kutayotgan paytda RXO aktsiyalarini ushlab turishni takrorlaydi",
+    "summary": ""
+   }
   },
   {
    "title": "Lionsgate Studios stock gains on takeover interest, StoneX says",
@@ -964,7 +1005,11 @@
    "link": "https://www.investing.com/news/analyst-ratings/lionsgate-studios-stock-gains-on-takeover-interest-stonex-says-93CH-4963516",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792593069
+   "time": 1792593069,
+   "uz": {
+    "title": "StoneXning ta'kidlashicha, Lionsgate Studios aksiyalarini sotib olish foizlari ortib bormoqda",
+    "summary": ""
+   }
   },
   {
    "title": "Snap-On faces quarterly earnings test as price targets fall",
@@ -972,7 +1017,11 @@
    "link": "https://www.investing.com/news/earnings/snapon-faces-quarterly-earnings-test-as-price-targets-fall-93CH-4963518",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593081
+   "time": 1792593081,
+   "uz": {
+    "title": "Snap-On har chorakda daromadlarni sinovdan o'tkazadi, chunki narx maqsadlari pasaygan",
+    "summary": ""
+   }
   },
   {
    "title": "Crude oil inventories fall more than expected, indicating strong demand",
@@ -980,7 +1029,11 @@
    "link": "https://www.investing.com/news/economic-indicators/crude-oil-inventories-fall-more-than-expected-indicating-strong-demand-93CH-4963519",
    "source": "Investing.com",
    "tag": "#EconomicData",
-   "time": 1792593127
+   "time": 1792593127,
+   "uz": {
+    "title": "Xom neft zaxiralari kutilganidan ko'proq tushib ketdi, bu kuchli talabni ko'rsatadi",
+    "summary": ""
+   }
   },
   {
    "title": "Medical Properties earnings in focus as turnaround test looms",
@@ -988,7 +1041,11 @@
    "link": "https://www.investing.com/news/earnings/medical-properties-earnings-in-focus-as-turnaround-test-looms-93CH-4963520",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593135
+   "time": 1792593135,
+   "uz": {
+    "title": "Tibbiy mulkning daromadlari sinovdan o'tayotganda diqqat markazida",
+    "summary": ""
+   }
   },
   {
    "title": "Amplitude stock hits 52-week high at $16.18",
@@ -996,7 +1053,11 @@
    "link": "https://www.investing.com/news/company-news/amplitude-stock-hits-52week-high-at-1618-93CH-4963521",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792593151
+   "time": 1792593151,
+   "uz": {
+    "title": "Amplitude aktsiyalari 52 haftaning eng yuqori ko'rsatkichi - 16,18 dollar",
+    "summary": ""
+   }
   },
   {
    "title": "AWS to deploy 3M optical technology in data centers",
@@ -1004,7 +1065,11 @@
    "link": "https://www.investing.com/news/company-news/aws-to-deploy-3m-optical-technology-in-data-centers-93CH-4963522",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792593154
+   "time": 1792593154,
+   "uz": {
+    "title": "AWS maʼlumotlar markazlarida 3M optik texnologiyasini oʻrnatish uchun",
+    "summary": ""
+   }
   },
   {
    "title": "Time for a Micron mindset shift? Here’s how to navigate the new AI landscape.",
@@ -1012,7 +1077,11 @@
    "link": "https://www.marketwatch.com/story/time-for-a-micron-mindset-shift-heres-how-to-navigate-the-new-ai-landscape-09395ac8?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792593180
+   "time": 1792593180,
+   "uz": {
+    "title": "Mikron ongini o'zgartirish vaqti keldimi? Yangi sun'iy intellekt landshaftida qanday harakat qilish kerak.",
+    "summary": "Tahlilchining aytishicha, Micron investorlari tez o'sishga ko'nikib qolgan, ammo endi sun'iy intellekt ko'proq marafonga o'xshaydi degan fikr atrofida o'zlarini qayta yo'naltirishlari kerak."
+   }
   },
   {
    "title": "SEI Investments faces earnings test on margin sustainability",
@@ -1020,7 +1089,11 @@
    "link": "https://www.investing.com/news/earnings/sei-investments-faces-earnings-test-on-margin-sustainability-93CH-4963524",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593189
+   "time": 1792593189,
+   "uz": {
+    "title": "SEI Investments marja barqarorligi bo'yicha daromad sinoviga duch keladi",
+    "summary": ""
+   }
   },
   {
    "title": "PulteGroup earnings in focus: Can homebuilder hold margins as rates surge?",
@@ -1028,7 +1101,11 @@
    "link": "https://www.investing.com/news/earnings/pultegroup-earnings-in-focus-can-homebuilder-hold-margins-as-rates-surge-93CH-4963526",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593242
+   "time": 1792593242,
+   "uz": {
+    "title": "PulteGroup daromadlari diqqat markazida: stavkalar oshgani sayin uy quruvchi marjani ushlab turishi mumkinmi?",
+    "summary": ""
+   }
   },
   {
    "title": "Expro earnings: Investors brace for margin test after Q2 miss",
@@ -1036,7 +1113,11 @@
    "link": "https://www.investing.com/news/earnings/expro-earnings-investors-brace-for-margin-test-after-q2-miss-93CH-4963527",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593297
+   "time": 1792593297,
+   "uz": {
+    "title": "Ekspro daromad: Investorlar 2-chorak o'tkazib yuborilganidan keyin marja testiga tayyor",
+    "summary": ""
+   }
   },
   {
    "title": "Why is Meta Platforms stock rallying today?",
@@ -1044,7 +1125,11 @@
    "link": "https://www.investing.com/news/stock-market-news/why-is-meta-platforms-stock-rallying-today-93CH-4963528",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792593305
+   "time": 1792593305,
+   "uz": {
+    "title": "Nima uchun Meta Platforms aktsiyalari bugungi kunda ko'tarilmoqda?",
+    "summary": ""
+   }
   },
   {
    "title": "Globe Life earnings up next: Can profit growth offset revenue dip?",
@@ -1052,7 +1137,11 @@
    "link": "https://www.investing.com/news/earnings/globe-life-earnings-up-next-can-profit-growth-offset-revenue-dip-93CH-4963530",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792593350
+   "time": 1792593350,
+   "uz": {
+    "title": "Globe Life daromadlari keyingi bosqichda: Foyda o'sishi daromadning pasayishini bartaraf qila oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "Colleges raced to build massive computer-science departments. Now the boom is turning to bust.",
@@ -1060,7 +1149,11 @@
    "link": "https://www.marketwatch.com/story/colleges-raced-to-build-massive-computer-science-departments-now-the-boom-is-turning-to-bust-692cfe37?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792593960
+   "time": 1792593960,
+   "uz": {
+    "title": "Kollejlar katta kompyuter fanlari bo'limlarini qurish uchun kurashdilar. Endi bum bustga aylanmoqda.",
+    "summary": "\"Kompyuter fanlari odamlar o'ylagandek Amerika orzusiga chipta emas.\""
+   }
   },
   {
    "title": "Why Micron investors need a new mentality for today's AI trade",
@@ -1068,7 +1161,11 @@
    "link": "https://www.marketwatch.com/bulletins/redirect/go?g=4d5179cf-d72f-441f-b766-57359ffb1044&mod=mw_rss_bulletins",
    "source": "MarketWatch",
    "tag": "#Breaking",
-   "time": 1792594108
+   "time": 1792594108,
+   "uz": {
+    "title": "Nima uchun Micron investorlariga bugungi AI savdosi uchun yangi mentalitet kerak",
+    "summary": ""
+   }
   },
   {
    "title": "Money-saving habits to cope with higher prices — from our readers",
@@ -1076,7 +1173,11 @@
    "link": "https://www.marketwatch.com/story/money-saving-hacks-to-cope-with-higher-prices-from-our-readers-a092767e?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792594140
+   "time": 1792594140,
+   "uz": {
+    "title": "Yuqori narxlarni engish uchun pulni tejash odatlari - bizning o'quvchilarimizdan",
+    "summary": "Men odamlardan bugungi hayotni yanada arzonroq qilish uchun nima qilayotganlarini so'radim. Men, albatta, ulardan ba'zilarini sinab ko'raman."
+   }
   },
   {
    "title": "Daiwa reiterates Neutral rating on SpaceX stock with $140 target",
@@ -1084,7 +1185,11 @@
    "link": "https://www.investing.com/news/analyst-ratings/daiwa-reiterates-neutral-rating-on-spacex-stock-with-140-target-93CH-4963534",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792593414
+   "time": 1792593414,
+   "uz": {
+    "title": "Daiwa 140 dollarlik maqsad bilan SpaceX aktsiyalarining neytral reytingini takrorlaydi",
+    "summary": ""
+   }
   },
   {
    "title": "Micron, Taiwan union sign deal, withdraw from mediation",
@@ -1092,7 +1197,11 @@
    "link": "https://www.investing.com/news/economy-news/micron-taiwan-union-sign-deal-withdraw-from-mediation-4961824",
    "source": "Investing.com",
    "tag": "#Macro",
-   "time": 1792593440
+   "time": 1792593440,
+   "uz": {
+    "title": "Micron, Tayvan kasaba uyushmasi kelishuv imzoladi, vositachilikdan voz kechdi",
+    "summary": ""
+   }
   },
   {
    "title": "Russia, US, Ukraine talks may take place mid-November in Abu Dhabi",
@@ -1100,7 +1209,11 @@
    "link": "https://www.investing.com/news/economy-news/russia-us-ukraine-talks-may-take-place-midnovember-in-abu-dhabi-93CH-4963538",
    "source": "Investing.com",
    "tag": "#Macro",
-   "time": 1792593567
+   "time": 1792593567,
+   "uz": {
+    "title": "Rossiya, AQSh va Ukraina muzokaralari noyabr oyi o‘rtalarida Abu-Dabida bo‘lib o‘tishi mumkin",
+    "summary": ""
+   }
   },
   {
    "title": "The political ad wars are still being fought over the airwaves even as digital gains share",
@@ -1108,7 +1221,11 @@
    "link": "https://www.cnbc.com/2026/10/21/why-broadcast-tv-still-dominates-political-ad-spending.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792593602
+   "time": 1792593602,
+   "uz": {
+    "title": "Siyosiy reklama urushlari hali ham raqamli yutuqlarga ega bo'lsa ham, havo to'lqinlari orqali olib borilmoqda",
+    "summary": "Teleradiokompaniya oraliq saylovlar oldidan siyosiy reklama xarajatlarining deyarli yarmini qamrab oladi, chunki mahalliy telekanallar rekord xarajatlardan foyda ko'radi."
+   }
   },
   {
    "title": "Investors flood to Jio IPO on day one of India’s largest offering",
@@ -1116,7 +1233,11 @@
    "link": "https://www.investing.com/news/stock-market-news/ambanis-32-billion-jio-ipo-subscribed-within-two-hours-in-record-indian-sale-4961607",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792593782
+   "time": 1792593782,
+   "uz": {
+    "title": "Hindistonning eng yirik takliflaridan birida sarmoyadorlar Jio IPO ga to'planishdi",
+    "summary": ""
+   }
   },
   {
    "title": "US crude oil inventories drop 3.06 million barrels",
@@ -1124,7 +1245,11 @@
    "link": "https://www.investing.com/news/commodities-news/us-crude-oil-inventories-drop-306-million-barrels-93CH-4963561",
    "source": "Investing.com",
    "tag": "#Commodities",
-   "time": 1792593926
+   "time": 1792593926,
+   "uz": {
+    "title": "AQShning xom neft zaxiralari 3,06 million barrelga qisqardi",
+    "summary": ""
+   }
   },
   {
    "title": "York water director Brossman buys $999 in YORW stock",
@@ -1132,7 +1257,11 @@
    "link": "https://www.investing.com/news/insider-trading-news/york-water-director-brossman-buys-999-in-yorw-stock-93CH-4963563",
    "source": "Investing.com",
    "tag": "#InsiderTrading",
-   "time": 1792593952
+   "time": 1792593952,
+   "uz": {
+    "title": "York suv direktori Brossman YORW aktsiyalarini 999 dollarga sotib oladi",
+    "summary": ""
+   }
   },
   {
    "title": "Apple will have limited iPhone Duo units available in stores on Friday",
@@ -1140,7 +1269,11 @@
    "link": "https://www.investing.com/news/stock-market-news/apple-will-have-limited-iphone-duo-units-available-in-stores-on-friday-4963408",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594139
+   "time": 1792594139,
+   "uz": {
+    "title": "Apple juma kuni do'konlarda cheklangan iPhone Duo qurilmalariga ega bo'ladi",
+    "summary": ""
+   }
   },
   {
    "title": "Greece stocks higher at close of trade; Athens General Composite up 1.27%",
@@ -1148,7 +1281,11 @@
    "link": "https://www.investing.com/news/stock-market-news/greece-stocks-higher-at-close-of-trade-athens-general-composite-up-127-4963572",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594203
+   "time": 1792594203,
+   "uz": {
+    "title": "Savdo yopilish chog‘ida Gretsiya qimmatli qog‘ozlari qimmatlashdi; Afina General Composite 1,27 foizga o'sdi",
+    "summary": ""
+   }
   },
   {
    "title": "United Airlines CEO says fuel prices expected to stay high in 2027",
@@ -1156,7 +1293,11 @@
    "link": "https://www.investing.com/news/stock-market-news/united-airlines-ceo-says-fuel-prices-expected-to-stay-high-in-2027-93CH-4963575",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594261
+   "time": 1792594261,
+   "uz": {
+    "title": "United Airlines bosh direktorining ta'kidlashicha, yoqilg'i narxi 2027 yilda yuqori bo'lib qolishi kutilmoqda",
+    "summary": ""
+   }
   },
   {
    "title": "GOWell H1 2026 slides: 43% revenue growth, shares fall on guidance",
@@ -1164,7 +1305,11 @@
    "link": "https://www.investing.com/news/company-news/gowell-h1-2026-slides-43-revenue-growth-shares-fall-on-guidance-93CH-4963578",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594322
+   "time": 1792594322,
+   "uz": {
+    "title": "GOWell H1 2026 slaydlari: daromadning 43% o'sishi, aksiyalar ko'rsatmalarga muvofiq tushadi",
+    "summary": ""
+   }
   },
   {
    "title": "SThree extends takeover deadline to November 18",
@@ -1172,7 +1317,11 @@
    "link": "https://www.investing.com/news/company-news/sthree-extends-takeover-deadline-to-november-18-93CH-4963579",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594361
+   "time": 1792594361,
+   "uz": {
+    "title": "SThree sotib olish muddatini 18 noyabrgacha uzaytirdi",
+    "summary": ""
+   }
   },
   {
    "title": "Israel stocks lower at close of trade; TA 35 down 0.05%",
@@ -1180,7 +1329,11 @@
    "link": "https://www.investing.com/news/stock-market-news/israel-stocks-lower-at-close-of-trade-ta-35-down-005-4963583",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594503
+   "time": 1792594503,
+   "uz": {
+    "title": "Savdo yopilish chog'ida Isroil qimmatli qog'ozlari narxi tushdi; TA 35 0,05% pasaydi",
+    "summary": ""
+   }
   },
   {
    "title": "Northpointe Q3 2026 slides: strategic pivot amid earnings miss",
@@ -1188,7 +1341,11 @@
    "link": "https://www.investing.com/news/company-news/northpointe-q3-2026-slides-strategic-pivot-amid-earnings-miss-93CH-4963586",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594540
+   "time": 1792594540,
+   "uz": {
+    "title": "Northpointe 2026 yil 3-chorak slaydlari: daromadlar kamayganligi sababli strategik o'zgarishlar",
+    "summary": ""
+   }
   },
   {
    "title": "Apa stock hits 52-week high at 50.46 USD",
@@ -1196,7 +1353,11 @@
    "link": "https://www.investing.com/news/company-news/apa-stock-hits-52week-high-at-5046-usd-93CH-4963588",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594637
+   "time": 1792594637,
+   "uz": {
+    "title": "Apa aktsiyalari 50,46 AQSh dollari darajasida 52 haftalik eng yuqori darajaga yetdi",
+    "summary": ""
+   }
   },
   {
    "title": "IHCL Q2FY27 slides: 18th record quarter, guidance raised to 17%",
@@ -1204,7 +1365,11 @@
    "link": "https://www.investing.com/news/company-news/ihcl-q2fy27-slides-18th-record-quarter-guidance-raised-to-17-93CH-4963590",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594667
+   "time": 1792594667,
+   "uz": {
+    "title": "IHCL Q2FY27 slaydlari: 18-rekord chorak, ko'rsatma 17% gacha ko'tarildi",
+    "summary": ""
+   }
   },
   {
    "title": "Charles River Laboratories stock hits 52-week high at 333.31 USD",
@@ -1212,7 +1377,11 @@
    "link": "https://www.investing.com/news/company-news/charles-river-laboratories-stock-hits-52week-high-at-33331-usd-93CH-4963591",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594667
+   "time": 1792594667,
+   "uz": {
+    "title": "Charlz River Laboratories aktsiyalari 52 haftaning eng yuqori ko'rsatkichini 333,31 AQSh dollarini tashkil etdi",
+    "summary": ""
+   }
   },
   {
    "title": "Moderna is about to release the trial results for its cancer vaccine. A lot is riding on this data.",
@@ -1220,7 +1389,11 @@
    "link": "https://www.marketwatch.com/story/moderna-is-about-to-release-the-trial-results-for-its-cancer-vaccine-a-lot-is-riding-on-this-data-ccbf8c9c?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792594800
+   "time": 1792594800,
+   "uz": {
+    "title": "Moderna saratonga qarshi vaksinaning sinov natijalarini e'lon qilmoqchi. Ko'p narsa bu ma'lumotlarga tayanadi.",
+    "summary": "Moderna o'zining maxsus saraton kasalligini davolash tufayli yilning eng issiq zaxiralaridan biridir. To'liq 3-bosqich ma'lumotlari shu hafta oxirida e'lon qilinadi."
+   }
   },
   {
    "title": "Intel hits construction milestone at Ohio chip fab that’s at least 5 years behind schedule",
@@ -1228,7 +1401,11 @@
    "link": "https://www.cnbc.com/2026/10/21/intel-hits-construction-milestone-at-delayed-ohio-chip-fab-.html",
    "source": "CNBC",
    "tag": "#Tech",
-   "time": 1792594801
+   "time": 1792594801,
+   "uz": {
+    "title": "Intel Ogayo chip fabrikasida qurilish bosqichiga erishdi, bu rejadan kamida 5 yil orqada",
+    "summary": "Intel o'zining Ogayo shtatidagi kechiktirilgan chip fabrikasida birinchi yirik strukturaviy trussni o'rnatdi, ammo kompaniya haligacha yirik tashqi mijozni e'lon qilmagan."
+   }
   },
   {
    "title": "Norway stocks higher at close of trade; Oslo OBX up 0.97%",
@@ -1236,7 +1413,11 @@
    "link": "https://www.investing.com/news/stock-market-news/norway-stocks-higher-at-close-of-trade-oslo-obx-up-097-4963595",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594804
+   "time": 1792594804,
+   "uz": {
+    "title": "Norvegiya aksiyalari savdo yopilish chog‘ida qimmatlashdi; Oslo OBX 0,97% ga oshdi",
+    "summary": ""
+   }
   },
   {
    "title": "OFG Bancorp Q3 2026 slides: digital push drives growth amid flat revenue",
@@ -1244,7 +1425,11 @@
    "link": "https://www.investing.com/news/company-news/ofg-bancorp-q3-2026-slides-digital-push-drives-growth-amid-flat-revenue-93CH-4963598",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594816
+   "time": 1792594816,
+   "uz": {
+    "title": "OFG Bancorp Q3 2026 slaydlari: raqamli push bir tekis daromad sharoitida o'sishni rag'batlantiradi",
+    "summary": ""
+   }
   },
   {
    "title": "FCC chair says broadcast networks could violate regulatory obligations by airing ’fake polls’",
@@ -1252,7 +1437,11 @@
    "link": "https://www.investing.com/news/stock-market-news/fcc-chair-says-broadcast-networks-could-violate-regulatory-obligations-by-airing-fake-polls-4963599",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792594843
+   "time": 1792594843,
+   "uz": {
+    "title": "FCC raisining ta'kidlashicha, eshittirish tarmoqlari \"soxta so'rovlar\"ni efirga uzatish orqali tartibga solish majburiyatlarini buzishi mumkin.",
+    "summary": ""
+   }
   },
   {
    "title": "York Water director David Velazquez buys $40,000 in shares",
@@ -1260,7 +1449,11 @@
    "link": "https://www.investing.com/news/insider-trading-news/york-water-director-david-velazquez-buys-40000-in-shares-93CH-4963603",
    "source": "Investing.com",
    "tag": "#InsiderTrading",
-   "time": 1792594872
+   "time": 1792594872,
+   "uz": {
+    "title": "York Water direktori David Velazquez 40 000 dollarlik aktsiyalarni sotib oladi",
+    "summary": ""
+   }
   },
   {
    "title": "Spotify earnings up next: Can margin gains ease growth concerns?",
@@ -1268,7 +1461,11 @@
    "link": "https://www.investing.com/news/earnings/spotify-earnings-up-next-can-margin-gains-ease-growth-concerns-93CH-4963605",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792594962
+   "time": 1792594962,
+   "uz": {
+    "title": "Keyingi Spotify daromadlari: Marjaning o'sishi o'sish tashvishlarini engillashtira oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "MasTec Inc stock hits 52-week low at 182.33 USD",
@@ -1276,7 +1473,11 @@
    "link": "https://www.investing.com/news/company-news/mastec-inc-stock-hits-52week-low-at-18233-usd-93CH-4963606",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792594983
+   "time": 1792594983,
+   "uz": {
+    "title": "MasTec Inc aktsiyalari 182,33 AQSh dollari darajasida 52 haftalik eng past darajaga yetdi",
+    "summary": ""
+   }
   },
   {
    "title": "Crown Castle earnings on deck as tower growth faces test",
@@ -1284,7 +1485,11 @@
    "link": "https://www.investing.com/news/earnings/crown-castle-earnings-on-deck-as-tower-growth-faces-test-93CH-4963607",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595016
+   "time": 1792595016,
+   "uz": {
+    "title": "Minoraning o'sishi sinovdan o'tayotganda, toj qal'asining kemadagi daromadlari",
+    "summary": ""
+   }
   },
   {
    "title": "United Bankshares faces earnings test amid margin pressures",
@@ -1292,7 +1497,11 @@
    "link": "https://www.investing.com/news/earnings/united-bankshares-faces-earnings-test-amid-margin-pressures-93CH-4963610",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595070
+   "time": 1792595070,
+   "uz": {
+    "title": "United Bankshares marja bosimi ostida daromad sinoviga duch keladi",
+    "summary": ""
+   }
   },
   {
    "title": "Zephyr Minerals closes $260,000 private placement financing",
@@ -1300,7 +1509,11 @@
    "link": "https://www.investing.com/news/company-news/zephyr-minerals-closes-260000-private-placement-financing-93CH-4963611",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792595071
+   "time": 1792595071,
+   "uz": {
+    "title": "Zephyr Minerals 260 000 dollarlik xususiy joylashtirishni moliyalashtirishni yopadi",
+    "summary": ""
+   }
   },
   {
    "title": "Ping An Bio announces 1-for-40 reverse stock split effective Thursday",
@@ -1308,7 +1521,11 @@
    "link": "https://www.investing.com/news/company-news/ping-an-bio-announces-1for40-reverse-stock-split-effective-thursday-93CH-4963612",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792595071
+   "time": 1792595071,
+   "uz": {
+    "title": "Ping An Bio payshanba kunidan boshlab 1-for-40-ga teskari aktsiyalarni taqsimlashni e'lon qiladi",
+    "summary": ""
+   }
   },
   {
    "title": "Investors brace for Waste Connections earnings amid valuation debate",
@@ -1316,7 +1533,11 @@
    "link": "https://www.investing.com/news/earnings/investors-brace-for-waste-connections-earnings-amid-valuation-debate-93CH-4963614",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595123
+   "time": 1792595123,
+   "uz": {
+    "title": "Investorlar baholash munozaralari paytida Waste Connections daromadlarini qo'llab-quvvatlamoqda",
+    "summary": ""
+   }
   },
   {
    "title": "Valero earnings loom as refining margins hit record highs",
@@ -1324,7 +1545,11 @@
    "link": "https://www.investing.com/news/earnings/valero-earnings-loom-as-refining-margins-hit-record-highs-93CH-4963615",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595177
+   "time": 1792595177,
+   "uz": {
+    "title": "Valero daromadlari o'sib bormoqda, chunki tozalash marjalari rekord darajaga yetdi",
+    "summary": ""
+   }
   },
   {
    "title": "United Airlines sees elevated fuel costs through 2027, flags margin challenges",
@@ -1332,7 +1557,11 @@
    "link": "https://www.investing.com/news/stock-market-news/united-airlines-sees-elevated-fuel-costs-through-2027-flags-margin-challenges-4963584",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792595206
+   "time": 1792595206,
+   "uz": {
+    "title": "United Airlines aviakompaniyasi 2027 yilgacha yonilg'i narxining oshishini ko'radi, bu esa marjada qiyinchiliklarga duch keladi",
+    "summary": ""
+   }
   },
   {
    "title": "FirstCash earnings up next: Can lending growth offset AFF woes?",
@@ -1340,7 +1569,11 @@
    "link": "https://www.investing.com/news/earnings/firstcash-earnings-up-next-can-lending-growth-offset-aff-woes-93CH-4963616",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595231
+   "time": 1792595231,
+   "uz": {
+    "title": "FirstCash daromadlari keyingi bosqichda: Kredit berishning o'sishi AFF muammolarini bartaraf eta oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "United Rentals faces earnings test amid mega project boom",
@@ -1348,7 +1581,11 @@
    "link": "https://www.investing.com/news/earnings/united-rentals-faces-earnings-test-amid-mega-project-boom-93CH-4963618",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595285
+   "time": 1792595285,
+   "uz": {
+    "title": "United Rentals mega loyiha bumi davrida daromad sinoviga duch kelmoqda",
+    "summary": ""
+   }
   },
   {
    "title": "Lockheed Martin earnings up next: Can munitions surge deliver?",
@@ -1356,7 +1593,11 @@
    "link": "https://www.investing.com/news/earnings/lockheed-martin-earnings-up-next-can-munitions-surge-deliver-93CH-4963619",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595338
+   "time": 1792595338,
+   "uz": {
+    "title": "Lockheed Martin daromadlari keyingi bosqichda: o'q-dorilar ko'payib ketishi mumkinmi?",
+    "summary": ""
+   }
   },
   {
    "title": "Nebius earnings in focus: Can AI cloud growth offset wider losses?",
@@ -1364,7 +1605,11 @@
    "link": "https://www.investing.com/news/earnings/nebius-earnings-in-focus-can-ai-cloud-growth-offset-wider-losses-93CH-4963620",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595392
+   "time": 1792595392,
+   "uz": {
+    "title": "Nebius daromadlari diqqat markazida: AI bulutining o'sishi kengroq yo'qotishlarni qoplay oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "Morocco stocks higher at close of trade; Moroccan All Shares up 0.05%",
@@ -1372,7 +1617,11 @@
    "link": "https://www.investing.com/news/stock-market-news/morocco-stocks-higher-at-close-of-trade-moroccan-all-shares-up-005-4963621",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792595403
+   "time": 1792595403,
+   "uz": {
+    "title": "Marokash qimmatli qog'ozlar savdo yopilish chog'ida qimmatlashdi; Marokashning barcha aktsiyalari 0,05% ga oshdi",
+    "summary": ""
+   }
   },
   {
    "title": "Kinder Morgan set to report earnings amid data center bet",
@@ -1380,7 +1629,11 @@
    "link": "https://www.investing.com/news/earnings/kinder-morgan-set-to-report-earnings-amid-data-center-bet-93CH-4963625",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595446
+   "time": 1792595446,
+   "uz": {
+    "title": "Kinder Morgan ma'lumotlar markazi pul tikish paytida daromad haqida hisobot berishga tayyor",
+    "summary": ""
+   }
   },
   {
    "title": "Who’s paying for the AI build-out? Probably you",
@@ -1388,7 +1641,11 @@
    "link": "https://www.ft.com/content/09f56730-4702-446d-9986-f7c93ffe6bf0?syn-25a6b1a6=1",
    "source": "Financial Times",
    "tag": "#Markets",
-   "time": 1792594825
+   "time": 1792594825,
+   "uz": {
+    "title": "AIni yaratish uchun kim to'laydi? Ehtimol siz",
+    "summary": "Rivojlangan dunyoning har bir burchagida kapitalning har bir katta hovuzi ma'lumotlar markazlarini moliyalashtirmoqda"
+   }
   },
   {
    "title": "Blackstone earnings on deck as performance fees face headwinds",
@@ -1396,7 +1653,11 @@
    "link": "https://www.investing.com/news/earnings/blackstone-earnings-on-deck-as-performance-fees-face-headwinds-93CH-4963626",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595501
+   "time": 1792595501,
+   "uz": {
+    "title": "Harakat to'lovlari teskari shamollarga duchor bo'lganligi sababli kemadagi Blackstone daromadlari",
+    "summary": ""
+   }
   },
   {
    "title": "Norfolk Southern in focus: Earnings test amid merger clouds",
@@ -1404,7 +1665,11 @@
    "link": "https://www.investing.com/news/earnings/norfolk-southern-in-focus-earnings-test-amid-merger-clouds-93CH-4963627",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595554
+   "time": 1792595554,
+   "uz": {
+    "title": "Norfolk Southern diqqat markazida: Birlashish bulutlari orasida daromad sinovi",
+    "summary": ""
+   }
   },
   {
    "title": "Molecule Group grants options to chair Susan Clement Davies",
@@ -1412,7 +1677,11 @@
    "link": "https://www.investing.com/news/company-news/molecule-group-grants-options-to-chair-susan-clement-davies-93CH-4963628",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792595563
+   "time": 1792595563,
+   "uz": {
+    "title": "Molecule Group Syuzan Klement Devisga raislik qilish imkoniyatlarini taqdim etadi",
+    "summary": ""
+   }
   },
   {
    "title": "CSX earnings up next: Can railroad sustain margin momentum?",
@@ -1420,7 +1689,11 @@
    "link": "https://www.investing.com/news/earnings/csx-earnings-up-next-can-railroad-sustain-margin-momentum-93CH-4963629",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595608
+   "time": 1792595608,
+   "uz": {
+    "title": "Keyingi CSX daromadlari: Temir yo'l marja tezligini saqlab qola oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "Union Pacific faces earnings test as merger review looms",
@@ -1428,7 +1701,11 @@
    "link": "https://www.investing.com/news/earnings/union-pacific-faces-earnings-test-as-merger-review-looms-93CH-4963633",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595662
+   "time": 1792595662,
+   "uz": {
+    "title": "Union Pacific, birlashishni ko'rib chiqish arafasida daromadlarni sinovdan o'tkazmoqda",
+    "summary": ""
+   }
   },
   {
    "title": "IBM earnings on deck: Can software deals prove Q2 miss was timing?",
@@ -1436,7 +1713,11 @@
    "link": "https://www.investing.com/news/earnings/ibm-earnings-on-deck-can-software-deals-prove-q2-miss-was-timing-93CH-4963636",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792595716
+   "time": 1792595716,
+   "uz": {
+    "title": "IBMning kemadagi daromadlari: dasturiy ta'minot kelishuvlari 2-chorak o'tkazib yuborilgan vaqtni isbotlay oladimi?",
+    "summary": ""
+   }
   },
   {
    "title": "A $50 sports bet costs a young investor hundreds later. Here's how",
@@ -1444,7 +1725,11 @@
    "link": "https://www.cnbc.com/2026/10/21/sports-betting-young-investors-compounding.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792595780
+   "time": 1792595780,
+   "uz": {
+    "title": "50 dollarlik sport garovi yosh investorga keyin yuzlab turadi. Mana qanday qilib",
+    "summary": "Tadqiqotlar shuni ko'rsatadiki, qimor o'yinlari odamlarning jamg'armalari va investitsiya mablag'larini, ayniqsa, yosh avlodlar orasida yeb ketmoqda."
+   }
   },
   {
    "title": "Intel advances Arizona, Ohio factory projects as chip demand outlook improves",
@@ -1452,7 +1737,11 @@
    "link": "https://www.investing.com/news/stock-market-news/intel-advances-arizona-ohio-factory-projects-as-chip-demand-outlook-improves-4963637",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792595814
+   "time": 1792595814,
+   "uz": {
+    "title": "Intel Arizona, Ogayodagi zavod loyihalarini ilgari surmoqda, chunki chiplarga bo'lgan talab yaxshilanadi",
+    "summary": ""
+   }
   },
   {
    "title": "EBay to lay off 9% of workforce in its second round of job cuts this year",
@@ -1460,7 +1749,11 @@
    "link": "https://www.cnbc.com/2026/10/21/ebay-layoffs-workforce-cuts.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792595823
+   "time": 1792595823,
+   "uz": {
+    "title": "EBay bu yil ish o'rinlarini qisqartirishning ikkinchi bosqichida ishchilarning 9 foizini ishdan bo'shatadi",
+    "summary": "EBay o‘zining “asosiy strategik ustuvorliklari”ga e’tibor qaratishga harakat qilgani uchun ishchi kuchining 9 foizini yoki 1000 ga yaqin xodimini ishdan bo‘shatadi."
+   }
   },
   {
    "title": "Factbox-Websites taken offline over PHP risks",
@@ -1468,7 +1761,11 @@
    "link": "https://www.investing.com/news/stock-market-news/factboxwebsites-taken-offline-over-php-risks-4963631",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792595923
+   "time": 1792595923,
+   "uz": {
+    "title": "Factbox - PHP xavflari tufayli oflayn rejimda olingan veb-saytlar",
+    "summary": ""
+   }
   },
   {
    "title": "Winnebago Q4 FY26 slides: cash flow surges despite revenue decline",
@@ -1476,7 +1773,11 @@
    "link": "https://www.investing.com/news/company-news/winnebago-q4-fy26-slides-cash-flow-surges-despite-revenue-decline-93CH-4963643",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792596292
+   "time": 1792596292,
+   "uz": {
+    "title": "Winnebago 26-moliyaning 4-chorak slaydlari: daromadlar kamayganiga qaramay, pul oqimi oshib bormoqda",
+    "summary": ""
+   }
   },
   {
    "title": "AI stocks are probably in a bubble — but might be worth holding on to, says Citadel’s Ken Griffin",
@@ -1484,7 +1785,11 @@
    "link": "https://www.marketwatch.com/story/ai-stocks-are-probably-in-a-bubble-but-might-be-worth-holding-onto-says-citadels-ken-griffin-87f535ce?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792596420
+   "time": 1792596420,
+   "uz": {
+    "title": "AI aktsiyalari pufakda bo'lishi mumkin - lekin ushlab turishga arziydi, deydi Citadel's Ken Griffin",
+    "summary": "Investorlar shubhasiz \"pufakchalar\" ga duch kelishadi, ammo Ken Griffin investorlarga bu aktsiyalarni tashlashni aytmayapti."
+   }
   },
   {
    "title": "Salesforce goes back to the M&A well to fortify a weaker business. Why it's a smart move",
@@ -1492,7 +1797,11 @@
    "link": "https://www.cnbc.com/investingclub/2026/10/21/salesforce-goes-back-to-the-ma-well-to-fortify-a-weaker-business-why-its-a-smart-move.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792596423
+   "time": 1792596423,
+   "uz": {
+    "title": "Salesforce zaifroq biznesni mustahkamlash uchun M&A qudug'iga qaytadi. Nima uchun bu aqlli harakat",
+    "summary": "Korporativ dasturiy ta'minot gigantining Braze-ni rejalashtirilgan sotib olishi uning marketing biznesini kuchaytiradi va bu jarayonda aktsiyadorlarni susaytiradi."
+   }
   },
   {
    "title": "Old National Q3 2026 slides: record profit, efficiency amid revenue miss",
@@ -1500,7 +1809,11 @@
    "link": "https://www.investing.com/news/company-news/old-national-q3-2026-slides-record-profit-efficiency-amid-revenue-miss-93CH-4963645",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792596427
+   "time": 1792596427,
+   "uz": {
+    "title": "Qadimgi Milliy 2026-yilning 3-chorak slaydlari: rekord daromad, daromad etishmasligi sharoitida samaradorlik",
+    "summary": ""
+   }
   },
   {
    "title": "Denmark stocks higher at close of trade; OMX Copenhagen 20 up 1.58%",
@@ -1508,7 +1821,11 @@
    "link": "https://www.investing.com/news/stock-market-news/denmark-stocks-higher-at-close-of-trade-omx-copenhagen-20-up-158-4963646",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792596604
+   "time": 1792596604,
+   "uz": {
+    "title": "Daniya aksiyalari savdo yopilish chog‘ida qimmatlashdi; OMX Copenhagen 20 1,58 foizga qimmatlashdi",
+    "summary": ""
+   }
   },
   {
    "title": "Mountview Estates schedules general meeting for November 16",
@@ -1516,7 +1833,11 @@
    "link": "https://www.investing.com/news/company-news/mountview-estates-schedules-general-meeting-for-november-16-93CH-4963647",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792596641
+   "time": 1792596641,
+   "uz": {
+    "title": "Mounview Estates umumiy yig'ilishini 16-noyabrga rejalashtirmoqda",
+    "summary": ""
+   }
   },
   {
    "title": "Kalshi could be headed for Supreme Court showdown, CEO says",
@@ -1524,7 +1845,11 @@
    "link": "https://www.investing.com/news/economy-news/kalshi-could-be-headed-for-supreme-court-showdown-ceo-says-4963639",
    "source": "Investing.com",
    "tag": "#Macro",
-   "time": 1792596670
+   "time": 1792596670,
+   "uz": {
+    "title": "Bosh direktorning ta'kidlashicha, Kalshi Oliy sudning o'zaro bahsiga yo'l olishi mumkin",
+    "summary": ""
+   }
   },
   {
    "title": "Cintas stock hits 52-week high at 219.21 USD",
@@ -1532,7 +1857,11 @@
    "link": "https://www.investing.com/news/company-news/cintas-stock-hits-52week-high-at-21921-usd-93CH-4963649",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792596817
+   "time": 1792596817,
+   "uz": {
+    "title": "Cintas aktsiyalari 52 haftaning eng yuqori ko'rsatkichini 219,21 dollarga yetdi",
+    "summary": ""
+   }
   },
   {
    "title": "Tufton Assets shareholders approve all resolutions at AGM",
@@ -1540,7 +1869,11 @@
    "link": "https://www.investing.com/news/company-news/tufton-assets-shareholders-approve-all-resolutions-at-agm-93CH-4963650",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792596879
+   "time": 1792596879,
+   "uz": {
+    "title": "Tufton Assets aktsiyadorlari umumiy yig'ilishda barcha qarorlarni tasdiqlaydilar",
+    "summary": ""
+   }
   },
   {
    "title": "EOS Climbs 10% In Bullish Trade",
@@ -1548,7 +1881,11 @@
    "link": "https://www.investing.com/news/cryptocurrency-news/eos-climbs-10-in-bullish-trade-4963651",
    "source": "Investing.com",
    "tag": "#Crypto",
-   "time": 1792596900
+   "time": 1792596900,
+   "uz": {
+    "title": "EOS bullish savdosida 10% ga ko'tarildi",
+    "summary": ""
+   }
   },
   {
    "title": "Poland stocks higher at close of trade; WIG30 up 1.54%",
@@ -1556,7 +1893,11 @@
    "link": "https://www.investing.com/news/stock-market-news/poland-stocks-higher-at-close-of-trade-wig30-up-154-4963652",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792596903
+   "time": 1792596903,
+   "uz": {
+    "title": "Polsha qimmatli qog'ozlar savdo yopilish chog'ida qimmatlashdi; WIG30 1,54% ga oshdi",
+    "summary": ""
+   }
   },
   {
    "title": "How Ukraine’s drone strikes on Russia crippled the world’s second largest diesel supplier",
@@ -1564,7 +1905,23 @@
    "link": "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792596953
+   "time": 1792596953,
+   "uz": {
+    "title": "Ukrainaning uchuvchisiz samolyoti Rossiyaga qanday zarba bergani dunyodagi ikkinchi yirik dizel yetkazib beruvchini ishdan chiqardi",
+    "summary": "Prezident Donald Tramp Ukrainani dizel narxining oshishida aybladi, bu esa respublikachilarning saylovoldi imkoniyatlariga ikki hafta qolganida oraliq saylovga putur yetkazmoqda."
+   }
+  },
+  {
+   "title": "Reform reports ITV to police over undercover documentary",
+   "summary": "Zia Yusuf says tactics behind programme that showed party councillors making sexist and racist comments may have been illegal",
+   "link": "https://www.ft.com/content/3d67dfc3-e17c-4580-9797-a6bfa7256be0?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Companies",
+   "time": 1792595550,
+   "uz": {
+    "title": "Islohot ITV politsiyaga maxfiy hujjatli film haqida xabar beradi",
+    "summary": "Ziyo Yusufning aytishicha, partiya maslahatchilarining seksistik va irqchi izohlar bildirayotganini ko'rsatadigan dastur ortidagi taktikalar noqonuniy bo'lishi mumkin"
+   }
   }
  ]
 }
