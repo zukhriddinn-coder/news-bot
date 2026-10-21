@@ -849,7 +849,21 @@
   "https://www.investing.com/news/stock-market-news/europes-financial-regulators-query-google-over-cloud-outage-that-hit-banks-4963664",
   "https://www.investing.com/news/stock-market-news/explainerwhat-is-php-and-why-did-it-take-government-websites-offline-4963668",
   "https://www.investing.com/news/stock-market-news/getty-images-files-for-us-bankruptcy-advances-restructuring-plan-4961698",
-  "https://www.marketwatch.com/bulletins/redirect/go?g=cdde2f52-d68b-4807-8de0-3b15f89020e2&mod=mw_rss_bulletins"
+  "https://www.marketwatch.com/bulletins/redirect/go?g=cdde2f52-d68b-4807-8de0-3b15f89020e2&mod=mw_rss_bulletins",
+  "https://www.investing.com/news/company-news/reworld-appoints-kodiak-gas-services-ceo-to-board-93CH-4963669",
+  "https://www.cnbc.com/2026/10/21/musk-spacex-stock-trump-account.html",
+  "https://www.marketwatch.com/story/polymarket-traders-see-a-10-chance-the-ai-bubble-bursts-before-new-years-day-ad33258b?mod=mw_rss_topstories",
+  "https://www.cnbc.com/investingclub/2026/10/21/meta-stock-advances-ahead-of-after-the-bell-earnings-what-were-looking-for.html",
+  "https://www.cnbc.com/2026/10/21/tesla-tsla-q3-2026-earnings-report.html",
+  "https://www.investing.com/news/stock-market-news/italy-stocks-higher-at-close-of-trade-investingcom-italy-40-up-123-4963682",
+  "https://www.investing.com/news/stock-market-news/netherlands-stocks-higher-at-close-of-trade-aex-up-077-4963683",
+  "https://www.investing.com/news/stock-market-news/portugal-stocks-higher-at-close-of-trade-psi-up-046-4963684",
+  "https://www.investing.com/news/stock-market-news/spain-stocks-higher-at-close-of-trade-ibex-35-up-108-4963685",
+  "https://www.investing.com/news/stock-market-news/uk-stocks-higher-at-close-of-trade-investingcom-united-kingdom-100-up-024-4963686",
+  "https://www.investing.com/news/stock-market-news/why-is-mobileye-stock-sliding-today-93CH-4963687",
+  "https://www.investing.com/news/stock-market-news/why-is-unicycive-therapeutics-stock-rallying-today-93CH-4963688",
+  "https://www.investing.com/news/stock-market-news/why-is-digitalocean-stock-rallying-today-93CH-4963689",
+  "https://www.investing.com/news/earnings/hometrust-earnings-beat-by-026-revenue-topped-estimates-4963690"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -1679,8 +1693,9 @@
    "tag": "#Earnings",
    "time": 1792595392,
    "uz": {
-    "title": "Nebius daromadlari diqqat markazida: AI bulutining o'sishi kengroq yo'qotishlarni qoplay oladimi?",
-    "summary": ""
+    "title": "Nebius moliyaviy hisoboti e'tibor markazida: sun'iy intellekt bulutli xizmatlarining o'sishi katta zararlarni qoplay oladimi?",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1691,8 +1706,9 @@
    "tag": "#StockMarket",
    "time": 1792595403,
    "uz": {
-    "title": "Marokash qimmatli qog'ozlar savdo yopilish chog'ida qimmatlashdi; Marokashning barcha aktsiyalari 0,05% ga oshdi",
-    "summary": ""
+    "title": "Marokash aksiyalari savdo yopilishida o'sdi; Moroccan All Shares 0.05% ga ko'tarildi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1703,8 +1719,9 @@
    "tag": "#Earnings",
    "time": 1792595446,
    "uz": {
-    "title": "Kinder Morgan ma'lumotlar markazi pul tikish paytida daromad haqida hisobot berishga tayyor",
-    "summary": ""
+    "title": "Kinder Morgan ma'lumotlar markazlariga tikilgan investitsiyalar fonida moliyaviy hisobotini e'lon qilishga hozirlanmoqda",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1715,8 +1732,9 @@
    "tag": "#Markets",
    "time": 1792594825,
    "uz": {
-    "title": "AIni yaratish uchun kim to'laydi? Ehtimol siz",
-    "summary": "Rivojlangan dunyoning har bir burchagida kapitalning har bir katta hovuzi ma'lumotlar markazlarini moliyalashtirmoqda"
+    "title": "Sun'iy intellekt infratuzilmasi uchun kim to'layapti? Ehtimol, o'zingiz",
+    "summary": "Rivojlangan dunyoning har bir burchagidagi yirik kapital manbalari ma'lumotlar markazlarini moliyalashtirmoqda",
+    "by": "gemini"
    }
   },
   {
@@ -1727,8 +1745,9 @@
    "tag": "#Earnings",
    "time": 1792595501,
    "uz": {
-    "title": "Harakat to'lovlari teskari shamollarga duchor bo'lganligi sababli kemadagi Blackstone daromadlari",
-    "summary": ""
+    "title": "Natija uchun komissiyalar qarshiligiga uchrayotgan Blackstone moliyaviy hisoboti kutilmoqda",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1739,8 +1758,9 @@
    "tag": "#Earnings",
    "time": 1792595554,
    "uz": {
-    "title": "Norfolk Southern diqqat markazida: Birlashish bulutlari orasida daromad sinovi",
-    "summary": ""
+    "title": "Norfolk Southern e'tibor markazida: qo'shilishlar haqidagi taxminlar fonida moliyaviy hisobot sinovi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1751,8 +1771,9 @@
    "tag": "#Companies",
    "time": 1792595563,
    "uz": {
-    "title": "Molecule Group Syuzan Klement Devisga raislik qilish imkoniyatlarini taqdim etadi",
-    "summary": ""
+    "title": "Molecule Group raisi Susan Clement Davies'ga optsionlar taqdim etdi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1763,8 +1784,9 @@
    "tag": "#Earnings",
    "time": 1792595608,
    "uz": {
-    "title": "Keyingi CSX daromadlari: Temir yo'l marja tezligini saqlab qola oladimi?",
-    "summary": ""
+    "title": "Navbatdagi moliyaviy hisobot CSX'dan: temiryo'l kompaniyasi daromadlilik sur'atini saqlab qola oladimi?",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1775,8 +1797,9 @@
    "tag": "#Earnings",
    "time": 1792595662,
    "uz": {
-    "title": "Union Pacific, birlashishni ko'rib chiqish arafasida daromadlarni sinovdan o'tkazmoqda",
-    "summary": ""
+    "title": "Birlashish bo'yicha ko'rib chiqish jarayoni yaqinlashar ekan, Union Pacific moliyaviy hisobot sinovidan o'tmoqda",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1787,8 +1810,9 @@
    "tag": "#Earnings",
    "time": 1792595716,
    "uz": {
-    "title": "IBMning kemadagi daromadlari: dasturiy ta'minot kelishuvlari 2-chorak o'tkazib yuborilgan vaqtni isbotlay oladimi?",
-    "summary": ""
+    "title": "IBM moliyaviy hisoboti kutilmoqda: dasturiy ta'minot bo'yicha bitimlar 2-chorakdagi pasayish vaqtinchalik bo'lganini isbotlay oladimi?",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1799,8 +1823,9 @@
    "tag": "#Markets",
    "time": 1792595780,
    "uz": {
-    "title": "50 dollarlik sport garovi yosh investorga keyin yuzlab turadi. Mana qanday qilib",
-    "summary": "Tadqiqotlar shuni ko'rsatadiki, qimor o'yinlari odamlarning jamg'armalari va investitsiya mablag'larini, ayniqsa, yosh avlodlar orasida yeb ketmoqda."
+    "title": "50 dollarlik sport tikish yosh investorga keyinchalik yuzlab dollarga tushadi. Mana qanday qilib",
+    "summary": "Tadqiqotlar shuni ko'rsatmoqdaki, qimor o'yinlari odamlarning jamg'armalari va investitsiya mablag'larini, ayniqsa yosh avlod vakillari orasida, yeb bitirmoqda.",
+    "by": "gemini"
    }
   },
   {
@@ -1811,8 +1836,9 @@
    "tag": "#StockMarket",
    "time": 1792595814,
    "uz": {
-    "title": "Intel Arizona, Ogayodagi zavod loyihalarini ilgari surmoqda, chunki chiplarga bo'lgan talab yaxshilanadi",
-    "summary": ""
+    "title": "Chipga bo'lgan talab istiqbollari yaxshilangani sari Intel Arizona va Ogayo shtatlaridagi zavod loyihalarini rivojlantirmoqda",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1823,8 +1849,9 @@
    "tag": "#Markets",
    "time": 1792595823,
    "uz": {
-    "title": "EBay bu yil ish o'rinlarini qisqartirishning ikkinchi bosqichida ishchilarning 9 foizini ishdan bo'shatadi",
-    "summary": "EBay o‘zining “asosiy strategik ustuvorliklari”ga e’tibor qaratishga harakat qilgani uchun ishchi kuchining 9 foizini yoki 1000 ga yaqin xodimini ishdan bo‘shatadi."
+    "title": "EBay o'z ishchilar kuchining 9% qisqartiradi, bu joriy yildagi ikkinchi yirik ishdan bo'shatish to'lqini bo'ladi",
+    "summary": "EBay o'zining asosiy strategik ustuvorliklariga e'tibor qaratish maqsadida ishchi kuchining 9% yoki taxminan 1,000 nafar xodimini ishdan bo'shatadi.",
+    "by": "gemini"
    }
   },
   {
@@ -1835,8 +1862,9 @@
    "tag": "#StockMarket",
    "time": 1792595923,
    "uz": {
-    "title": "Factbox - PHP xavflari tufayli oflayn rejimda olingan veb-saytlar",
-    "summary": ""
+    "title": "Fakt-ma'lumot: PHP xavflari tufayli veb-saytlar faoliyati to'xtatildi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1847,8 +1875,9 @@
    "tag": "#Companies",
    "time": 1792596292,
    "uz": {
-    "title": "Winnebago 26-moliyaning 4-chorak slaydlari: daromadlar kamayganiga qaramay, pul oqimi oshib bormoqda",
-    "summary": ""
+    "title": "Winnebago 2026 moliya yilining 4-choragi ko'rsatkichlari: tushum kamayganiga qaramay, pul oqimi keskin oshdi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1859,8 +1888,9 @@
    "tag": "#StockMarket",
    "time": 1792596420,
    "uz": {
-    "title": "AI aktsiyalari pufakda bo'lishi mumkin - lekin ushlab turishga arziydi, deydi Citadel's Ken Griffin",
-    "summary": "Investorlar shubhasiz \"pufakchalar\" ga duch kelishadi, ammo Ken Griffin investorlarga bu aktsiyalarni tashlashni aytmayapti."
+    "title": "Sun'iy intellekt aksiyalari, ehtimol, pufak holatidadir, biroq ularni saqlab qolishga arziydi, deydi Citadel rahbari Ken Griffin",
+    "summary": "Investorlar, shubhasiz, \"pufaklar\"ga duch kelishmoqda, ammo Ken Griffin investorlarga bu aksiyalardan qutulishni tavsiya etmayapti.",
+    "by": "gemini"
    }
   },
   {
@@ -1871,8 +1901,9 @@
    "tag": "#Markets",
    "time": 1792596423,
    "uz": {
-    "title": "Salesforce zaifroq biznesni mustahkamlash uchun M&A qudug'iga qaytadi. Nima uchun bu aqlli harakat",
-    "summary": "Korporativ dasturiy ta'minot gigantining Braze-ni rejalashtirilgan sotib olishi uning marketing biznesini kuchaytiradi va bu jarayonda aktsiyadorlarni susaytiradi."
+    "title": "Salesforce zaiflashgan biznesini mustahkamlash uchun yana M&A (qo'shilish va sotib olish) bozoriga qaytmoqda. Nega bu aqlli qadam",
+    "summary": "Korporativ dasturiy ta'minot gigantining Braze'ni sotib olish bo'yicha rejalashtirilgan bitimi uning marketing biznesini kuchaytiradi va shu bilan birga aksiyadorlar ulushining qadrsizlanishining oldini oladi.",
+    "by": "gemini"
    }
   },
   {
@@ -1883,8 +1914,9 @@
    "tag": "#Companies",
    "time": 1792596427,
    "uz": {
-    "title": "Qadimgi Milliy 2026-yilning 3-chorak slaydlari: rekord daromad, daromad etishmasligi sharoitida samaradorlik",
-    "summary": ""
+    "title": "Old National 2026 yil 3-choragi ko'rsatkichlari: tushum kutilganidan past chiqqaniga qaramay, rekord foyda va samaradorlik qayd etildi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1895,8 +1927,9 @@
    "tag": "#StockMarket",
    "time": 1792596604,
    "uz": {
-    "title": "Daniya aksiyalari savdo yopilish chog‘ida qimmatlashdi; OMX Copenhagen 20 1,58 foizga qimmatlashdi",
-    "summary": ""
+    "title": "Daniya aksiyalari savdo yopilishida o'sdi; OMX Copenhagen 20 indeksi 1.58% ga ko'tarildi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1907,8 +1940,9 @@
    "tag": "#Companies",
    "time": 1792596641,
    "uz": {
-    "title": "Mounview Estates umumiy yig'ilishini 16-noyabrga rejalashtirmoqda",
-    "summary": ""
+    "title": "Mountview Estates 16-noyabrga umumiy yig'ilish belgiladi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1919,8 +1953,9 @@
    "tag": "#Macro",
    "time": 1792596670,
    "uz": {
-    "title": "Bosh direktorning ta'kidlashicha, Kalshi Oliy sudning o'zaro bahsiga yo'l olishi mumkin",
-    "summary": ""
+    "title": "Kalshi Oliy sud bilan to‘qnash kelishi mumkin, deydi bosh direktor",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1931,8 +1966,9 @@
    "tag": "#Companies",
    "time": 1792596817,
    "uz": {
-    "title": "Cintas aktsiyalari 52 haftaning eng yuqori ko'rsatkichini 219,21 dollarga yetdi",
-    "summary": ""
+    "title": "Cintas aksiyasi 219.21 USD bilan 52 haftalik eng yuqori cho‘qqiga chiqdi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1943,8 +1979,9 @@
    "tag": "#Companies",
    "time": 1792596879,
    "uz": {
-    "title": "Tufton Assets aktsiyadorlari umumiy yig'ilishda barcha qarorlarni tasdiqlaydilar",
-    "summary": ""
+    "title": "Tufton Assets aksiyadorlari yillik umumiy yig‘ilishda barcha rezolyutsiyalarni ma’qulladilar",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1955,8 +1992,9 @@
    "tag": "#Crypto",
    "time": 1792596900,
    "uz": {
-    "title": "EOS bullish savdosida 10% ga ko'tarildi",
-    "summary": ""
+    "title": "O‘sish tendentsiyasidagi savdolarda EOS 10% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1967,8 +2005,9 @@
    "tag": "#StockMarket",
    "time": 1792596903,
    "uz": {
-    "title": "Polsha qimmatli qog'ozlar savdo yopilish chog'ida qimmatlashdi; WIG30 1,54% ga oshdi",
-    "summary": ""
+    "title": "Polsha aksiyalari savdolar yopilishida yuqori natija ko‘rsatdi; WIG30 1.54% ga oshdi",
+    "summary": "",
+    "by": "gemini"
    }
   },
   {
@@ -1979,8 +2018,9 @@
    "tag": "#Markets",
    "time": 1792596953,
    "uz": {
-    "title": "Ukrainaning uchuvchisiz samolyoti Rossiyaga qanday zarba bergani dunyodagi ikkinchi yirik dizel yetkazib beruvchini ishdan chiqardi",
-    "summary": "Prezident Donald Tramp Ukrainani dizel narxining oshishida aybladi, bu esa respublikachilarning saylovoldi imkoniyatlariga ikki hafta qolganida oraliq saylovga putur yetkazmoqda."
+    "title": "Ukrainaning Rossiyadagi drona hujumlari dunyodagi ikkinchi yirik dizel yetkazib beruvchini qanday falaj qildi",
+    "summary": "Prezident Donald Tramp oraliq saylovlarga ikki hafta qolgan bir paytda respublikachilarning imkoniyatlariga putur yetkazayotgan dizel narxining keskin oshishida Ukrainani aybladi.",
+    "by": "gemini"
    }
   },
   {
@@ -1991,8 +2031,9 @@
    "tag": "#Companies",
    "time": 1792595550,
    "uz": {
-    "title": "Islohot ITV politsiyaga maxfiy hujjatli film haqida xabar beradi",
-    "summary": "Ziyo Yusufning aytishicha, partiya maslahatchilarining seksistik va irqchi izohlar bildirayotganini ko'rsatadigan dastur ortidagi taktikalar noqonuniy bo'lishi mumkin"
+    "title": "Reform yashirin suratga olingan hujjatli film yuzasidan ITV ustidan politsiyaga shikoyat qildi",
+    "summary": "Ziyo Yusufning ta'kidlashicha, partiya maslahatchilarining seksist va irqchi izohlarini ko‘rsatgan ko‘rsatuv ortidagi usullar noqonuniy bo‘lishi mumkin edi",
+    "by": "gemini"
    }
   },
   {
@@ -2001,7 +2042,12 @@
    "link": "https://www.marketwatch.com/story/elon-musk-promised-a-spacex-share-to-every-kid-in-america-dont-hold-your-breath-d6572cdf?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792597800
+   "time": 1792597800,
+   "uz": {
+    "title": "Ilon Mask Amerikadagi har bir bolaga bitta SpaceX aksiyasini va'da qildi — ko‘p ham umid qilmang",
+    "summary": "Shirinlikmi yoki hazil? Maskning aytgan gaplari voqelikka deyarli to‘g‘ri kelmasligi bo‘yicha uzoq tarixga ega.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Turkey stocks lower at close of trade; BIST 100 down 1.87%",
@@ -2009,7 +2055,12 @@
    "link": "https://www.investing.com/news/stock-market-news/turkey-stocks-lower-at-close-of-trade-bist-100-down-187-4963653",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792596929
+   "time": 1792596929,
+   "uz": {
+    "title": "Turkiya aksiyalari savdolar yopilishida pastladi; BIST 100 1.87% ga tushdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Whop valuation hits $5.1 billion as Sequoia leads funding - Bloomberg",
@@ -2017,7 +2068,12 @@
    "link": "https://www.investing.com/news/stock-market-news/whop-valuation-hits-51-billion-as-sequoia-leads-funding--bloomberg-93CH-4963655",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792597037
+   "time": 1792597037,
+   "uz": {
+    "title": "Sequoia moliyalashtirishga boshchilik qilgani sababli Whop bahosi 5.1 milliard dollarga yetdi - Bloomberg",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "PensionBee reaches £9bn in assets, revenue up 31%",
@@ -2025,7 +2081,12 @@
    "link": "https://www.investing.com/news/company-news/pensionbee-reaches-9bn-in-assets-revenue-up-31-93CH-4963656",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792597120
+   "time": 1792597120,
+   "uz": {
+    "title": "PensionBee aktivlari 9 mlrd funt sterlingga yetdi, tushum 31% ga oshdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Lithia Oct 2026 slides target $100B revenue despite softer demand",
@@ -2033,7 +2094,12 @@
    "link": "https://www.investing.com/news/company-news/lithia-oct-2026-slides-target-100b-revenue-despite-softer-demand-93CH-4963657",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792597121
+   "time": 1792597121,
+   "uz": {
+    "title": "Talab pasayganiga qaramay, Lithia 2026 yil oktabr oyi uchun 100 mlrd dollar daromad maqsadini ko‘rsatmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "S&P lowers Lamb Weston rating to ’BB’ with stable outlook amid elevated debt",
@@ -2041,7 +2107,12 @@
    "link": "https://www.investing.com/news/stock-market-news/sp-lowers-lamb-weston-rating-to-bb-with-stable-outlook-amid-elevated-debt-4963658",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792597375
+   "time": 1792597375,
+   "uz": {
+    "title": "S&P qarzning yuqoriligi fonida Lamb Weston reytingini barqaror prognoz bilan 'BB'gacha tushirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Barclays reduces stake in Central Asia Metals to 5.5%",
@@ -2049,7 +2120,12 @@
    "link": "https://www.investing.com/news/company-news/barclays-reduces-stake-in-central-asia-metals-to-55-93CH-4963660",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792597475
+   "time": 1792597475,
+   "uz": {
+    "title": "Barclays Central Asia Metals’dagi ulushini 5.5% gacha kamaytirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Moody’s upgrades TSMC rating to Aa2 on booming AI demand and market dominance",
@@ -2057,7 +2133,12 @@
    "link": "https://www.investing.com/news/stock-market-news/moodys-upgrades-tsmc-rating-to-aa2-on-booming-ai-demand-and-market-dominance-4963663",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792597597
+   "time": 1792597597,
+   "uz": {
+    "title": "Moody’s sun'iy intellektga bo‘lgan talabning keskin o‘sishi va bozor ustunligi fonida TSMC reytingini Aa2 gacha oshirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Europe’s financial regulators query Google over cloud outage that hit banks",
@@ -2065,7 +2146,12 @@
    "link": "https://www.investing.com/news/stock-market-news/europes-financial-regulators-query-google-over-cloud-outage-that-hit-banks-4963664",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792597719
+   "time": 1792597719,
+   "uz": {
+    "title": "Yevropaning moliyaviy regulyatorlari banklarga ta'sir ko‘rsatgan bulutli texnologiyalar nosozligi yuzasidan Googledan izoh so‘radi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Explainer-What is PHP and why did it take government websites offline?",
@@ -2073,7 +2159,12 @@
    "link": "https://www.investing.com/news/stock-market-news/explainerwhat-is-php-and-why-did-it-take-government-websites-offline-4963668",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598061
+   "time": 1792598061,
+   "uz": {
+    "title": "Tushuntirish: PHP o‘zi nima va nima uchun u hukumat veb-saytlarini ishdan chiqardi?",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Getty Images files for US bankruptcy, advances restructuring plan",
@@ -2081,7 +2172,12 @@
    "link": "https://www.investing.com/news/stock-market-news/getty-images-files-for-us-bankruptcy-advances-restructuring-plan-4961698",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598075
+   "time": 1792598075,
+   "uz": {
+    "title": "Getty Images AQShda bankrotlik bo‘yicha ariza berdi va qayta tuzish rejasini ilgari surmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Meta’s AI spending spree is reviving a financial-crisis playbook",
@@ -2089,7 +2185,129 @@
    "link": "https://www.marketwatch.com/bulletins/redirect/go?g=cdde2f52-d68b-4807-8de0-3b15f89020e2&mod=mw_rss_bulletins",
    "source": "MarketWatch",
    "tag": "#Breaking",
-   "time": 1792598123
+   "time": 1792598123,
+   "uz": {
+    "title": "Meta’ning sun'iy intellektga qilayotgan katta xarajatlari moliyaviy inqiroz davridagi uslubni qayta tiklamoqda",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Reworld appoints Kodiak Gas Services CEO to board",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/reworld-appoints-kodiak-gas-services-ceo-to-board-93CH-4963669",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792598192,
+   "uz": {
+    "title": "Reworld Kodiak Gas Services bosh direktorini direktorlar kengashiga tayinladi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Musk's SpaceX stock gift is 'tip of the iceberg' for Trump Accounts, Altimeter's Gerstner says",
+   "summary": "Elon Musk’s planned SpaceX share gift through Trump Accounts could be the start of a broader philanthropic push, says Altimeter Capital CEO Brad Gerstner.",
+   "link": "https://www.cnbc.com/2026/10/21/musk-spacex-stock-trump-account.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792598325
+  },
+  {
+   "title": "Polymarket traders see a 10% chance the AI bubble bursts before New Year’s Day",
+   "summary": "For investors worried that the runaway artificial-intelligence trade might be about to hit the skids, prediction markets are already starting to reflect that anxiety.",
+   "link": "https://www.marketwatch.com/story/polymarket-traders-see-a-10-chance-the-ai-bubble-bursts-before-new-years-day-ad33258b?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792598340
+  },
+  {
+   "title": "Meta stock advances ahead of after-the-bell earnings. What we're looking for",
+   "summary": "The Investing Club holds its \"Morning Meeting\" every weekday at 10:20 a.m. ET.",
+   "link": "https://www.cnbc.com/investingclub/2026/10/21/meta-stock-advances-ahead-of-after-the-bell-earnings-what-were-looking-for.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792598425
+  },
+  {
+   "title": "Tesla earnings loom after Musk calls SpaceX merger a 'good idea'",
+   "summary": "A day after Elon Musk's SpaceX reported third-quarter results, Tesla is scheduled to update investors.",
+   "link": "https://www.cnbc.com/2026/10/21/tesla-tsla-q3-2026-earnings-report.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792598485
+  },
+  {
+   "title": "Italy stocks higher at close of trade; Investing.com Italy 40 up 1.23%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/italy-stocks-higher-at-close-of-trade-investingcom-italy-40-up-123-4963682",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792598839
+  },
+  {
+   "title": "Netherlands stocks higher at close of trade; AEX up 0.77%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/netherlands-stocks-higher-at-close-of-trade-aex-up-077-4963683",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792598866
+  },
+  {
+   "title": "Portugal stocks higher at close of trade; PSI up 0.46%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/portugal-stocks-higher-at-close-of-trade-psi-up-046-4963684",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792598895
+  },
+  {
+   "title": "Spain stocks higher at close of trade; IBEX 35 up 1.08%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/spain-stocks-higher-at-close-of-trade-ibex-35-up-108-4963685",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792598921
+  },
+  {
+   "title": "U.K. stocks higher at close of trade; Investing.com United Kingdom 100 up 0.24%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/uk-stocks-higher-at-close-of-trade-investingcom-united-kingdom-100-up-024-4963686",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792598947
+  },
+  {
+   "title": "Why is Mobileye stock sliding today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-mobileye-stock-sliding-today-93CH-4963687",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599218
+  },
+  {
+   "title": "Why is Unicycive Therapeutics stock rallying today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-unicycive-therapeutics-stock-rallying-today-93CH-4963688",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599225
+  },
+  {
+   "title": "Why is DigitalOcean stock rallying today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-digitalocean-stock-rallying-today-93CH-4963689",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599233
+  },
+  {
+   "title": "HomeTrust earnings beat by $0.26, revenue topped estimates",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/hometrust-earnings-beat-by-026-revenue-topped-estimates-4963690",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792599252
   }
  ]
 }
