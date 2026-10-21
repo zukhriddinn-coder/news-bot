@@ -985,7 +985,9 @@
   "https://www.investing.com/news/company-news/agree-realty-corp-stock-hits-52week-low-at-6443-usd-93CH-4963883",
   "https://www.investing.com/news/earnings/southern-copper-earnings-beat-by-019-revenue-fell-short-of-estimates-4963884",
   "https://www.marketwatch.com/story/the-social-security-administration-wants-more-babies-signed-up-for-trump-accounts-but-theres-still-a-catch-4096f16e?mod=mw_rss_topstories",
-  "https://www.marketwatch.com/bulletins/redirect/go?g=56a13211-bfb5-4b34-97a2-083090845aa7&mod=mw_rss_bulletins"
+  "https://www.marketwatch.com/bulletins/redirect/go?g=56a13211-bfb5-4b34-97a2-083090845aa7&mod=mw_rss_bulletins",
+  "https://www.marketwatch.com/bulletins/redirect/go?g=623f9242-a8c4-4e41-840d-2b609e8ba2fa&mod=mw_rss_bulletins",
+  "https://www.marketwatch.com/bulletins/redirect/go?g=37b59a2c-2a27-4ca0-8cb1-c46254e569ef&mod=mw_rss_bulletins"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -1122,6 +1124,22 @@
    "source": "MarketWatch",
    "tag": "#Breaking",
    "time": 1792612908
+  },
+  {
+   "title": "Meta earnings are out, and Muse is top of mind. Here's what to know.",
+   "summary": "",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=623f9242-a8c4-4e41-840d-2b609e8ba2fa&mod=mw_rss_bulletins",
+   "source": "MarketWatch",
+   "tag": "#Breaking",
+   "time": 1792613209
+  },
+  {
+   "title": "Tesla just reported earnings. What investors need to know.",
+   "summary": "",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=37b59a2c-2a27-4ca0-8cb1-c46254e569ef&mod=mw_rss_bulletins",
+   "source": "MarketWatch",
+   "tag": "#Breaking",
+   "time": 1792613318
   }
  ]
 }
