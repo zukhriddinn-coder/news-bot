@@ -896,7 +896,17 @@
   "https://www.investing.com/news/economy-news/russian-oil-tax-price-runs-60-above-budget-assumptions-in-october-93CH-4963763",
   "https://www.investing.com/news/stock-market-news/reliances-ambani-meets-marco-rubio-in-jamnagar-93CH-4963766",
   "https://www.cnbc.com/2026/10/21/expanding-ai-trade-is-turning-safety-stocks-into-a-texas-hedge.html",
-  "https://www.cnbc.com/2026/10/21/meta-new-mexico-cambridge-analytica-penalty.html"
+  "https://www.cnbc.com/2026/10/21/meta-new-mexico-cambridge-analytica-penalty.html",
+  "https://www.investing.com/news/company-news/basicnet-9m-2026-slides-direct-sales-surge-30-as-debt-rises-93CH-4963769",
+  "https://www.investing.com/news/company-news/covivio-q3-2026-slides-rental-growth-accelerates-balance-sheet-strengthens-93CH-4963770",
+  "https://www.investing.com/news/stock-market-news/advisory-firm-lobbies-sec-to-end-shareholder-anonymity-eyes-january-push-4963775",
+  "https://www.investing.com/news/stock-market-news/meta-ordered-to-pay-25-billion-to-new-mexico-after-jury-finds-company-misled-consumers-about-data-privacy-4963776",
+  "https://www.investing.com/news/company-news/moncler-q3-2026-slides-growth-stalls-despite-major-nyc-expansion-93CH-4963777",
+  "https://www.investing.com/news/stock-market-news/judge-orders-meta-to-pay-25-billion-in-new-mexico-case-4963778",
+  "https://www.investing.com/news/company-news/fdj-united-q3-2026-slides-tax-increases-weak-jackpots-drive-revenue-decline-93CH-4963779",
+  "https://www.investing.com/news/company-news/big-pharmas-obesity-shopping-spree-is-moving-beyond-glp1s-palatin-may-fit-the-pattern-nasdaq-ptn-4963780",
+  "https://www.investing.com/news/analyst-ratings/briley-raises-clevelandcliffs-price-target-to-18-on-improved-outlook-93CH-4963781",
+  "https://www.investing.com/news/analyst-ratings/jefferies-raises-united-airlines-stock-price-target-on-earnings-beat-93CH-4963782"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2805,6 +2815,86 @@
    "source": "CNBC",
    "tag": "#Markets",
    "time": 1792603453
+  },
+  {
+   "title": "BasicNet 9m 2026 slides: direct sales surge 30% as debt rises",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/basicnet-9m-2026-slides-direct-sales-surge-30-as-debt-rises-93CH-4963769",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792603087
+  },
+  {
+   "title": "Covivio Q3 2026 slides: rental growth accelerates, balance sheet strengthens",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/covivio-q3-2026-slides-rental-growth-accelerates-balance-sheet-strengthens-93CH-4963770",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792603131
+  },
+  {
+   "title": "Advisory firm lobbies SEC to end shareholder anonymity, eyes January push",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/advisory-firm-lobbies-sec-to-end-shareholder-anonymity-eyes-january-push-4963775",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792603553
+  },
+  {
+   "title": "Meta ordered to pay $25 billion to New Mexico after jury finds company misled consumers about data privacy",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/meta-ordered-to-pay-25-billion-to-new-mexico-after-jury-finds-company-misled-consumers-about-data-privacy-4963776",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792603826
+  },
+  {
+   "title": "Moncler Q3 2026 slides: growth stalls despite major NYC expansion",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/moncler-q3-2026-slides-growth-stalls-despite-major-nyc-expansion-93CH-4963777",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792603889
+  },
+  {
+   "title": "Judge orders Meta to pay $25 billion in New Mexico case",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/judge-orders-meta-to-pay-25-billion-in-new-mexico-case-4963778",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792603890
+  },
+  {
+   "title": "FDJ United Q3 2026 slides: tax increases, weak jackpots drive revenue decline",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/fdj-united-q3-2026-slides-tax-increases-weak-jackpots-drive-revenue-decline-93CH-4963779",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792603910
+  },
+  {
+   "title": "Big Pharma’s Obesity Shopping Spree Is Moving Beyond GLP-1s. Palatin May Fit the Pattern (NASDAQ: PTN)",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/big-pharmas-obesity-shopping-spree-is-moving-beyond-glp1s-palatin-may-fit-the-pattern-nasdaq-ptn-4963780",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792603936
+  },
+  {
+   "title": "B.Riley raises Cleveland-Cliffs price target to $18 on improved outlook",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/briley-raises-clevelandcliffs-price-target-to-18-on-improved-outlook-93CH-4963781",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792603976
+  },
+  {
+   "title": "Jefferies raises United Airlines stock price target on earnings beat",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/jefferies-raises-united-airlines-stock-price-target-on-earnings-beat-93CH-4963782",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792603978
   }
  ]
 }
