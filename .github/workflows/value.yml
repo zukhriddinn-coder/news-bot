@@ -33,7 +33,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install
-        run: pip install yfinance matplotlib
+        run: |
+          (sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter) > /dev/null 2>&1 || true
+          pip install yfinance matplotlib
 
       - name: Calculate and reply
         run: python value.py
