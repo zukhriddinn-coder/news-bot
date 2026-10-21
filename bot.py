@@ -13,6 +13,8 @@ import time
 import urllib.error
 import urllib.request
 from calendar import timegm
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import feedparser
 
@@ -64,11 +66,19 @@ FEEDS = [
     {"name": "ECB"             , "url": "https://www.ecb.europa.eu/rss/press.html", "tag": "#ECB #Macro"},
 ]
 
-MAX_POSTS_PER_RUN = 12       # at most this many posts every run (avoids spam)
 SUMMARY_LENGTH = 280         # max characters of the short description
 MAX_AGE_HOURS = 12           # ignore articles older than this
 SEEN_FILE = "seen.json"      # remembers which news were already posted
 SEEN_LIMIT = 8000            # how many old links to remember
+
+# Daily delivery window (New York time). News are collected all day and posted
+# only inside this window. Anything not posted by WINDOW_END waits for tomorrow.
+MARKET_TZ = "America/New_York"
+WINDOW_START = (15, 30)           # 15:30 New York = 30 min before US market close
+WINDOW_END = (16, 0)              # 16:00 New York = market close, posting stops
+SEND_WEEKDAYS = {0, 1, 2, 3, 4}   # Monday..Friday
+QUEUE_MAX_AGE_HOURS = 96          # drop collected news older than this
+RECHECK_SECONDS = 120             # inside the window: re-check feeds this often
 
 # ---------------------------------------------------------------------------
 
@@ -184,34 +194,25 @@ def format_post(item):
     return "\n\n".join(parts)
 
 
-def main():
-    seen = load_seen()
-    if not seen["connected"] and not diagnose():
-        raise SystemExit("Sozlamalarni yuqoridagi TEKSHIRUV natijasiga qarab to'g'rilang.")
+def collect(seen):
+    """Reads all feeds and adds new articles to the queue. Returns how many were added."""
     seen_links = set(seen["links"])
     now = time.time()
     new_items = []
-
     for feed in FEEDS:
         parsed = feedparser.parse(feed["url"], agent=USER_AGENT)
         if parsed.get("bozo") and not parsed.entries:
             print(f"WARNING: could not read {feed['name']} ({feed['url']})")
             continue
-
         first_time = feed["url"] not in seen["feeds"]
         for e in parsed.entries:
             link = e.get("link")
             if not link or link in seen_links:
                 continue
-            if first_time:
-                # new feed: remember old articles, don't post them
-                seen["links"].append(link)
-                seen_links.add(link)
-                continue
+            seen_links.add(link)
             ts = entry_time(e)
-            if ts and now - ts > MAX_AGE_HOURS * 3600:
-                seen["links"].append(link)
-                seen_links.add(link)
+            if first_time or (ts and now - ts > MAX_AGE_HOURS * 3600):
+                seen["links"].append(link)   # old article: remember, don't post
                 continue
             new_items.append({
                 "title": clean_text(e.get("title")),
@@ -225,33 +226,77 @@ def main():
             seen["feeds"].append(feed["url"])
             print(f"{feed['name']}: first run, saved {len(parsed.entries)} existing articles")
 
+    # add to the queue, skipping the same story coming from two feeds
+    queue = seen.setdefault("queue", [])
+    titles = {q["title"].lower() for q in queue}
+    added = 0
+    for item in sorted(new_items, key=lambda x: x["time"]):
+        seen["links"].append(item["link"])
+        key = item["title"].lower()
+        if key in titles:
+            continue
+        titles.add(key)
+        queue.append(item)
+        added += 1
+    queue[:] = [q for q in queue if now - q["time"] < QUEUE_MAX_AGE_HOURS * 3600]
+    return added
+
+
+def window():
+    """Returns (now, start, end) in New York time."""
+    now = datetime.now(ZoneInfo(MARKET_TZ))
+    start = now.replace(hour=WINDOW_START[0], minute=WINDOW_START[1], second=0, microsecond=0)
+    end = now.replace(hour=WINDOW_END[0], minute=WINDOW_END[1], second=0, microsecond=0)
+    return now, start, end
+
+
+def in_window():
+    now, start, end = window()
+    return now.weekday() in SEND_WEEKDAYS and start <= now < end
+
+
+def main():
+    seen = load_seen()
+    if not seen["connected"] and not diagnose():
+        raise SystemExit("Sozlamalarni yuqoridagi TEKSHIRUV natijasiga qarab to'g'rilang.")
     if not seen["connected"]:
         send_post("✅ <b>News bot connected.</b>\nNew trading, macro and stock market news will appear here.")
         seen["connected"] = True
 
-    # remove duplicates with the same title (same story in two feeds)
-    unique, titles = [], set()
-    for item in sorted(new_items, key=lambda x: x["time"]):
-        key = item["title"].lower()
-        if key in titles:
-            seen["links"].append(item["link"])
-            continue
-        titles.add(key)
-        unique.append(item)
+    added = collect(seen)
+    queue = seen["queue"]
+    now, start, end = window()
+    print(f"New York time {now:%a %H:%M}. Added {added} news, queue {len(queue)}. "
+          f"Posting window open: {in_window()}")
+    if not in_window():
+        save_seen(seen)
+        return
 
-    posted, errors = 0, 0
-    for item in unique[:MAX_POSTS_PER_RUN]:
-        try:
-            send_post(format_post(item))
-            seen["links"].append(item["link"])
-            posted += 1
+    # Inside the window: post the queue, re-check feeds, repeat until the window closes
+    posted = errors = 0
+    while in_window():
+        queue.sort(key=lambda x: x["time"])
+        while queue and in_window():
+            item = queue.pop(0)
+            try:
+                send_post(format_post(item))
+                posted += 1
+            except Exception as exc:
+                errors += 1
+                print(f"ERROR sending '{item['title']}': {exc}")
+            if (posted + errors) % 20 == 0:
+                save_seen(seen)
             time.sleep(3)
-        except Exception as exc:
-            errors += 1
-            print(f"ERROR sending '{item['title']}': {exc}")
+        if not in_window():
+            break
+        save_seen(seen)
+        now, start, end = window()
+        time.sleep(max(1, min(RECHECK_SECONDS, (end - now).total_seconds())))
+        if in_window():
+            collect(seen)
 
     save_seen(seen)
-    print(f"Posted {posted}, waiting {max(len(unique) - MAX_POSTS_PER_RUN, 0)}, errors {errors}")
+    print(f"Window closed. Posted {posted}, errors {errors}, left for tomorrow {len(queue)}")
     if errors and not posted:
         raise SystemExit(1)
 
