@@ -863,7 +863,15 @@
   "https://www.investing.com/news/stock-market-news/why-is-mobileye-stock-sliding-today-93CH-4963687",
   "https://www.investing.com/news/stock-market-news/why-is-unicycive-therapeutics-stock-rallying-today-93CH-4963688",
   "https://www.investing.com/news/stock-market-news/why-is-digitalocean-stock-rallying-today-93CH-4963689",
-  "https://www.investing.com/news/earnings/hometrust-earnings-beat-by-026-revenue-topped-estimates-4963690"
+  "https://www.investing.com/news/earnings/hometrust-earnings-beat-by-026-revenue-topped-estimates-4963690",
+  "https://www.investing.com/news/stock-market-news/nvidias-huang-hails-europes-ai-potential-flanked-by-robot-ducks-4963697",
+  "https://www.investing.com/news/stock-market-news/spacex-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963699",
+  "https://www.investing.com/news/stock-market-news/netflix-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963700",
+  "https://www.investing.com/news/stock-market-news/att-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963703",
+  "https://www.investing.com/news/company-news/itm-power-applies-for-block-listing-of-299638-shares-on-aim-93CH-4963705",
+  "https://www.investing.com/news/company-news/tds-stock-hits-52week-low-at-315-usd-93CH-4963707",
+  "https://www.investing.com/news/stock-market-news/uks-ftse-100-pauses-as-hot-inflation-report-outweighs-energy-boost-4962387",
+  "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2211,7 +2219,12 @@
    "link": "https://www.cnbc.com/2026/10/21/musk-spacex-stock-trump-account.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792598325
+   "time": 1792598325,
+   "uz": {
+    "title": "Maskning SpaceX aksiyasini sovg‘a qilishi Trump Accounts uchun «aysbergning uchi», deydi Altimeter rahbari Gerstner",
+    "summary": "Altimeter Capital bosh direktori Bred Gerstnerning fikricha, Ilon Maskning Trump Accounts orqali SpaceX aksiyalarini sovg‘a qilish rejasi kengroq xayriya tashabbuslarining boshlanishi bo‘lishi mumkin.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Polymarket traders see a 10% chance the AI bubble bursts before New Year’s Day",
@@ -2219,7 +2232,12 @@
    "link": "https://www.marketwatch.com/story/polymarket-traders-see-a-10-chance-the-ai-bubble-bursts-before-new-years-day-ad33258b?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792598340
+   "time": 1792598340,
+   "uz": {
+    "title": "Polymarket treyderlari sun'iy intellekt pufagi Yangi yilga qadar yorilib ketish ehtimolini 10% deb baholamoqda",
+    "summary": "Sun'iy intellekt yo‘nalishidagi haddan tashqari qizib ketgan savdolar to‘xtab qolishidan xavotirda bo‘lgan investorlar uchun bashorat bozorlari bu xavotirni allaqachon aks ettira boshladi.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Meta stock advances ahead of after-the-bell earnings. What we're looking for",
@@ -2227,7 +2245,12 @@
    "link": "https://www.cnbc.com/investingclub/2026/10/21/meta-stock-advances-ahead-of-after-the-bell-earnings-what-were-looking-for.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792598425
+   "time": 1792598425,
+   "uz": {
+    "title": "Meta aksiyalari birja yopilgandan keyingi moliyaviy hisobot oldidan o‘smoqda. Biz nimaga e'tibor qaratmoqdamiz",
+    "summary": "Investing Club har kuni ish kunlari Sharqiy vaqt bilan soat 10:20 da \"Tonggi yig‘ilish\" o‘tkazadi.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Tesla earnings loom after Musk calls SpaceX merger a 'good idea'",
@@ -2235,7 +2258,12 @@
    "link": "https://www.cnbc.com/2026/10/21/tesla-tsla-q3-2026-earnings-report.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792598485
+   "time": 1792598485,
+   "uz": {
+    "title": "Mask SpaceX va Tesla birlashishini «yaxshi g‘oya» deb ataganidan so‘ng, Tesla moliyaviy hisoboti kutilmoqda",
+    "summary": "Ilon Maskning SpaceX kompaniyasi uchinchi chorak yakunlarini e'lon qilganidan bir kun o‘tib, Tesla investorlarga yangi ma'lumotlarni taqdim etishi rejalashtirilgan.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Italy stocks higher at close of trade; Investing.com Italy 40 up 1.23%",
@@ -2243,7 +2271,12 @@
    "link": "https://www.investing.com/news/stock-market-news/italy-stocks-higher-at-close-of-trade-investingcom-italy-40-up-123-4963682",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598839
+   "time": 1792598839,
+   "uz": {
+    "title": "Italiya aksiyalari savdolar yakunida o‘sdi; Investing.com Italy 40 indeksi 1.23% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Netherlands stocks higher at close of trade; AEX up 0.77%",
@@ -2251,7 +2284,12 @@
    "link": "https://www.investing.com/news/stock-market-news/netherlands-stocks-higher-at-close-of-trade-aex-up-077-4963683",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598866
+   "time": 1792598866,
+   "uz": {
+    "title": "Niderlandiya aksiyalari savdolar yakunida o‘sdi; AEX 0.77% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Portugal stocks higher at close of trade; PSI up 0.46%",
@@ -2259,7 +2297,12 @@
    "link": "https://www.investing.com/news/stock-market-news/portugal-stocks-higher-at-close-of-trade-psi-up-046-4963684",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598895
+   "time": 1792598895,
+   "uz": {
+    "title": "Portugaliya aksiyalari savdolar yakunida o‘sdi; PSI 0.46% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Spain stocks higher at close of trade; IBEX 35 up 1.08%",
@@ -2267,7 +2310,12 @@
    "link": "https://www.investing.com/news/stock-market-news/spain-stocks-higher-at-close-of-trade-ibex-35-up-108-4963685",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598921
+   "time": 1792598921,
+   "uz": {
+    "title": "Ispaniya aksiyalari savdolar yakunida o‘sdi; IBEX 35 1.08% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "U.K. stocks higher at close of trade; Investing.com United Kingdom 100 up 0.24%",
@@ -2275,7 +2323,12 @@
    "link": "https://www.investing.com/news/stock-market-news/uk-stocks-higher-at-close-of-trade-investingcom-united-kingdom-100-up-024-4963686",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792598947
+   "time": 1792598947,
+   "uz": {
+    "title": "Buyuk Britaniya aksiyalari savdolar yakunida o‘sdi; Investing.com United Kingdom 100 0.24% ga ko‘tarildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Why is Mobileye stock sliding today?",
@@ -2283,7 +2336,12 @@
    "link": "https://www.investing.com/news/stock-market-news/why-is-mobileye-stock-sliding-today-93CH-4963687",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792599218
+   "time": 1792599218,
+   "uz": {
+    "title": "Nima uchun Mobileye aksiyalari bugun pasaymoqda?",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Why is Unicycive Therapeutics stock rallying today?",
@@ -2291,7 +2349,12 @@
    "link": "https://www.investing.com/news/stock-market-news/why-is-unicycive-therapeutics-stock-rallying-today-93CH-4963688",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792599225
+   "time": 1792599225,
+   "uz": {
+    "title": "Nima uchun Unicycive Therapeutics aksiyalari bugun o‘smoqda?",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Why is DigitalOcean stock rallying today?",
@@ -2299,7 +2362,12 @@
    "link": "https://www.investing.com/news/stock-market-news/why-is-digitalocean-stock-rallying-today-93CH-4963689",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792599233
+   "time": 1792599233,
+   "uz": {
+    "title": "Nima uchun DigitalOcean aksiyalari bugun o‘smoqda?",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "HomeTrust earnings beat by $0.26, revenue topped estimates",
@@ -2307,7 +2375,111 @@
    "link": "https://www.investing.com/news/earnings/hometrust-earnings-beat-by-026-revenue-topped-estimates-4963690",
    "source": "Investing.com",
    "tag": "#Earnings",
-   "time": 1792599252
+   "time": 1792599252,
+   "uz": {
+    "title": "HomeTrust moliyaviy hisoboti $0.26 ga oshib, tushum prognozlardan yuqori keldi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Nvidia’s Huang hails Europe’s AI potential, flanked by robot ducks",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/nvidias-huang-hails-europes-ai-potential-flanked-by-robot-ducks-4963697",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599862,
+   "uz": {
+    "title": "Nvidia rahbari Xuan robot-o‘rdaklar qurshovida Yevropaning sun'iy intellekt salohiyatini olqishladi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "SpaceX earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/spacex-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963699",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599903,
+   "uz": {
+    "title": "SpaceX moliyaviy hisoboti tahlili: savollarga javoblar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Netflix earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/netflix-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963700",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599940,
+   "uz": {
+    "title": "Netflix moliyaviy hisoboti tahlili: savollarga javoblar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "AT&T earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/att-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963703",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792599972,
+   "uz": {
+    "title": "AT&T moliyaviy hisoboti tahlili: savollarga javoblar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "ITM Power applies for block listing of 299,638 shares on AIM",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/itm-power-applies-for-block-listing-of-299638-shares-on-aim-93CH-4963705",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792600112,
+   "uz": {
+    "title": "ITM Power AIM'da 299 638 ta aksiyani blokli joylashtirish uchun ariza berdi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "TDS stock hits 52-week low at 31.5 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/tds-stock-hits-52week-low-at-315-usd-93CH-4963707",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792600175,
+   "uz": {
+    "title": "TDS aksiyalari 31.5 USD darajasida so‘nggi 52 haftadagi eng past ko‘rsatkichga tushdi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "UK’s FTSE 100 ticks higher on energy boost; hot inflation report limits gains",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/uks-ftse-100-pauses-as-hot-inflation-report-outweighs-energy-boost-4962387",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792600225,
+   "uz": {
+    "title": "Buyuk Britaniyaning FTSE 100 indeksi energetika sektori ko‘magida biroz o‘sdi; yuqori inflyatsiya haqidagi hisobot o‘sishni cheklab qo‘ydi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Medicare is a bargain. What America can’t afford is private health insurance.",
+   "summary": "Private insurance costs way more for the same results — or worse.",
+   "link": "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792600440
   }
  ]
 }
