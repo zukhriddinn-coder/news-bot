@@ -11,6 +11,7 @@ import re
 import socket
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from calendar import timegm
 from datetime import datetime
@@ -80,6 +81,11 @@ SEND_WEEKDAYS = {0, 1, 2, 3, 4}   # Monday..Friday
 QUEUE_MAX_AGE_HOURS = 96          # drop collected news older than this
 RECHECK_SECONDS = 120             # inside the window: re-check feeds this often
 
+# Translation to Uzbek (Gemini first, Google Translate as backup, English if both fail)
+TRANSLATE = True
+TRANSLATE_BATCH = 20              # news translated per Gemini request
+GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"]
+
 # ---------------------------------------------------------------------------
 
 BOT_TOKEN = re.sub(r"\s+", "", os.environ["BOT_TOKEN"])
@@ -88,7 +94,9 @@ THREAD_ID = re.sub(r"\s+", "", os.environ["THREAD_ID"])
 if CHAT_ID.isdigit():          # "1987654321" -> "-1001987654321"
     CHAT_ID = "-100" + CHAT_ID
 
-socket.setdefaulttimeout(20)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+
+socket.setdefaulttimeout(60)
 USER_AGENT = "Mozilla/5.0 (compatible; TradingLabNewsBot/1.0)"
 
 
@@ -184,14 +192,119 @@ def diagnose():
 
 
 def format_post(item):
-    title = html.escape(item["title"])
-    summary = html.escape(item["summary"])
+    uz = item.get("uz") or {}
+    raw_title = uz.get("title") or item["title"]
+    raw_summary = uz.get("summary") if uz else item["summary"]
+    title = html.escape(raw_title)
+    summary = html.escape(raw_summary or "")
     link = html.escape(item["link"], quote=True)
     parts = [f"<b>{title}</b>"]
-    if summary and summary.lower() != item["title"].lower():
+    if summary and summary.lower() != raw_title.lower():
         parts.append(summary)
-    parts.append(f"{item['tag']}\n🔗 <a href=\"{link}\">Source: {html.escape(item['source'])}</a>")
+    label = "Manba" if uz else "Source"
+    parts.append(f"{item['tag']}\n🔗 <a href=\"{link}\">{label}: {html.escape(item['source'])}</a>")
     return "\n\n".join(parts)
+
+
+# ----------------------------- Translation ----------------------------------
+
+GEMINI_PROMPT = """You are a professional financial news translator.
+Translate each news item below from English into Uzbek (Latin script, modern standard Uzbek).
+Rules:
+- Natural, clear Uzbek as used by financial journalists; translate meaning, not word by word.
+- Keep tickers, company names, people's names, index names (S&P 500, Nasdaq, Dow), currencies and all numbers exactly as in the original.
+- Use established Uzbek terms: interest rate = foiz stavkasi, inflation = inflyatsiya, stock = aksiya, earnings = moliyaviy hisobot, bond = obligatsiya, yield = daromadlilik.
+- Do not add or remove information.
+Return ONLY a JSON array with one object per item: {"id": <same id>, "title": "...", "summary": "..."}.
+If an item has an empty summary, return an empty summary.
+
+Items:
+"""
+
+_gemini_disabled = False
+
+
+def http_json(url, payload, headers):
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", **headers})
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        return json.load(resp)
+
+
+def gemini_translate(items):
+    """Translates a list of items with Gemini. Returns {id: {"title", "summary"}}."""
+    global _gemini_disabled
+    if not GEMINI_API_KEY or _gemini_disabled:
+        return {}
+    data = [{"id": i, "title": it["title"], "summary": it["summary"]} for i, it in enumerate(items)]
+    payload = {
+        "contents": [{"parts": [{"text": GEMINI_PROMPT + json.dumps(data, ensure_ascii=False)}]}],
+        "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
+    }
+    for model in GEMINI_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        try:
+            res = http_json(url, payload, {"x-goog-api-key": GEMINI_API_KEY})
+            text = res["candidates"][0]["content"]["parts"][0]["text"]
+            out = json.loads(text)
+            return {int(o["id"]): {"title": str(o.get("title", "")).strip(),
+                                   "summary": str(o.get("summary", "")).strip()}
+                    for o in out if str(o.get("title", "")).strip()}
+        except urllib.error.HTTPError as e:
+            msg = e.read().decode("utf-8", "replace")[:200]
+            print(f"Gemini {model}: HTTP {e.code} {msg}")
+            if e.code == 404:
+                continue                      # model name not available, try the next one
+            if e.code in (400, 401, 403, 429):
+                _gemini_disabled = True       # bad key or daily limit: use backup for this run
+            return {}
+        except Exception as exc:
+            print(f"Gemini {model}: {exc}")
+            return {}
+    _gemini_disabled = True
+    return {}
+
+
+def google_translate(text):
+    if not text:
+        return ""
+    url = ("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=uz&dt=t&q="
+           + urllib.parse.quote(text))
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.load(resp)
+    return "".join(part[0] for part in data[0] if part and part[0]).strip()
+
+
+def translate_pending(seen, force=False):
+    """Translates queued news that are not translated yet.
+    Normally waits for a full batch; force=True translates everything now."""
+    if not TRANSLATE:
+        return
+    queue = seen.get("queue", [])
+    pending = [q for q in queue if "uz" not in q]
+    if not pending or (len(pending) < TRANSLATE_BATCH and not force):
+        return
+    done_gemini = done_google = failed = 0
+    for i in range(0, len(pending), TRANSLATE_BATCH):
+        batch = pending[i:i + TRANSLATE_BATCH]
+        result = gemini_translate(batch)
+        for n, item in enumerate(batch):
+            if n in result:
+                item["uz"] = result[n]
+                done_gemini += 1
+                continue
+            try:                                  # backup: Google Translate
+                item["uz"] = {"title": google_translate(item["title"]),
+                              "summary": google_translate(item["summary"])}
+                done_google += 1
+                time.sleep(0.5)
+            except Exception as exc:
+                failed += 1
+                if force:
+                    item["uz"] = None             # give up: post in English
+                print(f"Translate failed for '{item['title'][:50]}': {exc}")
+    print(f"Translated: Gemini {done_gemini}, Google Translate {done_google}, failed {failed}")
 
 
 def collect(seen):
@@ -239,6 +352,7 @@ def collect(seen):
         queue.append(item)
         added += 1
     queue[:] = [q for q in queue if now - q["time"] < QUEUE_MAX_AGE_HOURS * 3600]
+    translate_pending(seen)
     return added
 
 
@@ -279,6 +393,7 @@ def main():
     # Inside the window: post the queue, re-check feeds, repeat until the window closes
     posted = errors = 0
     while in_window():
+        translate_pending(seen, force=True)
         queue.sort(key=lambda x: x["time"])
         while queue and in_window():
             item = queue.pop(0)
