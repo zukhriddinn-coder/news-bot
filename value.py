@@ -240,8 +240,10 @@ JAVOB TALABLARI:
 - Javobning umumiy uzunligi 3000 belgidan oshmasin.
 - Yakuniy javobni "YAKUNIY JAVOB:" so'zlari bilan boshla.
 - Eng oxirgi qatorda natijalarni mashina o'qishi uchun quyidagi formatda ber (bitta qatorda, haqiqiy JSON):
-RESULTS_JSON: {{"methods": [{{"name": "DCF", "value": 123.45}}], "fair_value": 120.0, "low": 95.0, "high": 150.0}}
-  "methods" ga faqat qiymat hisoblangan usullarni kirit, "name" lar qisqa bo'lsin.
+RESULTS_JSON: {{"methods": [{{"name": "DCF", "value": 123.45, "low": 101.2, "high": 148.9}}], "fair_value": 120.0, "low": 95.0, "high": 150.0}}
+  "methods" ga faqat qiymat hisoblangan usullarni kirit, "name" lar qisqa bo'lsin (ko'pi bilan 20 belgi).
+  Har bir usul uchun "low" va "high" — shu usulning pessimistik va optimistik bahosi (masalan, DCF uchun
+  diskont stavkasi va o'sish ±1-2% o'zgarganda; Monte-Karlo va ehtimollik usullari uchun 10- va 90-persentil).
 """
 
 
@@ -323,60 +325,122 @@ def clean_results(results, price):
     methods = []
     for m in results.get("methods") or []:
         try:
-            name, value = str(m["name"]).strip()[:28], float(m["value"])
+            name, value = str(m["name"]).strip()[:24], float(m["value"])
         except (KeyError, TypeError, ValueError):
             continue
+        lo, hi = num(m.get("low")), num(m.get("high"))
+        if not (lo and hi and 0 < lo <= value <= hi < price * 50):
+            lo = hi = None
         if name and 0 < value < price * 50:
-            methods.append((name, value))
+            methods.append((name, value, lo, hi))
     return methods
 
 
 # ----------------------------- Chart ----------------------------------------
 
-def make_chart(symbol, name, price, methods, fair):
+THEME = {
+    "bg": "#0b1220", "panel": "#111a2e", "line": "#1e2a44", "ink": "#e6edf7",
+    "muted": "#8a99b8", "up": "#22c55e", "down": "#ef4444", "fair": "#f5b301",
+    "neutral": "#eab308",
+}
+
+
+def _font():
+    from matplotlib import font_manager
+    names = {f.name for f in font_manager.fontManager.ttflist}
+    return "Inter" if "Inter" in names else "DejaVu Sans"
+
+
+def make_chart(symbol, name, price, methods, fair, exchange="", low=None, high=None):
+    """Draws a dark 'football field' valuation card. methods = [(name, value, low, high)]."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    labels = [m[0] for m in methods] + (["O'rtacha asl qiymat"] if fair else [])
-    values = [m[1] for m in methods] + ([fair] if fair else [])
-    good, bad, ink, grid = "#2e9e5b", "#d1495b", "#1f2328", "#d8dee4"
-    colors = [good if v >= price else bad for v in values]
+    T = THEME
+    plt.rcParams["font.family"] = _font()
+    n = len(methods)
+    fig_h = 4.6 + 0.62 * n
+    fig = plt.figure(figsize=(10, fig_h), dpi=160, facecolor=T["bg"])
 
-    height = 1.6 + 0.55 * len(values)
-    fig, ax = plt.subplots(figsize=(8, height), dpi=150)
-    y = list(range(len(values)))[::-1]
-    bars = ax.barh(y, values, color=colors, height=0.6, zorder=2)
+    # ---------- header ----------
+    head = fig.add_axes([0, 1 - 2.25 / fig_h, 1, 2.25 / fig_h])
+    head.set_axis_off()
+    head.set_xlim(0, 1)
+    head.set_ylim(0, 1)
+    head.text(0.04, 0.78, f"${symbol}", fontsize=30, fontweight="bold", color=T["ink"], va="center")
+    head.text(0.04, 0.50, name[:46], fontsize=13, color=T["ink"], va="center")
+    head.text(0.04, 0.29, f"{exchange} · {datetime.now(timezone.utc):%d.%m.%Y} · Intrinsic Value",
+              fontsize=10, color=T["muted"], va="center")
+
+    def stat(x, label, value, color):
+        head.text(x, 0.80, label, fontsize=10, color=T["muted"], va="center", ha="left")
+        head.text(x, 0.55, value, fontsize=22, fontweight="bold", color=color, va="center", ha="left")
+
+    stat(0.52, "Joriy narx", f"${price:,.2f}", T["ink"])
     if fair:
-        bars[-1].set_edgecolor(ink)
-        bars[-1].set_linewidth(1.5)
-    ax.axvline(price, color=ink, linestyle="--", linewidth=1.3, zorder=1)   # behind the bars
-    ax.text(price, len(values) - 0.35, f"  Joriy narx ${price:,.2f}", color=ink, fontsize=9,
-            va="bottom", ha="left")
-    xmax = max(values + [price]) * 1.25
-    for yi, v in zip(y, values):
-        diff = (v / price - 1) * 100
-        label = f"${v:,.2f} ({diff:+.0f}%)"
-        if v > xmax * 0.33:          # inside the bar, so the price line never crosses it
-            ax.text(v - xmax * 0.012, yi, label, va="center", ha="right", fontsize=9,
-                    color="white", fontweight="bold", zorder=3)
-        else:
-            ax.text(v + xmax * 0.012, yi, label, va="center", ha="left", fontsize=9, color=ink)
-    ax.set_yticks(y)
-    ax.set_yticklabels(labels, fontsize=10)
-    ax.set_xlim(0, xmax)
-    ax.xaxis.set_major_formatter(lambda x, _: f"${x:,.0f}")
-    ax.grid(axis="x", color=grid, linewidth=0.8)
-    ax.set_axisbelow(True)
-    for side in ("top", "right", "left"):
-        ax.spines[side].set_visible(False)
-    ax.set_title(f"${symbol} — {name}\nAsl qiymat (Intrinsic Value) va joriy narx",
-                 loc="left", fontsize=12, fontweight="bold", color=ink)
-    fig.text(0.01, 0.01, f"Yashil: joriy narxdan yuqori · Qizil: past · {datetime.now(timezone.utc):%Y-%m-%d} · "
-             "Investitsion maslahat emas", fontsize=7.5, color="#57606a")
-    fig.tight_layout(rect=(0, 0.03, 1, 1))
+        diff = (fair / price - 1) * 100
+        tone = T["up"] if diff > 10 else T["down"] if diff < -10 else T["neutral"]
+        verdict = "ARZON" if diff > 10 else "QIMMAT" if diff < -10 else "ADOLATLI"
+        stat(0.74, "Asl qiymat", f"${fair:,.2f}", T["fair"])
+        head.text(0.74, 0.25, f" {verdict}  {diff:+.1f}% ", fontsize=11, fontweight="bold", color=tone,
+                  ha="left", va="center",
+                  bbox=dict(boxstyle="round,pad=0.45,rounding_size=0.8", facecolor=T["bg"],
+                            edgecolor=tone, linewidth=1.3))
+    head.plot([0.04, 0.96], [0.04, 0.04], color=T["line"], linewidth=1, transform=head.transAxes)
+
+    # ---------- football field ----------
+    top = 1 - 2.45 / fig_h
+    bottom = 0.95 / fig_h
+    ax = fig.add_axes([0.25, bottom, 0.53, top - bottom], facecolor=T["bg"])
+    lows = [m[2] if m[2] else m[1] for m in methods]
+    highs = [m[3] if m[3] else m[1] for m in methods]
+    span_lo = min(lows + [price] + ([fair] if fair else []))
+    span_hi = max(highs + [price] + ([fair] if fair else []))
+    pad = (span_hi - span_lo) * 0.18 or span_hi * 0.2
+    x0, x1 = max(0, span_lo - pad), span_hi + pad
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(-0.7, n - 0.3)
+
+    for i, (label, value, lo, hi) in enumerate(methods):
+        yy = n - 1 - i
+        color = T["up"] if value >= price else T["down"]
+        if i % 2 == 0:
+            ax.axhspan(yy - 0.5, yy + 0.5, xmin=-0.42, xmax=1.34, color=T["panel"], zorder=0,
+                       linewidth=0, clip_on=False)
+        if lo and hi and hi > lo:
+            ax.barh(yy, hi - lo, left=lo, height=0.42, color=color, alpha=0.30, zorder=2, linewidth=0)
+        ax.scatter([value], [yy], s=120, color=color, edgecolor=T["bg"], linewidth=2, zorder=5)
+        row_y = ax.transData.transform((0, yy))[1] / fig.dpi / fig_h
+        diff = (value / price - 1) * 100
+        fig.text(0.955, row_y + 0.06 / fig_h, f"${value:,.2f}", fontsize=12, fontweight="bold",
+                 color=T["ink"], ha="right", va="center")
+        sub = f"{diff:+.1f}%" + (f"  ·  \\${lo:,.0f}–\\${hi:,.0f}" if lo and hi and hi > lo else "")
+        fig.text(0.955, row_y - 0.17 / fig_h, sub, fontsize=8.5, color=color, ha="right", va="center")
+        fig.text(0.04, row_y, label, fontsize=11, color=T["ink"], va="center", ha="left")
+
+    ax.axvline(price, color=T["ink"], linestyle=(0, (4, 3)), linewidth=1.3, zorder=3)
+    ax.text(price, n - 0.3, f"Joriy ${price:,.0f}", fontsize=9, color=T["ink"], ha="center", va="bottom",
+            fontweight="bold")
+    if fair:
+        ax.axvline(fair, color=T["fair"], linewidth=1.6, zorder=3)
+        ax.text(fair, -0.7, f"Asl qiymat ${fair:,.0f}", fontsize=9, color=T["fair"], ha="center",
+                va="top", fontweight="bold")
+
+    ax.set_yticks([])
+    ax.tick_params(axis="x", colors=T["muted"], labelsize=9, length=0, pad=18)
+    ax.xaxis.set_major_formatter(lambda v, _: f"${v:,.0f}")
+    ax.grid(axis="x", color=T["line"], linewidth=0.8, zorder=1)
+    for side in ax.spines.values():
+        side.set_visible(False)
+
+    fig.text(0.04, 0.32 / fig_h, "Nuqta: usul bo'yicha asl qiymat · Chiziq: pessimistik–optimistik oraliq · "
+             "Yashil: joriy narxdan yuqori, qizil: past", fontsize=8, color=T["muted"])
+    fig.text(0.96, 0.32 / fig_h, "Trading Laboratory · Investitsion maslahat emas", fontsize=8,
+             color=T["muted"], ha="right")
+
     buf = io.BytesIO()
-    fig.savefig(buf, format="png")
+    fig.savefig(buf, format="png", facecolor=T["bg"])
     plt.close(fig)
     return buf.getvalue()
 
@@ -420,7 +484,7 @@ def main():
     if isinstance(results, dict):
         fair = num(results.get("fair_value"))
     if not fair and methods:
-        fair = sum(v for _, v in methods) / len(methods)
+        fair = sum(m[1] for m in methods) / len(methods)
 
     header = f"📊 ${symbol} — {name}\n🏛 Birja: {exchange} · Joriy narx: ${price:,.2f}"
     if fair:
@@ -429,7 +493,7 @@ def main():
         header += f"\n⚖️ O'rtacha asl qiymat: ${fair:,.2f} ({diff:+.1f}%) — {verdict}"
 
     if methods:
-        send_photo(make_chart(symbol, name, price, methods, fair), header)
+        send_photo(make_chart(symbol, name, price, methods, fair, exchange), header)
         send_text(text + "\n\n" + DISCLAIMER, reply=False)
     else:
         send_text(header + "\n\n" + text + "\n\n" + DISCLAIMER)
