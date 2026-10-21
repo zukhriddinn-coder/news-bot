@@ -912,7 +912,17 @@
   "https://www.cnbc.com/2026/10/21/trump-pac-spending-midterm-election-house-republicans.html",
   "https://www.investing.com/news/stock-market-news/reliance-says-ambanis-and-rubio-discussed-global-energy-data-centres-in-visit-4963792",
   "https://www.investing.com/news/stock-market-news/anthropic-adds-former-harvard-science-dean-to-oversight-body-4963794",
-  "https://www.cnbc.com/2026/10/21/gm-vehicle-development-ai-software.html"
+  "https://www.cnbc.com/2026/10/21/gm-vehicle-development-ai-software.html",
+  "https://www.investing.com/news/analyst-ratings/rosenblatt-cuts-pegasystems-stock-price-target-on-weaker-growth-outlook-93CH-4963795",
+  "https://www.investing.com/news/stock-market-news/initial-jobless-claims-highlight-thursdays-economic-calendar-93CH-4963797",
+  "https://www.investing.com/news/stock-market-news/procter--gamble-western-digital-lockheed-martin-and-more-set-to-report-thursday-93CH-4963798",
+  "https://www.investing.com/news/company-news/3e-network-secures-5m-hardware-sales-agreement-93CH-4963802",
+  "https://www.cnbc.com/investingclub/2026/10/21/capital-one-delivered-a-strong-quarter-why-were-not-declaring-victory-just-yet.html",
+  "https://www.investing.com/news/stock-market-news/palo-alto-networks-microstrategy-among-market-cap-stock-movers-on-wednesday-93CH-4963804",
+  "https://www.investing.com/news/stock-market-news/gm-targets-eyesoff-autonomous-driving-for-pickupssuvs-4963805",
+  "https://www.investing.com/news/stock-market-news/philip-morris-international-options-activity-points-to-institutional-hedging-after-q3-earnings-93CH-4963806",
+  "https://www.investing.com/news/company-news/sherwinwilliams-declares-quarterly-dividend-of-080-per-share-93CH-4963807",
+  "https://www.investing.com/news/stock-market-news/ual-options-activity-points-to-bullish-positioning-after-earnings-beat-93CH-4963808"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -3049,6 +3059,86 @@
    "source": "CNBC",
    "tag": "#Markets",
    "time": 1792605835
+  },
+  {
+   "title": "Rosenblatt cuts Pegasystems stock price target on weaker growth outlook",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/rosenblatt-cuts-pegasystems-stock-price-target-on-weaker-growth-outlook-93CH-4963795",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792605412
+  },
+  {
+   "title": "Initial jobless claims highlight Thursday’s economic calendar",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/initial-jobless-claims-highlight-thursdays-economic-calendar-93CH-4963797",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792605645
+  },
+  {
+   "title": "Procter & Gamble, Western Digital, Lockheed Martin and more set to report Thursday",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/procter--gamble-western-digital-lockheed-martin-and-more-set-to-report-thursday-93CH-4963798",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792605683
+  },
+  {
+   "title": "3E Network secures $5M hardware sales agreement",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/3e-network-secures-5m-hardware-sales-agreement-93CH-4963802",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792605880
+  },
+  {
+   "title": "Capital One delivered a strong quarter. Why we're not declaring victory just yet",
+   "summary": "Capital One reported solid earnings, but one of our biggest concerns still remains.",
+   "link": "https://www.cnbc.com/investingclub/2026/10/21/capital-one-delivered-a-strong-quarter-why-were-not-declaring-victory-just-yet.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792605991
+  },
+  {
+   "title": "Palo Alto Networks, MicroStrategy among market cap stock movers on Wednesday",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/palo-alto-networks-microstrategy-among-market-cap-stock-movers-on-wednesday-93CH-4963804",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792605998
+  },
+  {
+   "title": "GM targets ‘eyes-off’ autonomous driving for pickups, SUVs",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/gm-targets-eyesoff-autonomous-driving-for-pickupssuvs-4963805",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792606001
+  },
+  {
+   "title": "Philip Morris International options activity points to institutional hedging after Q3 earnings",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/philip-morris-international-options-activity-points-to-institutional-hedging-after-q3-earnings-93CH-4963806",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792606010
+  },
+  {
+   "title": "Sherwin-Williams declares quarterly dividend of $0.80 per share",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/sherwinwilliams-declares-quarterly-dividend-of-080-per-share-93CH-4963807",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792606107
+  },
+  {
+   "title": "UAL options activity points to bullish positioning after earnings beat",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/ual-options-activity-points-to-bullish-positioning-after-earnings-beat-93CH-4963808",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792606144
   }
  ]
 }
