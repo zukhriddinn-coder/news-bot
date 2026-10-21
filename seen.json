@@ -926,7 +926,10 @@
   "https://www.investing.com/news/commodities-news/chevron-to-sharpen-us-gulf-focus-with-sale-of-older-assets-4963810",
   "https://www.investing.com/news/stock-market-news/abbott-options-flow-points-to-downside-caution-after-guidance-cut-93CH-4963811",
   "https://www.investing.com/news/stock-market-news/blackrock-adds-robotics-etf-to-growing-ranks-of-aithemed-products-4963809",
-  "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814"
+  "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814",
+  "https://www.ft.com/content/bef7e107-3922-4312-acd9-3c96af60c309?syn-25a6b1a6=1",
+  "https://www.ft.com/content/68e28f90-cbc3-4fa6-950b-451cf7c49c87?syn-25a6b1a6=1",
+  "https://www.cnbc.com/2026/10/21/netflix-theatrical-strategy.html"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -3175,6 +3178,30 @@
    "source": "Investing.com",
    "tag": "#StockMarket",
    "time": 1792607444
+  },
+  {
+   "title": "Italy’s buffalo mozzarella production grinds to a halt in truckers’ strike",
+   "summary": "Highway blockades lead to major disruptions in country’s south",
+   "link": "https://www.ft.com/content/bef7e107-3922-4312-acd9-3c96af60c309?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Macro",
+   "time": 1792604234
+  },
+  {
+   "title": "Ghana in talks with European nations for reparations, president says",
+   "summary": "John Mahama says efforts are focused on securing the return of artefacts stolen during the centuries of the slave trade and colonialism",
+   "link": "https://www.ft.com/content/68e28f90-cbc3-4fa6-950b-451cf7c49c87?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Macro",
+   "time": 1792604597
+  },
+  {
+   "title": "Netflix has dipped its toe into theatrical. Is it ready to jump in?",
+   "summary": "Co-CEO Ted Sarandos has said the streamer needs new avenues for growth and to improve execution around its content strategy.",
+   "link": "https://www.cnbc.com/2026/10/21/netflix-theatrical-strategy.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792607532
   }
  ]
 }
