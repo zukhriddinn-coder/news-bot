@@ -329,7 +329,8 @@ def translate_pending(seen, force=False):
     if not TRANSLATE:
         return
     queue = seen.get("queue", [])
-    pending = [q for q in queue if "uz" not in q]
+    # everything not yet translated by Gemini (Google translations get a second chance)
+    pending = [q for q in queue if (q.get("uz") or {}).get("by") != "gemini"]
     if not pending or (len(pending) < TRANSLATE_BATCH and not force):
         return
     global _gemini_deadline
@@ -342,18 +343,20 @@ def translate_pending(seen, force=False):
         result = gemini_translate(batch)
         for n, item in enumerate(batch):
             if n in result:
-                item["uz"] = result[n]
+                item["uz"] = {**result[n], "by": "gemini"}
                 done_gemini += 1
-            elif force:
+            elif force and not item.get("uz"):
                 try:                              # backup: Google Translate
                     item["uz"] = {"title": google_translate(item["title"]),
-                                  "summary": google_translate(item["summary"])}
+                                  "summary": google_translate(item["summary"]), "by": "google"}
                     done_google += 1
                     time.sleep(0.5)
                 except Exception as exc:
                     failed += 1
                     item["uz"] = None             # give up: post in English
                     print(f"Translate failed for '{item['title'][:50]}': {exc}")
+        if _gemini_disabled and not force:
+            break
         time.sleep(GEMINI_PAUSE)                  # stay under the free per-minute limit
     print(f"Translated: Gemini {done_gemini}, Google Translate {done_google}, English {failed}")
 
