@@ -21,10 +21,22 @@ import feedparser
 # ---------------------------------------------------------------------------
 
 FEEDS = [
-    {"name": "CNBC Economy",       "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html", "tag": "#Macro"},
-    {"name": "CNBC Finance",       "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html", "tag": "#Markets"},
-    {"name": "CNBC Investing",     "url": "https://www.cnbc.com/id/15839069/device/rss/rss.html", "tag": "#Trading"},
-    {"name": "Yahoo Finance",      "url": "https://finance.yahoo.com/news/rssindex",               "tag": "#StockMarket"},
+    # CNBC
+    {"name": "CNBC Top News",      "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "tag": "#Markets"},
+    {"name": "CNBC Economy",       "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html",  "tag": "#Macro"},
+    {"name": "CNBC Finance",       "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html",  "tag": "#Markets"},
+    {"name": "CNBC Investing",     "url": "https://www.cnbc.com/id/15839069/device/rss/rss.html",  "tag": "#Trading"},
+    # MarketWatch
+    {"name": "MarketWatch",        "url": "https://feeds.marketwatch.com/marketwatch/topstories",  "tag": "#StockMarket"},
+    {"name": "MarketWatch",        "url": "https://feeds.marketwatch.com/marketwatch/bulletins",   "tag": "#Breaking"},
+    # Investing.com
+    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_25.rss",             "tag": "#StockMarket"},
+    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_14.rss",             "tag": "#Macro"},
+    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_95.rss",             "tag": "#EconomicData"},
+    # Financial Times
+    {"name": "Financial Times",    "url": "https://www.ft.com/markets?format=rss",                 "tag": "#Markets"},
+    {"name": "Financial Times",    "url": "https://www.ft.com/global-economy?format=rss",          "tag": "#Macro"},
+    # Central banks
     {"name": "Federal Reserve",    "url": "https://www.federalreserve.gov/feeds/press_all.xml",    "tag": "#Fed #Macro"},
     {"name": "ECB",                "url": "https://www.ecb.europa.eu/rss/press.html",               "tag": "#ECB #Macro"},
 ]
