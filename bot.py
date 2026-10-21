@@ -84,7 +84,13 @@ RECHECK_SECONDS = 120             # inside the window: re-check feeds this often
 # Translation to Uzbek (Gemini first, Google Translate as backup, English if both fail)
 TRANSLATE = True
 TRANSLATE_BATCH = 20              # news translated per Gemini request
-GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"]
+GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest",
+                 "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+GEMINI_RETRIES = 3                # attempts per model before trying the next model
+GEMINI_WAIT = 20                  # seconds to wait after a limit/error (grows each retry)
+GEMINI_PAUSE = 7                  # pause between batches (free tier allows ~10 per minute)
+GEMINI_BUDGET_DAY = 600           # max seconds per run spent on Gemini during the day
+GEMINI_BUDGET_WINDOW = 240        # max seconds right before/inside the posting window
 
 # ---------------------------------------------------------------------------
 
@@ -222,47 +228,86 @@ Items:
 """
 
 _gemini_disabled = False
+_gemini_deadline = 0.0            # stop retrying Gemini after this moment (set per run)
+_dead_models = set()              # models unavailable or out of daily quota in this run
+
+
+def _gemini_out_of_time():
+    return _gemini_deadline and time.time() > _gemini_deadline
 
 
 def http_json(url, payload, headers):
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", **headers})
-    with urllib.request.urlopen(req, timeout=90) as resp:
+    with urllib.request.urlopen(req, timeout=120) as resp:
         return json.load(resp)
 
 
-def gemini_translate(items):
-    """Translates a list of items with Gemini. Returns {id: {"title", "summary"}}."""
-    global _gemini_disabled
-    if not GEMINI_API_KEY or _gemini_disabled:
-        return {}
+def _gemini_call(model, items):
     data = [{"id": i, "title": it["title"], "summary": it["summary"]} for i, it in enumerate(items)]
     payload = {
         "contents": [{"parts": [{"text": GEMINI_PROMPT + json.dumps(data, ensure_ascii=False)}]}],
         "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
     }
-    for model in GEMINI_MODELS:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        try:
-            res = http_json(url, payload, {"x-goog-api-key": GEMINI_API_KEY})
-            text = res["candidates"][0]["content"]["parts"][0]["text"]
-            out = json.loads(text)
-            return {int(o["id"]): {"title": str(o.get("title", "")).strip(),
-                                   "summary": str(o.get("summary", "")).strip()}
-                    for o in out if str(o.get("title", "")).strip()}
-        except urllib.error.HTTPError as e:
-            msg = e.read().decode("utf-8", "replace")[:200]
-            print(f"Gemini {model}: HTTP {e.code} {msg}")
-            if e.code == 404:
-                continue                      # model name not available, try the next one
-            if e.code in (400, 401, 403, 429):
-                _gemini_disabled = True       # bad key or daily limit: use backup for this run
-            return {}
-        except Exception as exc:
-            print(f"Gemini {model}: {exc}")
-            return {}
-    _gemini_disabled = True
-    return {}
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    res = http_json(url, payload, {"x-goog-api-key": GEMINI_API_KEY})
+    text = res["candidates"][0]["content"]["parts"][0]["text"]
+    out = json.loads(text)
+    return {int(o["id"]): {"title": str(o.get("title", "")).strip(),
+                           "summary": str(o.get("summary", "")).strip()}
+            for o in out if str(o.get("title", "")).strip()}
+
+
+def gemini_translate(items, depth=0):
+    """Translates items with Gemini, trying hard: retries with pauses, other models,
+    and smaller batches. Returns {index: {"title", "summary"}} for what succeeded."""
+    global _gemini_disabled
+    if not GEMINI_API_KEY or _gemini_disabled or not items or _gemini_out_of_time():
+        return {}
+    for model in [m for m in GEMINI_MODELS if m not in _dead_models]:
+        for attempt in range(GEMINI_RETRIES):
+            if _gemini_out_of_time():
+                return {}
+            try:
+                result = _gemini_call(model, items)
+                if len(result) == len(items) or len(items) == 1:
+                    return result
+                # some items missing: translate the missing ones again
+                missing = [i for i in range(len(items)) if i not in result]
+                extra = gemini_translate([items[i] for i in missing], depth + 1) if depth < 2 else {}
+                for k, v in extra.items():
+                    result[missing[k]] = v
+                return result
+            except urllib.error.HTTPError as e:
+                msg = e.read().decode("utf-8", "replace")[:300]
+                print(f"Gemini {model}: HTTP {e.code} {msg}")
+                if e.code in (401, 403) or "API key" in msg or "API_KEY" in msg:
+                    print("Gemini kaliti noto'g'ri yoki ruxsat yo'q. GEMINI_API_KEY secret'ini tekshiring.")
+                    _gemini_disabled = True
+                    return {}
+                if e.code == 404:
+                    _dead_models.add(model)
+                    break                              # this model is not available, try the next one
+                if e.code == 400 and len(items) > 1:
+                    break
+                if e.code == 429 and "PerDay" in msg:
+                    _dead_models.add(model)
+                    break                              # daily limit of this model: next model
+                time.sleep(GEMINI_WAIT * (attempt + 1))   # 429 limit / 5xx: wait and retry
+            except Exception as exc:
+                print(f"Gemini {model}: {exc}")
+                time.sleep(GEMINI_WAIT * (attempt + 1))
+    # still failing: try smaller batches before giving up
+    result = {}
+    if len(items) > 1 and depth < 2:
+        half = len(items) // 2
+        left = gemini_translate(items[:half], depth + 1)
+        right = gemini_translate(items[half:], depth + 1)
+        result = {**left, **{k + half: v for k, v in right.items()}}
+    if depth == 0 and not result:
+        print("Gemini hozir javob bermayapti, bu ishga tushirishda boshqa urinilmaydi.")
+        _gemini_disabled = True
+    return result
 
 
 def google_translate(text):
@@ -278,33 +323,39 @@ def google_translate(text):
 
 def translate_pending(seen, force=False):
     """Translates queued news that are not translated yet.
-    Normally waits for a full batch; force=True translates everything now."""
+    During the day: Gemini only, in full batches (untranslated ones wait and are retried).
+    force=True (right before / during posting): translate everything; anything Gemini
+    still cannot do goes to Google Translate, and only if that fails too it stays English."""
     if not TRANSLATE:
         return
     queue = seen.get("queue", [])
     pending = [q for q in queue if "uz" not in q]
     if not pending or (len(pending) < TRANSLATE_BATCH and not force):
         return
+    global _gemini_deadline
+    _gemini_deadline = time.time() + (GEMINI_BUDGET_WINDOW if force else GEMINI_BUDGET_DAY)
     done_gemini = done_google = failed = 0
     for i in range(0, len(pending), TRANSLATE_BATCH):
         batch = pending[i:i + TRANSLATE_BATCH]
+        if not force and len(batch) < TRANSLATE_BATCH:
+            break
         result = gemini_translate(batch)
         for n, item in enumerate(batch):
             if n in result:
                 item["uz"] = result[n]
                 done_gemini += 1
-                continue
-            try:                                  # backup: Google Translate
-                item["uz"] = {"title": google_translate(item["title"]),
-                              "summary": google_translate(item["summary"])}
-                done_google += 1
-                time.sleep(0.5)
-            except Exception as exc:
-                failed += 1
-                if force:
+            elif force:
+                try:                              # backup: Google Translate
+                    item["uz"] = {"title": google_translate(item["title"]),
+                                  "summary": google_translate(item["summary"])}
+                    done_google += 1
+                    time.sleep(0.5)
+                except Exception as exc:
+                    failed += 1
                     item["uz"] = None             # give up: post in English
-                print(f"Translate failed for '{item['title'][:50]}': {exc}")
-    print(f"Translated: Gemini {done_gemini}, Google Translate {done_google}, failed {failed}")
+                    print(f"Translate failed for '{item['title'][:50]}': {exc}")
+        time.sleep(GEMINI_PAUSE)                  # stay under the free per-minute limit
+    print(f"Translated: Gemini {done_gemini}, Google Translate {done_google}, English {failed}")
 
 
 def collect(seen):
@@ -383,9 +434,11 @@ def main():
     print(f"New York time {now:%a %H:%M}. Added {added} news, queue {len(queue)}. "
           f"Posting window open: {in_window()}")
     if not in_window() and now.weekday() in SEND_WEEKDAYS and 0 < (start - now).total_seconds() <= 11 * 60:
+        translate_pending(seen, force=True)
         save_seen(seen)
-        print(f"Waiting {(start - now).total_seconds():.0f}s for the posting window to open…")
-        time.sleep((start - now).total_seconds())
+        now, start, end = window()
+        print(f"Waiting {max(0, (start - now).total_seconds()):.0f}s for the posting window to open…")
+        time.sleep(max(0, (start - now).total_seconds()))
     if not in_window():
         save_seen(seen)
         return
