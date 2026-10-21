@@ -9,6 +9,7 @@ script (GitHub Actions) with the ticker. It:
   4. posts a chart and the analysis back to the topic as a reply.
 """
 
+import html
 import io
 import json
 import math
@@ -90,10 +91,12 @@ def where(reply=True):
     return p
 
 
-def send_text(text, reply=True):
+def send_text(text, reply=True, html_mode=False):
     for i, chunk in enumerate(split_text(text)):
-        tg("sendMessage", {**where(reply and i == 0), "text": chunk,
-                           "link_preview_options": {"is_disabled": True}})
+        payload = {**where(reply and i == 0), "text": chunk, "link_preview_options": {"is_disabled": True}}
+        if html_mode:
+            payload["parse_mode"] = "HTML"
+        tg("sendMessage", payload)
 
 
 def send_photo(png, caption):
@@ -230,20 +233,24 @@ MA'LUMOTLAR:
 JAVOB TALABLARI:
 - Barcha hisob-kitoblarni albatta Python kodini ishga tushirib bajar (Monte-Karlo uchun kamida 10 000 ta
   simulyatsiya, natija qayta chiqishi uchun np.random.seed(42)).
-- Javob o'zbek tilida (lotin yozuvi), oddiy matn. Markdown belgilarini ishlatma: **, ##, ```, jadval
-  chiziqlari yo'q. Emoji ishlatish mumkin.
-- Har bir usul uchun 2-4 qator: asosiy taxminlar va natija (bir aksiya uchun, $ da).
 - Usul bu kompaniyaga mos kelmasa (masalan, dividend to'lanmasa Gordon modeli, yoki erkin pul oqimi
-  manfiy bo'lsa DCF), sababini bir qatorda yoz va unga qiymat berma.
-- Oxirida: barcha usullar bo'yicha o'rtacha asl qiymat, oraliq (eng past - eng yuqori), joriy narxga
-  nisbatan farq (%) va 2-3 gaplik xulosa.
-- Javobning umumiy uzunligi 3000 belgidan oshmasin.
-- Yakuniy javobni "YAKUNIY JAVOB:" so'zlari bilan boshla.
-- Eng oxirgi qatorda natijalarni mashina o'qishi uchun quyidagi formatda ber (bitta qatorda, haqiqiy JSON):
-RESULTS_JSON: {{"methods": [{{"name": "DCF", "value": 123.45, "low": 101.2, "high": 148.9}}], "fair_value": 120.0, "low": 95.0, "high": 150.0}}
-  "methods" ga faqat qiymat hisoblangan usullarni kirit, "name" lar qisqa bo'lsin (ko'pi bilan 20 belgi).
-  Har bir usul uchun "low" va "high" — shu usulning pessimistik va optimistik bahosi (masalan, DCF uchun
-  diskont stavkasi va o'sish ±1-2% o'zgarganda; Monte-Karlo va ehtimollik usullari uchun 10- va 90-persentil).
+  manfiy bo'lsa DCF), unga qiymat berma, "skipped" ro'yxatiga sababi bilan yoz.
+- Hisob-kitoblardan keyin yakuniy javob sifatida FAQAT bitta RESULTS_JSON ber, boshqa matn yozma.
+  Barcha matnlar o'zbek tilida (lotin yozuvi), qisqa va aniq, markdown belgilarisiz:
+RESULTS_JSON: {{
+ "methods": [
+  {{"name": "DCF Valuation", "value": 123.45, "low": 101.2, "high": 148.9,
+    "assumptions": ["Erkin pul oqimi o'sishi: 6% (5 yil)", "WACC: 8.5%", "Terminal o'sish: 2.5%"],
+    "note": "Bir gaplik izoh: natija nimani anglatadi."}}
+ ],
+ "skipped": [{{"name": "Gordon Growth Model", "reason": "Kompaniya dividend to'lamaydi"}}],
+ "fair_value": 120.0, "low": 95.0, "high": 150.0,
+ "summary": "2-3 gaplik professional xulosa: asl qiymat joriy narxga nisbatan qanday va nima uchun."
+}}
+  "name" — usulning to'liq nomi (ko'pi bilan 24 belgi). "assumptions" — 2-4 ta eng muhim taxmin, har biri
+  "Nomi: qiymati" ko'rinishida. "low"/"high" — shu usulning pessimistik va optimistik bahosi (masalan, DCF
+  uchun diskont stavkasi va o'sish ±1-2% o'zgarganda; Monte-Karlo va ehtimollik usullari uchun 10- va
+  90-persentil). "fair_value" — qiymat hisoblangan usullarning o'rtachasi.
 """
 
 
@@ -298,17 +305,23 @@ def parse_answer(parts):
     """Returns (analysis text, results dict or None)."""
     text = "\n".join(p.get("text", "") for p in parts if p.get("text"))
     results = None
-    m = re.search(r"RESULTS_JSON:\s*(\{.*\})", text, re.S)
+    m = (re.search(r"RESULTS_JSON:\s*(?:```(?:json)?\s*)?(\{.*\})", text, re.S)
+         or re.search(r"```(?:json)?\s*(\{\s*\"methods\".*\})\s*```", text, re.S))
     if m:
         raw = m.group(1)
         for end in range(len(raw), 0, -1):                 # tolerate text after the JSON
             if raw[end - 1] != "}":
                 continue
+            chunk = raw[:end]
             try:
-                results = json.loads(raw[:end])
+                results = json.loads(chunk)
                 break
             except json.JSONDecodeError:
-                continue
+                try:                                        # forgive trailing commas
+                    results = json.loads(re.sub(r",\s*([}\]])", r"\1", chunk))
+                    break
+                except json.JSONDecodeError:
+                    continue
         text = text[:m.start()]
     if "YAKUNIY JAVOB:" in text:
         text = text[text.rindex("YAKUNIY JAVOB:") + len("YAKUNIY JAVOB:"):]
@@ -334,6 +347,81 @@ def clean_results(results, price):
         if name and 0 < value < price * 50:
             methods.append((name, value, lo, hi))
     return methods
+
+
+
+# ----------------------------- Text card ------------------------------------
+
+NUMBERS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"]
+
+
+def esc(s):
+    return html.escape(str(s or "").strip().replace("**", ""), quote=False)
+
+
+def tone(value, price):
+    diff = (value / price - 1) * 100
+    mark = "🟢" if diff > 10 else "🔴" if diff < -10 else "🟡"
+    return diff, mark
+
+
+def money(v):
+    return f"${v:,.2f}"
+
+
+def format_card(symbol, price, results):
+    """Builds the analysis message (Telegram HTML) from Gemini's structured result.
+    Returns None when the result has no usable methods."""
+    if not isinstance(results, dict):
+        return None
+    blocks = [f"📋 <b>${esc(symbol)} — tahlil tafsilotlari</b>"]
+    n = 0
+    values, ranges = [], []
+    for m in results.get("methods") or []:
+        value = num(m.get("value")) if isinstance(m, dict) else None
+        if not value or value <= 0 or value > price * 50:
+            continue
+        diff, mark = tone(value, price)
+        lo, hi = num(m.get("low")), num(m.get("high"))
+        lines = [f"{NUMBERS[n] if n < len(NUMBERS) else '▪️'} <b>{esc(m.get('name'))}</b>"]
+        for a in (m.get("assumptions") or [])[:4]:
+            lines.append(f"   ▫️ {esc(a)}")
+        result = f"   💵 <b>{money(value)}</b>  {mark} {diff:+.1f}%"
+        if lo and hi and lo <= value <= hi:
+            result += f"\n   ↔️ <i>Oraliq: {money(lo)} – {money(hi)}</i>"
+        lines.append(result)
+        if m.get("note"):
+            lines.append(f"   <i>{esc(m.get('note'))}</i>")
+        blocks.append("\n".join(lines))
+        values.append(value)
+        ranges.extend([lo or value, hi or value])
+        n += 1
+    if not values:
+        return None
+
+    skipped = [s for s in (results.get("skipped") or []) if isinstance(s, dict) and s.get("name")]
+    if skipped:
+        blocks.append("\n".join(["⛔️ <b>Qo'llanilmagan usullar</b>"] +
+                                [f"   ▫️ {esc(s['name'])}: <i>{esc(s.get('reason'))}</i>" for s in skipped]))
+
+    fair = num(results.get("fair_value")) or sum(values) / len(values)
+    diff, mark = tone(fair, price)
+    verdict = "arzon baholangan" if diff > 10 else "qimmat baholangan" if diff < -10 else "adolatli narxga yaqin"
+    lo, hi = num(results.get("low")) or min(ranges), num(results.get("high")) or max(ranges)
+    summary = [
+        "━━━━━━━━━━━━━━━",
+        "⚖️ <b>Xulosa</b>",
+        f"   Joriy narx: <b>{money(price)}</b>",
+        f"   O'rtacha asl qiymat: <b>{money(fair)}</b>  {mark} {diff:+.1f}%",
+    ]
+    if hi - lo >= 0.01:
+        summary.append(f"   Baholash oralig'i: {money(lo)} – {money(hi)}")
+    summary.append(f"   Holat: <b>{verdict}</b>")
+    if results.get("summary"):
+        summary.append(f"<blockquote>{esc(results['summary'])}</blockquote>")
+    blocks.append("\n".join(summary))
+    blocks.append(f"<i>{esc(DISCLAIMER)}</i>")
+    return "\n\n".join(blocks)
 
 
 # ----------------------------- Chart ----------------------------------------
@@ -475,7 +563,7 @@ def main():
 
     parts, model = gemini(build_prompt(exchange, symbol, data))
     text, results = parse_answer(parts)
-    if not text:
+    if not text and not results:
         raise RuntimeError("Gemini bo'sh javob qaytardi")
 
     price = data["price"]
@@ -492,11 +580,15 @@ def main():
         verdict = "arzon baholangan 🟢" if diff > 10 else "qimmat baholangan 🔴" if diff < -10 else "adolatli narxga yaqin 🟡"
         header += f"\n⚖️ O'rtacha asl qiymat: ${fair:,.2f} ({diff:+.1f}%) — {verdict}"
 
+    card = format_card(symbol, price, results)
     if methods:
         send_photo(make_chart(symbol, name, price, methods, fair, exchange), header)
-        send_text(text + "\n\n" + DISCLAIMER, reply=False)
+        if card:
+            send_text(card, reply=False, html_mode=True)
+        else:
+            send_text(text + "\n\n" + DISCLAIMER, reply=False)
     else:
-        send_text(header + "\n\n" + text + "\n\n" + DISCLAIMER)
+        send_text(header + "\n\n" + (text or "Natija olinmadi.") + "\n\n" + DISCLAIMER)
     delete_ack()
     print(f"Done with {model}, methods on chart: {len(methods)}")
 
