@@ -1,0 +1,47 @@
+name: Ticker news request
+
+on:
+  workflow_dispatch:            # started by Google Apps Script when someone writes $TICKER in News
+    inputs:
+      ticker:
+        description: "Ticker, e.g. TSLA"
+        required: true
+      chat_id:
+        required: true
+      thread_id:
+        required: false
+        default: ""
+      reply_to:
+        required: false
+        default: ""
+      ack_id:
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  ticker-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install feedparser yfinance
+
+      - name: Find news and reply
+        run: python tickernews.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TICKER: ${{ inputs.ticker }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          REPLY_TO: ${{ inputs.reply_to }}
+          ACK_ID: ${{ inputs.ack_id }}
