@@ -874,7 +874,21 @@
   "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories",
   "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html",
   "https://www.cnbc.com/2026/10/21/stocks-making-the-biggest-moves-midday-spcx-meta-smci-roiv.html",
-  "https://www.cnbc.com/2026/10/21/epstein-new-mexico-lawsuit-sex-trafficking.html"
+  "https://www.cnbc.com/2026/10/21/epstein-new-mexico-lawsuit-sex-trafficking.html",
+  "https://www.investing.com/news/stock-market-news/cme-group-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963718",
+  "https://www.investing.com/news/stock-market-news/teledyne-technologies-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963719",
+  "https://www.investing.com/news/company-news/sea-ltd-stock-hits-52week-low-at-770-usd-93CH-4963720",
+  "https://www.investing.com/news/company-news/fnac-darty-9m-2026-slides-margins-expand-as-europe-drives-growth-93CH-4963722",
+  "https://www.investing.com/news/company-news/zebra-technologies-stock-hits-52week-high-at-39085-93CH-4963723",
+  "https://www.investing.com/news/stock-market-news/thermo-fisher-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963729",
+  "https://www.investing.com/news/stock-market-news/intuitive-surgical-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963730",
+  "https://www.investing.com/news/analyst-ratings/goldman-sachs-reiterates-nvidia-stock-rating-on-ai-deployment-outlook-93CH-4963731",
+  "https://www.investing.com/news/stock-market-news/nextera-energy-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963735",
+  "https://www.investing.com/news/stock-market-news/capital-one-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963736",
+  "https://www.investing.com/news/stock-market-news/spacex-options-activity-calls-dominate-as-volume-hits-217m-contracts-93CH-4963744",
+  "https://www.investing.com/news/analyst-ratings/raymond-james-reiterates-strong-buy-on-att-stock-33-target-amid-fiber-strategy-93CH-4963746",
+  "https://www.investing.com/news/stock-market-news/bridgepoint-bain-bid-for-uk-wealth-manager-w1m--bloomberg-93CH-4963747",
+  "https://www.investing.com/news/stock-market-news/europe-risks-startup-exodus-as-regulation-funding-and-skill-gaps-hamper-ai-adoption-aws-emea-head-says-4963748"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2507,6 +2521,118 @@
    "source": "CNBC",
    "tag": "#Markets",
    "time": 1792601800
+  },
+  {
+   "title": "CME Group earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/cme-group-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963718",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792600499
+  },
+  {
+   "title": "Teledyne Technologies earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/teledyne-technologies-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963719",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792600545
+  },
+  {
+   "title": "Sea Ltd stock hits 52-week low at 77.0 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/sea-ltd-stock-hits-52week-low-at-770-usd-93CH-4963720",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792600549
+  },
+  {
+   "title": "Fnac Darty 9M 2026 slides: margins expand as Europe drives growth",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/fnac-darty-9m-2026-slides-margins-expand-as-europe-drives-growth-93CH-4963722",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792600624
+  },
+  {
+   "title": "Zebra Technologies stock hits 52-week high at $390.85",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/zebra-technologies-stock-hits-52week-high-at-39085-93CH-4963723",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792600864
+  },
+  {
+   "title": "Thermo Fisher earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/thermo-fisher-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963729",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601069
+  },
+  {
+   "title": "Intuitive Surgical earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/intuitive-surgical-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963730",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601096
+  },
+  {
+   "title": "Goldman Sachs reiterates Nvidia stock rating on AI deployment outlook",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/goldman-sachs-reiterates-nvidia-stock-rating-on-ai-deployment-outlook-93CH-4963731",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792601107
+  },
+  {
+   "title": "NextEra Energy earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/nextera-energy-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963735",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601112
+  },
+  {
+   "title": "Capital One earnings analysis: questions answered and next catalysts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/capital-one-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963736",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601143
+  },
+  {
+   "title": "SpaceX options activity: calls dominate as volume hits 2.17M contracts",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/spacex-options-activity-calls-dominate-as-volume-hits-217m-contracts-93CH-4963744",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601499
+  },
+  {
+   "title": "Raymond James reiterates Strong Buy on AT&T stock, $33 target amid fiber strategy",
+   "summary": "",
+   "link": "https://www.investing.com/news/analyst-ratings/raymond-james-reiterates-strong-buy-on-att-stock-33-target-amid-fiber-strategy-93CH-4963746",
+   "source": "Investing.com",
+   "tag": "#AnalystRatings",
+   "time": 1792601580
+  },
+  {
+   "title": "Bridgepoint, Bain bid for UK wealth manager W1M - Bloomberg",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/bridgepoint-bain-bid-for-uk-wealth-manager-w1m--bloomberg-93CH-4963747",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601590
+  },
+  {
+   "title": "Europe risks startup exodus as regulation, funding and skill gaps hamper AI adoption, AWS EMEA head says",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/europe-risks-startup-exodus-as-regulation-funding-and-skill-gaps-hamper-ai-adoption-aws-emea-head-says-4963748",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601670
   }
  ]
 }
