@@ -37,9 +37,11 @@ SEEN_LIMIT = 3000            # how many old links to remember
 
 # ---------------------------------------------------------------------------
 
-BOT_TOKEN = os.environ["BOT_TOKEN"].strip()
-CHAT_ID = os.environ["CHAT_ID"].strip()
-THREAD_ID = os.environ["THREAD_ID"].strip()
+BOT_TOKEN = re.sub(r"\s+", "", os.environ["BOT_TOKEN"])
+CHAT_ID = re.sub(r"\s+", "", os.environ["CHAT_ID"])
+THREAD_ID = re.sub(r"\s+", "", os.environ["THREAD_ID"])
+if CHAT_ID.isdigit():          # "1987654321" -> "-1001987654321"
+    CHAT_ID = "-100" + CHAT_ID
 
 socket.setdefaulttimeout(20)
 USER_AGENT = "Mozilla/5.0 (compatible; TradingLabNewsBot/1.0)"
@@ -105,6 +107,37 @@ def send_post(text):
     telegram("sendMessage", payload)
 
 
+def diagnose():
+    """Checks the bot settings and prints the correct IDs to the log."""
+    print("=" * 60)
+    print("TEKSHIRUV (diagnostika)")
+    me = telegram("getMe", {})["result"]
+    print(f"Token ishlayapti. Bot: @{me['username']}")
+    print(f"Siz kiritgan CHAT_ID: {CHAT_ID!r}, THREAD_ID: {THREAD_ID!r}")
+    try:
+        chat = telegram("getChat", {"chat_id": CHAT_ID})["result"]
+        print(f"Guruh topildi: {chat.get('title')}")
+        return True
+    except Exception as exc:
+        print(f"Guruh topilmadi: {exc}")
+
+    print("\nBot ko'rgan guruhlar va bo'limlar:")
+    found = False
+    for upd in telegram("getUpdates", {"allowed_updates": []})["result"]:
+        msg = upd.get("message") or upd.get("my_chat_member") or upd.get("channel_post") or {}
+        chat = msg.get("chat")
+        if not chat or chat.get("type") == "private":
+            continue
+        found = True
+        print(f"  Guruh: {chat.get('title')}  ->  CHAT_ID = {chat['id']}"
+              + (f"   THREAD_ID = {msg['message_thread_id']}" if msg.get("message_thread_id") else ""))
+    if not found:
+        print(f"  Hech narsa topilmadi. @{me['username']} botini guruhga ADMIN qilib qo'shing,")
+        print("  News bo'limiga 'test' deb yozing va workflow'ni qayta ishga tushiring.")
+    print("=" * 60)
+    return False
+
+
 def format_post(item):
     title = html.escape(item["title"])
     summary = html.escape(item["summary"])
@@ -118,6 +151,8 @@ def format_post(item):
 
 def main():
     seen = load_seen()
+    if not seen["connected"] and not diagnose():
+        raise SystemExit("Sozlamalarni yuqoridagi TEKSHIRUV natijasiga qarab to'g'rilang.")
     seen_links = set(seen["links"])
     now = time.time()
     new_items = []
