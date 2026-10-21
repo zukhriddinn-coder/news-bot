@@ -872,7 +872,9 @@
   "https://www.investing.com/news/company-news/tds-stock-hits-52week-low-at-315-usd-93CH-4963707",
   "https://www.investing.com/news/stock-market-news/uks-ftse-100-pauses-as-hot-inflation-report-outweighs-energy-boost-4962387",
   "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories",
-  "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html"
+  "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html",
+  "https://www.cnbc.com/2026/10/21/stocks-making-the-biggest-moves-midday-spcx-meta-smci-roiv.html",
+  "https://www.cnbc.com/2026/10/21/epstein-new-mexico-lawsuit-sex-trafficking.html"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2489,6 +2491,22 @@
    "source": "CNBC",
    "tag": "#Options",
    "time": 1792600548
+  },
+  {
+   "title": "Stocks making the biggest moves midday: SpaceX, Meta Platforms, Super Micro Computer, Roivant Sciences & more",
+   "summary": "Here are some of the companies making headlines in midday trading.",
+   "link": "https://www.cnbc.com/2026/10/21/stocks-making-the-biggest-moves-midday-spcx-meta-smci-roiv.html",
+   "source": "CNBC",
+   "tag": "#MarketInsider",
+   "time": 1792601322
+  },
+  {
+   "title": "New Mexico AG lawsuit accuses Epstein's attorney and accountant of facilitating sex trafficking",
+   "summary": "",
+   "link": "https://www.cnbc.com/2026/10/21/epstein-new-mexico-lawsuit-sex-trafficking.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792601800
   }
  ]
 }
