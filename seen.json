@@ -929,7 +929,12 @@
   "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814",
   "https://www.ft.com/content/bef7e107-3922-4312-acd9-3c96af60c309?syn-25a6b1a6=1",
   "https://www.ft.com/content/68e28f90-cbc3-4fa6-950b-451cf7c49c87?syn-25a6b1a6=1",
-  "https://www.cnbc.com/2026/10/21/netflix-theatrical-strategy.html"
+  "https://www.cnbc.com/2026/10/21/netflix-theatrical-strategy.html",
+  "https://www.ft.com/content/7f8e97b4-bd2e-4414-858a-bc746cb515f6?syn-25a6b1a6=1",
+  "https://www.ft.com/content/7c0fb51a-2c17-414e-96a7-ac33f40af3de?syn-25a6b1a6=1",
+  "https://www.cnbc.com/investingclub/2026/10/21/apples-iphone-duo-in-short-supply-plus-2-stocks-fueling-an-ai-rebound.html",
+  "https://www.ft.com/content/245778d9-597b-492d-b5b6-a2967c77e853?syn-25a6b1a6=1",
+  "https://www.ft.com/content/5b7c2fdf-2300-4208-860e-6389ceb18886?syn-25a6b1a6=1"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -3057,7 +3062,12 @@
    "link": "https://www.investing.com/news/stock-market-news/anthropic-adds-former-harvard-science-dean-to-oversight-body-4963794",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792605297
+   "time": 1792605297,
+   "uz": {
+    "title": "Anthropic Harvardning sobiq fan dekanini nazorat organiga qo‘shdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "GM aims to develop vehicles in as little as two years with AI, software push",
@@ -3065,7 +3075,12 @@
    "link": "https://www.cnbc.com/2026/10/21/gm-vehicle-development-ai-software.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792605835
+   "time": 1792605835,
+   "uz": {
+    "title": "GM sun’iy intellekt va dasturiy ta’minot yordamida avtomobillarni bor-yo‘g‘i ikki yil ichida ishlab chiqishni maqsad qilmoqda",
+    "summary": "General Motors sun’iy intellekt, simulyatsiya va avtomobil dasturiy ta’minotidan foydalanishni kengaytirar ekan, avtomobil ishlab chiqish siklini taxminan ikki yilgacha qisqartirishni rejalashtirmoqda.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Rosenblatt cuts Pegasystems stock price target on weaker growth outlook",
@@ -3073,7 +3088,12 @@
    "link": "https://www.investing.com/news/analyst-ratings/rosenblatt-cuts-pegasystems-stock-price-target-on-weaker-growth-outlook-93CH-4963795",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792605412
+   "time": 1792605412,
+   "uz": {
+    "title": "Rosenblatt o‘sish istiqbollari zaiflashgani sababli Pegasystems aksiyalari bo‘yicha maqsadli narxni pasaytirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Initial jobless claims highlight Thursday’s economic calendar",
@@ -3081,7 +3101,12 @@
    "link": "https://www.investing.com/news/stock-market-news/initial-jobless-claims-highlight-thursdays-economic-calendar-93CH-4963797",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792605645
+   "time": 1792605645,
+   "uz": {
+    "title": "Ishsizlik nafaqasi bo‘yicha dastlabki arizalar payshanba kungi iqtisodiy taqvimda asosiy o‘rinni egallaydi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Procter & Gamble, Western Digital, Lockheed Martin and more set to report Thursday",
@@ -3089,7 +3114,12 @@
    "link": "https://www.investing.com/news/stock-market-news/procter--gamble-western-digital-lockheed-martin-and-more-set-to-report-thursday-93CH-4963798",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792605683
+   "time": 1792605683,
+   "uz": {
+    "title": "Procter & Gamble, Western Digital, Lockheed Martin va boshqalar payshanba kuni moliyaviy hisobot taqdim etadi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "3E Network secures $5M hardware sales agreement",
@@ -3097,7 +3127,12 @@
    "link": "https://www.investing.com/news/company-news/3e-network-secures-5m-hardware-sales-agreement-93CH-4963802",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792605880
+   "time": 1792605880,
+   "uz": {
+    "title": "3E Network $5M lik uskunalar savdosi bo‘yicha kelishuvga erishdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Capital One delivered a strong quarter. Why we're not declaring victory just yet",
@@ -3105,7 +3140,12 @@
    "link": "https://www.cnbc.com/investingclub/2026/10/21/capital-one-delivered-a-strong-quarter-why-were-not-declaring-victory-just-yet.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792605991
+   "time": 1792605991,
+   "uz": {
+    "title": "Capital One kuchli chorak natijalarini ko‘rsatdi. Nega biz hali g‘alabani e’lon qilmayapmiz",
+    "summary": "Capital One mustahkam moliyaviy hisobot taqdim etdi, biroq bizning eng katta xavotirlarimizdan biri hali ham saqlanib qolmoqda.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Palo Alto Networks, MicroStrategy among market cap stock movers on Wednesday",
@@ -3113,7 +3153,12 @@
    "link": "https://www.investing.com/news/stock-market-news/palo-alto-networks-microstrategy-among-market-cap-stock-movers-on-wednesday-93CH-4963804",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792605998
+   "time": 1792605998,
+   "uz": {
+    "title": "Palo Alto Networks va MicroStrategy chorshanba kuni bozor kapitallashuvi bo‘yicha eng faol harakatlangan aksiyalar qatorida bo‘ldi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "GM targets ‘eyes-off’ autonomous driving for pickups, SUVs",
@@ -3121,7 +3166,12 @@
    "link": "https://www.investing.com/news/stock-market-news/gm-targets-eyesoff-autonomous-driving-for-pickupssuvs-4963805",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792606001
+   "time": 1792606001,
+   "uz": {
+    "title": "GM pikaplar va SUVlar uchun to‘liq avtonom («eyes-off») boshqaruv tizimini joriy qilishni maqsad qilmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Philip Morris International options activity points to institutional hedging after Q3 earnings",
@@ -3129,7 +3179,12 @@
    "link": "https://www.investing.com/news/stock-market-news/philip-morris-international-options-activity-points-to-institutional-hedging-after-q3-earnings-93CH-4963806",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792606010
+   "time": 1792606010,
+   "uz": {
+    "title": "Philip Morris International optsionlaridagi faollik Q3 moliyaviy hisobotidan so‘ng institutsional xedjirlashga ishora qilmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Sherwin-Williams declares quarterly dividend of $0.80 per share",
@@ -3137,7 +3192,12 @@
    "link": "https://www.investing.com/news/company-news/sherwinwilliams-declares-quarterly-dividend-of-080-per-share-93CH-4963807",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792606107
+   "time": 1792606107,
+   "uz": {
+    "title": "Sherwin-Williams har bir aksiya uchun $0.80 miqdorida choraklik dividend e’lon qildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "UAL options activity points to bullish positioning after earnings beat",
@@ -3145,7 +3205,12 @@
    "link": "https://www.investing.com/news/stock-market-news/ual-options-activity-points-to-bullish-positioning-after-earnings-beat-93CH-4963808",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792606144
+   "time": 1792606144,
+   "uz": {
+    "title": "UAL optsionlaridagi faollik kutilganidan yuqori moliyaviy hisobotdan so‘ng o‘sishga bo‘lgan ishonchga ishora qilmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Chevron to sharpen US Gulf focus with sale of older assets",
@@ -3153,7 +3218,12 @@
    "link": "https://www.investing.com/news/commodities-news/chevron-to-sharpen-us-gulf-focus-with-sale-of-older-assets-4963810",
    "source": "Investing.com",
    "tag": "#Commodities",
-   "time": 1792606754
+   "time": 1792606754,
+   "uz": {
+    "title": "Chevron eski aktivlarini sotish orqali US Gulf mintaqasiga e’tiborini kuchaytiradi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Abbott options flow points to downside caution after guidance cut",
@@ -3161,7 +3231,12 @@
    "link": "https://www.investing.com/news/stock-market-news/abbott-options-flow-points-to-downside-caution-after-guidance-cut-93CH-4963811",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792606831
+   "time": 1792606831,
+   "uz": {
+    "title": "Abbott optsionlar oqimi prognoz pasaytirilganidan so‘ng pasayish xavfidan ehtiyot bo‘lishga ishora qilmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "BlackRock adds robotics ETF to growing ranks of AI-themed products",
@@ -3169,7 +3244,12 @@
    "link": "https://www.investing.com/news/stock-market-news/blackrock-adds-robotics-etf-to-growing-ranks-of-aithemed-products-4963809",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792607060
+   "time": 1792607060,
+   "uz": {
+    "title": "BlackRock o‘zining sun’iy intellektga oid mahsulotlari safiga robototexnika ETF fondini qo‘shdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Britain regulator ends Home REIT probe, defers to fraud office",
@@ -3177,7 +3257,12 @@
    "link": "https://www.investing.com/news/stock-market-news/britain-regulator-ends-home-reit-probe-defers-to-fraud-office-93CH-4963814",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792607444
+   "time": 1792607444,
+   "uz": {
+    "title": "Buyuk Britaniya regulyatori Home REIT bo‘yicha tekshiruvni yakunladi va ishni firibgarlikka qarshi kurashish idorasiga topshirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Italy’s buffalo mozzarella production grinds to a halt in truckers’ strike",
@@ -3185,7 +3270,12 @@
    "link": "https://www.ft.com/content/bef7e107-3922-4312-acd9-3c96af60c309?syn-25a6b1a6=1",
    "source": "Financial Times",
    "tag": "#Macro",
-   "time": 1792604234
+   "time": 1792604234,
+   "uz": {
+    "title": "Yuk mashinalari haydovchilari ish tashlashi tufayli Italiyada motsarella ishlab chiqarish to‘xtab qoldi",
+    "summary": "Avtomagistrallarning to‘sib qo‘yilishi mamlakat janubida jiddiy uzilishlarga olib keldi",
+    "by": "gemini"
+   }
   },
   {
    "title": "Ghana in talks with European nations for reparations, president says",
@@ -3193,7 +3283,12 @@
    "link": "https://www.ft.com/content/68e28f90-cbc3-4fa6-950b-451cf7c49c87?syn-25a6b1a6=1",
    "source": "Financial Times",
    "tag": "#Macro",
-   "time": 1792604597
+   "time": 1792604597,
+   "uz": {
+    "title": "Gana tovon to‘lash bo‘yicha Yevropa davlatlari bilan muzokaralar olib bormoqda, dedi prezident",
+    "summary": "John Mahama sa’y-harakatlar qul savdosi va mustamlakachilik davrida o‘g‘irlangan madaniy boyliklarni qaytarishga qaratilganini aytdi",
+    "by": "gemini"
+   }
   },
   {
    "title": "Netflix has dipped its toe into theatrical. Is it ready to jump in?",
@@ -3201,7 +3296,57 @@
    "link": "https://www.cnbc.com/2026/10/21/netflix-theatrical-strategy.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792607532
+   "time": 1792607532,
+   "uz": {
+    "title": "Netflix kinoteatrlar bozorini sinab ko‘rdi. U to‘liq kirishga tayyormi?",
+    "summary": "Hamrais Ted Sarandos striming xizmatiga o‘sish uchun yangi yo‘llar va kontent strategiyasini amalga oshirishni yaxshilash zarurligini aytdi.",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Tesla-SpaceX: a huge corporate constellation with Musk at its centre",
+   "summary": "A merger of Elon Musk’s listed companies has some logic, but other shareholders might end up with less influence than they have today",
+   "link": "https://www.ft.com/content/7f8e97b4-bd2e-4414-858a-bc746cb515f6?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Companies",
+   "time": 1792603553,
+   "uz": {
+    "title": "Tesla-SpaceX: markazida Musk turgan ulkan korporativ tizim",
+    "summary": "Elon Musk nazoratidagi ommaviy kompaniyalarning birlashuvida ma’lum bir mantiq bor, biroq boshqa aksiyadorlar bugungi kunga qaraganda kamroq ta’sir kuchiga ega bo‘lib qolishi mumkin",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "CVC explores bid for Verisure just 1 year after IPO",
+   "summary": "Shares in Swedish-listed security group trading 30% below their price at flotation",
+   "link": "https://www.ft.com/content/7c0fb51a-2c17-414e-96a7-ac33f40af3de?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Markets",
+   "time": 1792604632
+  },
+  {
+   "title": "Apple's iPhone Duo in short supply — plus, the 2 stocks fueling an AI rebound",
+   "summary": "Every weekday, the Investing Club releases the Homestretch; an actionable afternoon update just in time for the last hour of trading.",
+   "link": "https://www.cnbc.com/investingclub/2026/10/21/apples-iphone-duo-in-short-supply-plus-2-stocks-fueling-an-ai-rebound.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792608328
+  },
+  {
+   "title": "NSA warns on ‘critical’ cyber vulnerabilities detected using AI",
+   "summary": "Researchers used OpenAI and Google models to find severe faults in software used on majority of websites around the world",
+   "link": "https://www.ft.com/content/245778d9-597b-492d-b5b6-a2967c77e853?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Companies",
+   "time": 1792608403
+  },
+  {
+   "title": "Bessent shrugs off ‘systemic’ AI risks at closed-door investor conference",
+   "summary": "Treasury secretary spoke to financiers at charity event where tickets cost $7,500",
+   "link": "https://www.ft.com/content/5b7c2fdf-2300-4208-860e-6389ceb18886?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Markets",
+   "time": 1792608419
   }
  ]
 }
