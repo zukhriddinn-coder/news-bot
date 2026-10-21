@@ -239,8 +239,7 @@ def format_post(sym, name, r):
         lines.append(f"🎯 Target: {money(r['old'])} → {money(r['new'])} ({pct:+.1f}%)")
     elif r["new"]:
         lines.append(f"🎯 Target: {money(r['new'])}")
-    link = f"https://finance.yahoo.com/quote/{sym}/analysis"
-    lines.append(f"\n#PriceTarget #{re.sub(r'[^A-Za-z0-9]', '', sym)}\n🔗 <a href=\"{link}\">Source: Yahoo Finance</a>")
+    lines.append(f"\n#PriceTarget #{re.sub(r'[^A-Za-z0-9]', '', sym)}")
     return "\n".join(lines)
 
 
