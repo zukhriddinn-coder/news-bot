@@ -22,30 +22,53 @@ import feedparser
 
 FEEDS = [
     # CNBC
-    {"name": "CNBC Top News",      "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "tag": "#Markets"},
-    {"name": "CNBC Economy",       "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html",  "tag": "#Macro"},
-    {"name": "CNBC Finance",       "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html",  "tag": "#Markets"},
-    {"name": "CNBC Investing",     "url": "https://www.cnbc.com/id/15839069/device/rss/rss.html",  "tag": "#Trading"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "tag": "#Markets"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html", "tag": "#Macro"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html", "tag": "#Markets"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/15839069/device/rss/rss.html", "tag": "#Trading"},
+    {"name": "CNBC"            , "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20409666", "tag": "#MarketInsider"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/15839135/device/rss/rss.html", "tag": "#Earnings"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19836768/device/rss/rss.html", "tag": "#Energy"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/10000030/device/rss/rss.html", "tag": "#Oil"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19854910/device/rss/rss.html", "tag": "#Tech"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/28282083/device/rss/rss.html", "tag": "#Options"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19832390/device/rss/rss.html", "tag": "#Asia"},
+    {"name": "CNBC"            , "url": "https://www.cnbc.com/id/19794221/device/rss/rss.html", "tag": "#Europe"},
     # MarketWatch
-    {"name": "MarketWatch",        "url": "https://feeds.marketwatch.com/marketwatch/topstories",  "tag": "#StockMarket"},
-    {"name": "MarketWatch",        "url": "https://feeds.marketwatch.com/marketwatch/bulletins",   "tag": "#Breaking"},
+    {"name": "MarketWatch"     , "url": "https://feeds.marketwatch.com/marketwatch/topstories", "tag": "#StockMarket"},
+    {"name": "MarketWatch"     , "url": "https://feeds.marketwatch.com/marketwatch/bulletins", "tag": "#Breaking"},
     # Investing.com
-    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_25.rss",             "tag": "#StockMarket"},
-    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_14.rss",             "tag": "#Macro"},
-    {"name": "Investing.com",      "url": "https://www.investing.com/rss/news_95.rss",             "tag": "#EconomicData"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_25.rss", "tag": "#StockMarket"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_14.rss", "tag": "#Macro"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_95.rss", "tag": "#EconomicData"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1061.rss", "tag": "#AnalystRatings"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1062.rss", "tag": "#Earnings"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1.rss", "tag": "#Forex"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_11.rss", "tag": "#Commodities"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_357.rss", "tag": "#InsiderTrading"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_356.rss", "tag": "#Companies"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_1065.rss", "tag": "#InvestmentIdeas"},
+    {"name": "Investing.com"   , "url": "https://www.investing.com/rss/news_301.rss", "tag": "#Crypto"},
     # Financial Times
-    {"name": "Financial Times",    "url": "https://www.ft.com/markets?format=rss",                 "tag": "#Markets"},
-    {"name": "Financial Times",    "url": "https://www.ft.com/global-economy?format=rss",          "tag": "#Macro"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/markets?format=rss", "tag": "#Markets"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/global-economy?format=rss", "tag": "#Macro"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/commodities?format=rss", "tag": "#Commodities"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/emerging-markets?format=rss", "tag": "#EmergingMarkets"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/unhedged?format=rss", "tag": "#Unhedged"},
+    {"name": "Financial Times" , "url": "https://www.ft.com/companies?format=rss", "tag": "#Companies"},
     # Central banks
-    {"name": "Federal Reserve",    "url": "https://www.federalreserve.gov/feeds/press_all.xml",    "tag": "#Fed #Macro"},
-    {"name": "ECB",                "url": "https://www.ecb.europa.eu/rss/press.html",               "tag": "#ECB #Macro"},
+    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/press_all.xml", "tag": "#Fed #Macro"},
+    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/press_monetary.xml", "tag": "#Fed #FOMC"},
+    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/speeches_and_testimony.xml", "tag": "#Fed #Speech"},
+    {"name": "Federal Reserve" , "url": "https://www.federalreserve.gov/feeds/s_t_powell.xml", "tag": "#Fed #Powell"},
+    {"name": "ECB"             , "url": "https://www.ecb.europa.eu/rss/press.html", "tag": "#ECB #Macro"},
 ]
 
-MAX_POSTS_PER_RUN = 8        # at most this many posts every run (avoids spam)
+MAX_POSTS_PER_RUN = 12       # at most this many posts every run (avoids spam)
 SUMMARY_LENGTH = 280         # max characters of the short description
 MAX_AGE_HOURS = 12           # ignore articles older than this
 SEEN_FILE = "seen.json"      # remembers which news were already posted
-SEEN_LIMIT = 3000            # how many old links to remember
+SEEN_LIMIT = 8000            # how many old links to remember
 
 # ---------------------------------------------------------------------------
 
@@ -194,7 +217,7 @@ def main():
                 "title": clean_text(e.get("title")),
                 "summary": clean_text(e.get("summary") or e.get("description")),
                 "link": link,
-                "source": feed["name"].split(" ")[0] if feed["name"].startswith("CNBC") else feed["name"],
+                "source": feed["name"],
                 "tag": feed["tag"],
                 "time": ts or now,
             })
