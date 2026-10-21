@@ -906,7 +906,8 @@
   "https://www.investing.com/news/company-news/fdj-united-q3-2026-slides-tax-increases-weak-jackpots-drive-revenue-decline-93CH-4963779",
   "https://www.investing.com/news/company-news/big-pharmas-obesity-shopping-spree-is-moving-beyond-glp1s-palatin-may-fit-the-pattern-nasdaq-ptn-4963780",
   "https://www.investing.com/news/analyst-ratings/briley-raises-clevelandcliffs-price-target-to-18-on-improved-outlook-93CH-4963781",
-  "https://www.investing.com/news/analyst-ratings/jefferies-raises-united-airlines-stock-price-target-on-earnings-beat-93CH-4963782"
+  "https://www.investing.com/news/analyst-ratings/jefferies-raises-united-airlines-stock-price-target-on-earnings-beat-93CH-4963782",
+  "https://www.ft.com/content/8c443652-5c29-4711-81d1-dd985f2e4578?syn-25a6b1a6=1"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2895,6 +2896,14 @@
    "source": "Investing.com",
    "tag": "#AnalystRatings",
    "time": 1792603978
+  },
+  {
+   "title": "Indonesia should heed MSCI’s warning",
+   "summary": "A credible stock market is essential if the country is to fulfil its enormous economic promise",
+   "link": "https://www.ft.com/content/8c443652-5c29-4711-81d1-dd985f2e4578?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#EmergingMarkets",
+   "time": 1792604217
   }
  ]
 }
