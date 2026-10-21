@@ -268,6 +268,10 @@ def main():
     now, start, end = window()
     print(f"New York time {now:%a %H:%M}. Added {added} news, queue {len(queue)}. "
           f"Posting window open: {in_window()}")
+    if not in_window() and now.weekday() in SEND_WEEKDAYS and 0 < (start - now).total_seconds() <= 11 * 60:
+        save_seen(seen)
+        print(f"Waiting {(start - now).total_seconds():.0f}s for the posting window to open…")
+        time.sleep((start - now).total_seconds())
     if not in_window():
         save_seen(seen)
         return

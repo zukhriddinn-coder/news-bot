@@ -15,6 +15,8 @@ import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import yfinance as yf
 
@@ -25,7 +27,6 @@ import yfinance as yf
 PRIORITY_BATCH = 150     # S&P 500 stocks checked per run (all 500 every ~4 runs)
 OTHER_BATCH = 150        # other NASDAQ stocks checked per run
 WORKERS = 4              # parallel requests to Yahoo
-MAX_POSTS_PER_RUN = 15   # max Telegram posts per run
 MAX_AGE_DAYS = 3         # ignore analyst actions older than this
 ONLY_TARGET_CHANGES = False  # True = post only when the target price changes
 
@@ -33,6 +34,15 @@ SP500_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/ma
 NASDAQ_URL = "https://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt"
 STATE_FILE = "targets_state.json"
 LIST_REFRESH_HOURS = 24
+
+# Daily delivery window (New York time). Changes are collected all day and posted
+# only inside this window. Anything not posted by WINDOW_END waits for tomorrow.
+MARKET_TZ = "America/New_York"
+WINDOW_START = (15, 30)           # 15:30 New York = 30 min before US market close
+WINDOW_END = (16, 0)              # 16:00 New York = market close, posting stops
+SEND_WEEKDAYS = {0, 1, 2, 3, 4}   # Monday..Friday
+QUEUE_MAX_AGE_HOURS = 96          # drop collected changes older than this
+RECHECK_SECONDS = 120             # inside the window: scan the next batch this often
 
 # ---------------------------------------------------------------------------
 
@@ -252,11 +262,10 @@ def is_worth_posting(r):
 
 # ----------------------------- Main -----------------------------------------
 
-def main():
-    state = load_state()
-    refresh_lists(state)
+def scan(state):
+    """Checks the next batch of tickers and adds new analyst actions to the queue."""
     last = state.setdefault("last", {})      # ticker -> [latest timestamp, [keys at that time]]
-
+    queue = state.setdefault("queue", [])
     batch = next_batch(state, "priority", PRIORITY_BATCH) + next_batch(state, "others", OTHER_BATCH)
     print(f"Checking {len(batch)} tickers…")
 
@@ -265,7 +274,8 @@ def main():
 
     errors = [(s, e) for s, rows, e in results if rows is None]
     now = time.time()
-    candidates = []
+    queued = {q["id"] for q in queue}
+    added = 0
     for sym, rows, err in results:
         if rows is None:
             continue
@@ -280,19 +290,42 @@ def main():
         prev_ts, prev_keys = last[sym]
         for r in rows:
             fresh = r["ts"] > prev_ts or (r["ts"] == prev_ts and row_key(r) not in prev_keys)
-            if fresh and now - r["ts"] < MAX_AGE_DAYS * 86400 and is_worth_posting(r):
-                candidates.append((r["ts"], sym, r))
+            item_id = f"{sym}|{r['ts']}|{row_key(r)}"
+            if fresh and now - r["ts"] < MAX_AGE_DAYS * 86400 and is_worth_posting(r) and item_id not in queued:
+                queue.append({"id": item_id, "ts": r["ts"], "sym": sym, "row": r})
+                queued.add(item_id)
+                added += 1
         if newest > prev_ts:
             last[sym] = [newest, newest_keys]
         elif newest == prev_ts:
             last[sym] = [newest, sorted(set(prev_keys) | set(newest_keys))]
+    queue[:] = [q for q in queue if now - q["ts"] < QUEUE_MAX_AGE_HOURS * 3600]
 
-    print(f"Yahoo: {len(results) - len(errors)} ok, {len(errors)} errors")
+    print(f"Yahoo: {len(results) - len(errors)} ok, {len(errors)} errors. New changes: {added}")
     for s, e in errors[:5]:
         print(f"  {s}: {e}")
     if batch and len(errors) == len(batch):
         save_state(state)
         raise SystemExit("Yahoo Finance hamma so'rovlarni rad etdi (bloklangan bo'lishi mumkin).")
+
+
+def window():
+    """Returns (now, start, end) in New York time."""
+    now = datetime.now(ZoneInfo(MARKET_TZ))
+    start = now.replace(hour=WINDOW_START[0], minute=WINDOW_START[1], second=0, microsecond=0)
+    end = now.replace(hour=WINDOW_END[0], minute=WINDOW_END[1], second=0, microsecond=0)
+    return now, start, end
+
+
+def in_window():
+    now, start, end = window()
+    return now.weekday() in SEND_WEEKDAYS and start <= now < end
+
+
+def main():
+    state = load_state()
+    refresh_lists(state)
+    scan(state)
 
     if not state.get("connected"):
         try:
@@ -304,19 +337,47 @@ def main():
             raise SystemExit("Sozlamalarni yuqoridagi TEKSHIRUV natijasiga qarab to'g'rilang.")
         state["connected"] = True
 
-    posted = 0
-    for _, sym, r in sorted(candidates)[:MAX_POSTS_PER_RUN]:
-        try:
-            send_post(format_post(sym, state.get("names", {}).get(sym, sym), r))
-            posted += 1
-            time.sleep(3)
-        except Exception as exc:
-            print(f"ERROR sending {sym}: {exc}")
-
-    tracked = len(last)
+    queue = state["queue"]
+    now, start, end = window()
     total = len(state.get("priority", [])) + len(state.get("others", []))
+    print(f"New York time {now:%a %H:%M}. Queue {len(queue)}. Tickers learned: {len(state['last'])}/{total}. "
+          f"Posting window open: {in_window()}")
+    if not in_window() and now.weekday() in SEND_WEEKDAYS and 0 < (start - now).total_seconds() <= 11 * 60:
+        save_state(state)
+        print(f"Waiting {(start - now).total_seconds():.0f}s for the posting window to open…")
+        time.sleep((start - now).total_seconds())
+    if not in_window():
+        save_state(state)
+        return
+
+    # Inside the window: post the queue, scan more tickers, repeat until the window closes
+    posted = errors = 0
+    names = state.get("names", {})
+    while in_window():
+        queue.sort(key=lambda q: q["ts"])
+        while queue and in_window():
+            q = queue.pop(0)
+            try:
+                send_post(format_post(q["sym"], names.get(q["sym"], q["sym"]), q["row"]))
+                posted += 1
+            except Exception as exc:
+                errors += 1
+                print(f"ERROR sending {q['sym']}: {exc}")
+            if (posted + errors) % 20 == 0:
+                save_state(state)
+            time.sleep(3)
+        if not in_window():
+            break
+        save_state(state)
+        now, start, end = window()
+        time.sleep(max(1, min(RECHECK_SECONDS, (end - now).total_seconds())))
+        if in_window():
+            scan(state)
+
     save_state(state)
-    print(f"Posted {posted} of {len(candidates)} changes. Tickers learned: {tracked}/{total}")
+    print(f"Window closed. Posted {posted}, errors {errors}, left for tomorrow {len(queue)}")
+    if errors and not posted:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
