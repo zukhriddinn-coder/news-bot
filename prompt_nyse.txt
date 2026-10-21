@@ -1,0 +1,12 @@
+$XXX kompaniyasining hozirda bozordagi narxi $XXX ekan.
+
+Shu kompaniya aksiyasining asl narxi, ya'ni Intrinsic Value qiymatini quyidagi usullarda aniqlab bergin:
+
+— DCF Valuation
+— Warren Buffet PE Valuation
+— Gordon Growth Model
+— Modegliani Miller Model
+— Probabilistic Valuation method
+— Monte Karlo simulyatsiyasi
+
+Professional moliyaviy tahlilchi sifatida aniq raqamlarni hisoblab bergin. Tahlilda Python orqali hisobla.

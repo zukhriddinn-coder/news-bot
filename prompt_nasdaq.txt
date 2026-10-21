@@ -1,0 +1,7 @@
+$XXX kompaniyasining hozirda bozordagi narxi $XXX ekan.
+
+Shu kompaniya aksiyasining asl narxi, ya'ni Intrinsic Value qiymatini quyidagi usullarda aniqlab bergin:
+
+— Probabilistic Valuation method
+
+Professional moliyaviy tahlilchi sifatida aniq raqamlarni hisoblab bergin. Tahlilda Python orqali hisobla.
