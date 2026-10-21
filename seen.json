@@ -934,7 +934,17 @@
   "https://www.ft.com/content/7c0fb51a-2c17-414e-96a7-ac33f40af3de?syn-25a6b1a6=1",
   "https://www.cnbc.com/investingclub/2026/10/21/apples-iphone-duo-in-short-supply-plus-2-stocks-fueling-an-ai-rebound.html",
   "https://www.ft.com/content/245778d9-597b-492d-b5b6-a2967c77e853?syn-25a6b1a6=1",
-  "https://www.ft.com/content/5b7c2fdf-2300-4208-860e-6389ceb18886?syn-25a6b1a6=1"
+  "https://www.ft.com/content/5b7c2fdf-2300-4208-860e-6389ceb18886?syn-25a6b1a6=1",
+  "https://www.investing.com/news/stock-market-news/bofa-securities-names-top-quantum-computing-stocks-to-watch-4963817",
+  "https://www.investing.com/news/company-news/msc-industrial-direct-stock-hits-alltime-high-at-13371-usd-93CH-4963819",
+  "https://www.investing.com/news/company-news/nemak-q3-2026-slides-22-revenue-surge-masks-profit-pressure-93CH-4963823",
+  "https://www.investing.com/news/company-news/chevron-stock-hits-alltime-high-at-22728-usd-93CH-4963826",
+  "https://www.investing.com/news/company-news/brightstar-lottery-stock-hits-52week-low-at-927-usd-93CH-4963828",
+  "https://www.investing.com/news/company-news/cms-energy-corp-stock-hits-52week-low-at-1959-usd-93CH-4963830",
+  "https://www.investing.com/news/stock-market-news/ea-to-shutter-bioware-studio-cut-jobs-as-it-narrows-game-slate-4963824",
+  "https://www.investing.com/news/stock-market-news/why-is-teledyne-technologies-stock-slipping-today-93CH-4963831",
+  "https://www.cnbc.com/investingclub/2026/10/21/spacex-gives-the-ai-trade-a-shot-in-the-arm-what-it-means-for-our-stocks-.html",
+  "https://www.marketwatch.com/bulletins/redirect/go?g=9bb1d6a4-8b51-4ba4-b6c6-13d2645b00bc&mod=mw_rss_bulletins"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -3347,6 +3357,86 @@
    "source": "Financial Times",
    "tag": "#Markets",
    "time": 1792608419
+  },
+  {
+   "title": "BofA Securities names top quantum computing stocks to watch",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/bofa-securities-names-top-quantum-computing-stocks-to-watch-4963817",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792607770
+  },
+  {
+   "title": "Msc Industrial Direct stock hits all-time high at 133.71 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/msc-industrial-direct-stock-hits-alltime-high-at-13371-usd-93CH-4963819",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792607840
+  },
+  {
+   "title": "Nemak Q3 2026 slides: 22% revenue surge masks profit pressure",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/nemak-q3-2026-slides-22-revenue-surge-masks-profit-pressure-93CH-4963823",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792608253
+  },
+  {
+   "title": "Chevron stock hits all-time high at 227.28 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/chevron-stock-hits-alltime-high-at-22728-usd-93CH-4963826",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792608631
+  },
+  {
+   "title": "Brightstar Lottery stock hits 52-week low at 9.27 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/brightstar-lottery-stock-hits-52week-low-at-927-usd-93CH-4963828",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792608776
+  },
+  {
+   "title": "Cms Energy Corp stock hits 52-week low at 19.59 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/cms-energy-corp-stock-hits-52week-low-at-1959-usd-93CH-4963830",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792608802
+  },
+  {
+   "title": "EA to shutter BioWare studio, cut jobs as it narrows game slate",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/ea-to-shutter-bioware-studio-cut-jobs-as-it-narrows-game-slate-4963824",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792608873
+  },
+  {
+   "title": "Why is Teledyne Technologies stock slipping today?",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/why-is-teledyne-technologies-stock-slipping-today-93CH-4963831",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792608875
+  },
+  {
+   "title": "SpaceX gives the AI trade a shot in the arm. What it means for our stocks",
+   "summary": "SpaceX indicated there's been no slowdown in demand for AI computing.",
+   "link": "https://www.cnbc.com/investingclub/2026/10/21/spacex-gives-the-ai-trade-a-shot-in-the-arm-what-it-means-for-our-stocks-.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792609283
+  },
+  {
+   "title": "Nasdaq leads stocks higher in final hour as investors await Meta, Tesla earnings",
+   "summary": "",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9bb1d6a4-8b51-4ba4-b6c6-13d2645b00bc&mod=mw_rss_bulletins",
+   "source": "MarketWatch",
+   "tag": "#Breaking",
+   "time": 1792609306
   }
  ]
 }
