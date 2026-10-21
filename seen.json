@@ -871,7 +871,8 @@
   "https://www.investing.com/news/company-news/itm-power-applies-for-block-listing-of-299638-shares-on-aim-93CH-4963705",
   "https://www.investing.com/news/company-news/tds-stock-hits-52week-low-at-315-usd-93CH-4963707",
   "https://www.investing.com/news/stock-market-news/uks-ftse-100-pauses-as-hot-inflation-report-outweighs-energy-boost-4962387",
-  "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories"
+  "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories",
+  "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2480,6 +2481,14 @@
    "source": "MarketWatch",
    "tag": "#StockMarket",
    "time": 1792600440
+  },
+  {
+   "title": "Meta and Tesla bulls get confidence boost after SpaceX earnings",
+   "summary": "A big rally in SpaceX after earnings is giving hope to Meta and Tesla bulls ahead of their reports due Wednesday afternoon.",
+   "link": "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html",
+   "source": "CNBC",
+   "tag": "#Options",
+   "time": 1792600548
   }
  ]
 }
