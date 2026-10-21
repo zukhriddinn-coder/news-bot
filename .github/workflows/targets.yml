@@ -9,12 +9,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: news-bot             # same group as the news bot, so they never run at the same time
+  group: targets-bot          # own queue, does not wait for the news bot
   cancel-in-progress: false
 
 jobs:
   post-targets:
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v5
 

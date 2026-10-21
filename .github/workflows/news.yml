@@ -9,16 +9,17 @@ permissions:
   contents: write
 
 concurrency:
-  group: news-bot
+  group: news-bot             # own queue, does not wait for the price target bot
   cancel-in-progress: false
 
 jobs:
   post-news:
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -38,4 +39,8 @@ jobs:
           git config user.name "news-bot"
           git config user.email "news-bot@users.noreply.github.com"
           git add seen.json || true
-          git diff --cached --quiet || (git commit -m "Update seen news" && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m "Update seen news"
+            git pull --rebase
+            git push
+          fi
