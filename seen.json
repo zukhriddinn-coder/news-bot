@@ -888,7 +888,14 @@
   "https://www.investing.com/news/stock-market-news/spacex-options-activity-calls-dominate-as-volume-hits-217m-contracts-93CH-4963744",
   "https://www.investing.com/news/analyst-ratings/raymond-james-reiterates-strong-buy-on-att-stock-33-target-amid-fiber-strategy-93CH-4963746",
   "https://www.investing.com/news/stock-market-news/bridgepoint-bain-bid-for-uk-wealth-manager-w1m--bloomberg-93CH-4963747",
-  "https://www.investing.com/news/stock-market-news/europe-risks-startup-exodus-as-regulation-funding-and-skill-gaps-hamper-ai-adoption-aws-emea-head-says-4963748"
+  "https://www.investing.com/news/stock-market-news/europe-risks-startup-exodus-as-regulation-funding-and-skill-gaps-hamper-ai-adoption-aws-emea-head-says-4963748",
+  "https://www.investing.com/news/stock-market-news/leifheit-lowers-2026-outlook-on-market-decline-93CH-4963750",
+  "https://www.investing.com/news/stock-market-news/us-treasury-sanctions-law-firm-over-iranian-shipping-support-93CH-4963755",
+  "https://www.investing.com/news/stock-market-news/john-malone-says-spacex-may-invest-up-to-10b-in-skydance-4963761",
+  "https://www.investing.com/news/company-news/puig-q3-2026-slides-growth-accelerates-to-56-on-makeup-strength-93CH-4963762",
+  "https://www.investing.com/news/economy-news/russian-oil-tax-price-runs-60-above-budget-assumptions-in-october-93CH-4963763",
+  "https://www.investing.com/news/stock-market-news/reliances-ambani-meets-marco-rubio-in-jamnagar-93CH-4963766",
+  "https://www.cnbc.com/2026/10/21/expanding-ai-trade-is-turning-safety-stocks-into-a-texas-hedge.html"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -2496,7 +2503,12 @@
    "link": "https://www.marketwatch.com/story/medicare-is-a-bargain-what-america-cant-afford-is-private-health-insurance-8a834023?mod=mw_rss_topstories",
    "source": "MarketWatch",
    "tag": "#StockMarket",
-   "time": 1792600440
+   "time": 1792600440,
+   "uz": {
+    "title": "Medicare — bu arzon yechim. Amerika ko‘tara olmaydigan narsa bu xususiy tibbiy sug‘urta.",
+    "summary": "Xususiy sug‘urta xuddi shunday yoki undan ham yomonroq natijalar uchun qariyb qimmatroq turadi.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Meta and Tesla bulls get confidence boost after SpaceX earnings",
@@ -2504,7 +2516,12 @@
    "link": "https://www.cnbc.com/2026/10/21/meta-tesla-options-earnings.html",
    "source": "CNBC",
    "tag": "#Options",
-   "time": 1792600548
+   "time": 1792600548,
+   "uz": {
+    "title": "SpaceX moliyaviy hisobotidan so‘ng Meta va Tesla aksiyalari o‘sishini kutayotgan investorlar ishonchi ortdi",
+    "summary": "Moliyaviy hisobotdan keyin SpaceX aksiyalarining keskin o‘sishi chorshanba kuni tushdan keyin o‘z hisobotlarini e'lon qilishi kutilayotgan Meta va Tesla aksiyalari o‘sishiga umid bermoqda.",
+    "by": "gemini"
+   }
   },
   {
    "title": "Stocks making the biggest moves midday: SpaceX, Meta Platforms, Super Micro Computer, Roivant Sciences & more",
@@ -2512,7 +2529,12 @@
    "link": "https://www.cnbc.com/2026/10/21/stocks-making-the-biggest-moves-midday-spcx-meta-smci-roiv.html",
    "source": "CNBC",
    "tag": "#MarketInsider",
-   "time": 1792601322
+   "time": 1792601322,
+   "uz": {
+    "title": "Kunduzgi savdolarda eng keskin o‘zgarishlarga uchrayotgan aksiyalar: SpaceX, Meta Platforms, Super Micro Computer, Roivant Sciences va boshqalar",
+    "summary": "Bu yerda kunduzgi savdolarda asosiy yangiliklarni keltirayotgan ayrim kompaniyalar keltirilgan.",
+    "by": "gemini"
+   }
   },
   {
    "title": "New Mexico AG lawsuit accuses Epstein's attorney and accountant of facilitating sex trafficking",
@@ -2520,7 +2542,12 @@
    "link": "https://www.cnbc.com/2026/10/21/epstein-new-mexico-lawsuit-sex-trafficking.html",
    "source": "CNBC",
    "tag": "#Markets",
-   "time": 1792601800
+   "time": 1792601800,
+   "uz": {
+    "title": "Nyu-Meksiko Bosh prokurori Epstein'ning advokati va buxgalterini odam savdosiga ko‘maklashganlikda ayblab sudga murojaat qildi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "CME Group earnings analysis: questions answered and next catalysts",
@@ -2528,7 +2555,12 @@
    "link": "https://www.investing.com/news/stock-market-news/cme-group-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963718",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792600499
+   "time": 1792600499,
+   "uz": {
+    "title": "CME Group moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Teledyne Technologies earnings analysis: questions answered and next catalysts",
@@ -2536,7 +2568,12 @@
    "link": "https://www.investing.com/news/stock-market-news/teledyne-technologies-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963719",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792600545
+   "time": 1792600545,
+   "uz": {
+    "title": "Teledyne Technologies moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Sea Ltd stock hits 52-week low at 77.0 USD",
@@ -2544,7 +2581,12 @@
    "link": "https://www.investing.com/news/company-news/sea-ltd-stock-hits-52week-low-at-770-usd-93CH-4963720",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792600549
+   "time": 1792600549,
+   "uz": {
+    "title": "Sea Ltd aksiyasi 77.0 USD darajasida so‘nggi 52 haftadagi eng past ko‘rsatkichga tushdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Fnac Darty 9M 2026 slides: margins expand as Europe drives growth",
@@ -2552,7 +2594,12 @@
    "link": "https://www.investing.com/news/company-news/fnac-darty-9m-2026-slides-margins-expand-as-europe-drives-growth-93CH-4963722",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792600624
+   "time": 1792600624,
+   "uz": {
+    "title": "Fnac Darty 9M 2026 taqdimoti: Yevropa o‘sishni rag‘batlantirar ekan, marjalar kengaymoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Zebra Technologies stock hits 52-week high at $390.85",
@@ -2560,7 +2607,12 @@
    "link": "https://www.investing.com/news/company-news/zebra-technologies-stock-hits-52week-high-at-39085-93CH-4963723",
    "source": "Investing.com",
    "tag": "#Companies",
-   "time": 1792600864
+   "time": 1792600864,
+   "uz": {
+    "title": "Zebra Technologies aksiyasi $390.85 darajasida so‘nggi 52 haftadagi eng yuqori ko‘rsatkichga yetdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Thermo Fisher earnings analysis: questions answered and next catalysts",
@@ -2568,7 +2620,12 @@
    "link": "https://www.investing.com/news/stock-market-news/thermo-fisher-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963729",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601069
+   "time": 1792601069,
+   "uz": {
+    "title": "Thermo Fisher moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Intuitive Surgical earnings analysis: questions answered and next catalysts",
@@ -2576,7 +2633,12 @@
    "link": "https://www.investing.com/news/stock-market-news/intuitive-surgical-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963730",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601096
+   "time": 1792601096,
+   "uz": {
+    "title": "Intuitive Surgical moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Goldman Sachs reiterates Nvidia stock rating on AI deployment outlook",
@@ -2584,7 +2646,12 @@
    "link": "https://www.investing.com/news/analyst-ratings/goldman-sachs-reiterates-nvidia-stock-rating-on-ai-deployment-outlook-93CH-4963731",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792601107
+   "time": 1792601107,
+   "uz": {
+    "title": "Goldman Sachs sun'iy intellektni joriy etish istiqbollari fonida Nvidia aksiyasi reytingini o‘zgarishsiz qoldirdi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "NextEra Energy earnings analysis: questions answered and next catalysts",
@@ -2592,7 +2659,12 @@
    "link": "https://www.investing.com/news/stock-market-news/nextera-energy-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963735",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601112
+   "time": 1792601112,
+   "uz": {
+    "title": "NextEra Energy moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Capital One earnings analysis: questions answered and next catalysts",
@@ -2600,7 +2672,12 @@
    "link": "https://www.investing.com/news/stock-market-news/capital-one-earnings-analysis-questions-answered-and-next-catalysts-93CH-4963736",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601143
+   "time": 1792601143,
+   "uz": {
+    "title": "Capital One moliyaviy hisoboti tahlili: javob topilgan savollar va keyingi katalizatorlar",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "SpaceX options activity: calls dominate as volume hits 2.17M contracts",
@@ -2608,7 +2685,12 @@
    "link": "https://www.investing.com/news/stock-market-news/spacex-options-activity-calls-dominate-as-volume-hits-217m-contracts-93CH-4963744",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601499
+   "time": 1792601499,
+   "uz": {
+    "title": "SpaceX optsionlari faolligi: savdo hajmi 2.17 mln shartnomaga yetgan bir paytda, call optsionlari ustunlik qilmoqda",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Raymond James reiterates Strong Buy on AT&T stock, $33 target amid fiber strategy",
@@ -2616,7 +2698,12 @@
    "link": "https://www.investing.com/news/analyst-ratings/raymond-james-reiterates-strong-buy-on-att-stock-33-target-amid-fiber-strategy-93CH-4963746",
    "source": "Investing.com",
    "tag": "#AnalystRatings",
-   "time": 1792601580
+   "time": 1792601580,
+   "uz": {
+    "title": "Raymond James optik tolali tarmoq strategiyasi fonida AT&T aksiyasiga \"Kuchli sotib olish\" tavsiyasini saqlab qoldi va maqsadli narxni $33 qilib belgiladi",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Bridgepoint, Bain bid for UK wealth manager W1M - Bloomberg",
@@ -2624,7 +2711,12 @@
    "link": "https://www.investing.com/news/stock-market-news/bridgepoint-bain-bid-for-uk-wealth-manager-w1m--bloomberg-93CH-4963747",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601590
+   "time": 1792601590,
+   "uz": {
+    "title": "Bridgepoint va Bain Buyuk Britaniyaning W1M boylikni boshqarish kompaniyasini sotib olish uchun taklif kiritdi - Bloomberg",
+    "summary": "",
+    "by": "gemini"
+   }
   },
   {
    "title": "Europe risks startup exodus as regulation, funding and skill gaps hamper AI adoption, AWS EMEA head says",
@@ -2632,7 +2724,78 @@
    "link": "https://www.investing.com/news/stock-market-news/europe-risks-startup-exodus-as-regulation-funding-and-skill-gaps-hamper-ai-adoption-aws-emea-head-says-4963748",
    "source": "Investing.com",
    "tag": "#StockMarket",
-   "time": 1792601670
+   "time": 1792601670,
+   "uz": {
+    "title": "Regulyatsiyalar, moliyalashtirish va malaka yetishmovchiligi sun'iy intellektni o‘zlashtirishga to‘sqinlik qilayotgani sababli Yevropa startaplar chiqib ketishi xavfi bilan yuz-xurmo, dedi AWS EMEA rahbari",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "Leifheit lowers 2026 outlook on market decline",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/leifheit-lowers-2026-outlook-on-market-decline-93CH-4963750",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792601975,
+   "uz": {
+    "title": "Leifheit bozor pasayishi fonida 2026 yilgi prognozlarini pasaytirdi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "US Treasury sanctions law firm over Iranian shipping support",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/us-treasury-sanctions-law-firm-over-iranian-shipping-support-93CH-4963755",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792602135,
+   "uz": {
+    "title": "AQSh Moliya vazirligi Eron kema qatnovini qo‘llab-quvvatlagani uchun yuridik firmaga sanksiya kiritdi",
+    "summary": "",
+    "by": "gemini"
+   }
+  },
+  {
+   "title": "John Malone says SpaceX may invest up to $10b in Skydance",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/john-malone-says-spacex-may-invest-up-to-10b-in-skydance-4963761",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792602422
+  },
+  {
+   "title": "Puig Q3 2026 slides: growth accelerates to 5.6% on makeup strength",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/puig-q3-2026-slides-growth-accelerates-to-56-on-makeup-strength-93CH-4963762",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792602461
+  },
+  {
+   "title": "Russian oil tax price runs 60% above budget assumptions in October",
+   "summary": "",
+   "link": "https://www.investing.com/news/economy-news/russian-oil-tax-price-runs-60-above-budget-assumptions-in-october-93CH-4963763",
+   "source": "Investing.com",
+   "tag": "#Macro",
+   "time": 1792602542
+  },
+  {
+   "title": "Reliance’s Ambani meets Marco Rubio in Jamnagar",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/reliances-ambani-meets-marco-rubio-in-jamnagar-93CH-4963766",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792602780
+  },
+  {
+   "title": "Expanding AI trade is turning safety stocks into a 'Texas hedge'",
+   "summary": "The growing AI trade is infiltrating traditionally safe sectors like utilities, making hedging more difficult.",
+   "link": "https://www.cnbc.com/2026/10/21/expanding-ai-trade-is-turning-safety-stocks-into-a-texas-hedge.html",
+   "source": "CNBC",
+   "tag": "#Options",
+   "time": 1792602854
   }
  ]
 }
