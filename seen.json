@@ -813,7 +813,30 @@
   "https://www.investing.com/news/earnings/lockheed-martin-earnings-up-next-can-munitions-surge-deliver-93CH-4963619",
   "https://www.investing.com/news/earnings/nebius-earnings-in-focus-can-ai-cloud-growth-offset-wider-losses-93CH-4963620",
   "https://www.investing.com/news/stock-market-news/morocco-stocks-higher-at-close-of-trade-moroccan-all-shares-up-005-4963621",
-  "https://www.investing.com/news/earnings/kinder-morgan-set-to-report-earnings-amid-data-center-bet-93CH-4963625"
+  "https://www.investing.com/news/earnings/kinder-morgan-set-to-report-earnings-amid-data-center-bet-93CH-4963625",
+  "https://www.ft.com/content/09f56730-4702-446d-9986-f7c93ffe6bf0?syn-25a6b1a6=1",
+  "https://www.investing.com/news/earnings/blackstone-earnings-on-deck-as-performance-fees-face-headwinds-93CH-4963626",
+  "https://www.investing.com/news/earnings/norfolk-southern-in-focus-earnings-test-amid-merger-clouds-93CH-4963627",
+  "https://www.investing.com/news/company-news/molecule-group-grants-options-to-chair-susan-clement-davies-93CH-4963628",
+  "https://www.investing.com/news/earnings/csx-earnings-up-next-can-railroad-sustain-margin-momentum-93CH-4963629",
+  "https://www.investing.com/news/earnings/union-pacific-faces-earnings-test-as-merger-review-looms-93CH-4963633",
+  "https://www.investing.com/news/earnings/ibm-earnings-on-deck-can-software-deals-prove-q2-miss-was-timing-93CH-4963636",
+  "https://www.cnbc.com/2026/10/21/sports-betting-young-investors-compounding.html",
+  "https://www.investing.com/news/stock-market-news/intel-advances-arizona-ohio-factory-projects-as-chip-demand-outlook-improves-4963637",
+  "https://www.cnbc.com/2026/10/21/ebay-layoffs-workforce-cuts.html",
+  "https://www.investing.com/news/stock-market-news/factboxwebsites-taken-offline-over-php-risks-4963631",
+  "https://www.investing.com/news/company-news/winnebago-q4-fy26-slides-cash-flow-surges-despite-revenue-decline-93CH-4963643",
+  "https://www.marketwatch.com/story/ai-stocks-are-probably-in-a-bubble-but-might-be-worth-holding-onto-says-citadels-ken-griffin-87f535ce?mod=mw_rss_topstories",
+  "https://www.cnbc.com/investingclub/2026/10/21/salesforce-goes-back-to-the-ma-well-to-fortify-a-weaker-business-why-its-a-smart-move.html",
+  "https://www.investing.com/news/company-news/old-national-q3-2026-slides-record-profit-efficiency-amid-revenue-miss-93CH-4963645",
+  "https://www.investing.com/news/stock-market-news/denmark-stocks-higher-at-close-of-trade-omx-copenhagen-20-up-158-4963646",
+  "https://www.investing.com/news/company-news/mountview-estates-schedules-general-meeting-for-november-16-93CH-4963647",
+  "https://www.investing.com/news/economy-news/kalshi-could-be-headed-for-supreme-court-showdown-ceo-says-4963639",
+  "https://www.investing.com/news/company-news/cintas-stock-hits-52week-high-at-21921-usd-93CH-4963649",
+  "https://www.investing.com/news/company-news/tufton-assets-shareholders-approve-all-resolutions-at-agm-93CH-4963650",
+  "https://www.investing.com/news/cryptocurrency-news/eos-climbs-10-in-bullish-trade-4963651",
+  "https://www.investing.com/news/stock-market-news/poland-stocks-higher-at-close-of-trade-wig30-up-154-4963652",
+  "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html"
  ],
  "feeds": [
   "https://www.cnbc.com/id/20910258/device/rss/rss.html",
@@ -1358,6 +1381,190 @@
    "source": "Investing.com",
    "tag": "#Earnings",
    "time": 1792595446
+  },
+  {
+   "title": "Who’s paying for the AI build-out? Probably you",
+   "summary": "Every big pool of capital, in every corner of the developed world, is funding data centres",
+   "link": "https://www.ft.com/content/09f56730-4702-446d-9986-f7c93ffe6bf0?syn-25a6b1a6=1",
+   "source": "Financial Times",
+   "tag": "#Markets",
+   "time": 1792594825
+  },
+  {
+   "title": "Blackstone earnings on deck as performance fees face headwinds",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/blackstone-earnings-on-deck-as-performance-fees-face-headwinds-93CH-4963626",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792595501
+  },
+  {
+   "title": "Norfolk Southern in focus: Earnings test amid merger clouds",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/norfolk-southern-in-focus-earnings-test-amid-merger-clouds-93CH-4963627",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792595554
+  },
+  {
+   "title": "Molecule Group grants options to chair Susan Clement Davies",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/molecule-group-grants-options-to-chair-susan-clement-davies-93CH-4963628",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792595563
+  },
+  {
+   "title": "CSX earnings up next: Can railroad sustain margin momentum?",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/csx-earnings-up-next-can-railroad-sustain-margin-momentum-93CH-4963629",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792595608
+  },
+  {
+   "title": "Union Pacific faces earnings test as merger review looms",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/union-pacific-faces-earnings-test-as-merger-review-looms-93CH-4963633",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792595662
+  },
+  {
+   "title": "IBM earnings on deck: Can software deals prove Q2 miss was timing?",
+   "summary": "",
+   "link": "https://www.investing.com/news/earnings/ibm-earnings-on-deck-can-software-deals-prove-q2-miss-was-timing-93CH-4963636",
+   "source": "Investing.com",
+   "tag": "#Earnings",
+   "time": 1792595716
+  },
+  {
+   "title": "A $50 sports bet costs a young investor hundreds later. Here's how",
+   "summary": "Studies show gambling is eating away at people's savings and investing funds, especially among younger generations.",
+   "link": "https://www.cnbc.com/2026/10/21/sports-betting-young-investors-compounding.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792595780
+  },
+  {
+   "title": "Intel advances Arizona, Ohio factory projects as chip demand outlook improves",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/intel-advances-arizona-ohio-factory-projects-as-chip-demand-outlook-improves-4963637",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792595814
+  },
+  {
+   "title": "EBay to lay off 9% of workforce in its second round of job cuts this year",
+   "summary": "EBay will lay off 9% of its workforce, or about 1,000 employees, as it works to focus on its \"top strategic priorities.\"",
+   "link": "https://www.cnbc.com/2026/10/21/ebay-layoffs-workforce-cuts.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792595823
+  },
+  {
+   "title": "Factbox-Websites taken offline over PHP risks",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/factboxwebsites-taken-offline-over-php-risks-4963631",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792595923
+  },
+  {
+   "title": "Winnebago Q4 FY26 slides: cash flow surges despite revenue decline",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/winnebago-q4-fy26-slides-cash-flow-surges-despite-revenue-decline-93CH-4963643",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792596292
+  },
+  {
+   "title": "AI stocks are probably in a bubble — but might be worth holding on to, says Citadel’s Ken Griffin",
+   "summary": "Investors are for sure facing “bubbles,” but Ken Griffin isn’t telling investors to dump those stocks.",
+   "link": "https://www.marketwatch.com/story/ai-stocks-are-probably-in-a-bubble-but-might-be-worth-holding-onto-says-citadels-ken-griffin-87f535ce?mod=mw_rss_topstories",
+   "source": "MarketWatch",
+   "tag": "#StockMarket",
+   "time": 1792596420
+  },
+  {
+   "title": "Salesforce goes back to the M&A well to fortify a weaker business. Why it's a smart move",
+   "summary": "The enterprise software giant's planned acquisition of Braze will beef up its marketing business and avoids diluting shareholders in the process.",
+   "link": "https://www.cnbc.com/investingclub/2026/10/21/salesforce-goes-back-to-the-ma-well-to-fortify-a-weaker-business-why-its-a-smart-move.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792596423
+  },
+  {
+   "title": "Old National Q3 2026 slides: record profit, efficiency amid revenue miss",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/old-national-q3-2026-slides-record-profit-efficiency-amid-revenue-miss-93CH-4963645",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792596427
+  },
+  {
+   "title": "Denmark stocks higher at close of trade; OMX Copenhagen 20 up 1.58%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/denmark-stocks-higher-at-close-of-trade-omx-copenhagen-20-up-158-4963646",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792596604
+  },
+  {
+   "title": "Mountview Estates schedules general meeting for November 16",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/mountview-estates-schedules-general-meeting-for-november-16-93CH-4963647",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792596641
+  },
+  {
+   "title": "Kalshi could be headed for Supreme Court showdown, CEO says",
+   "summary": "",
+   "link": "https://www.investing.com/news/economy-news/kalshi-could-be-headed-for-supreme-court-showdown-ceo-says-4963639",
+   "source": "Investing.com",
+   "tag": "#Macro",
+   "time": 1792596670
+  },
+  {
+   "title": "Cintas stock hits 52-week high at 219.21 USD",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/cintas-stock-hits-52week-high-at-21921-usd-93CH-4963649",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792596817
+  },
+  {
+   "title": "Tufton Assets shareholders approve all resolutions at AGM",
+   "summary": "",
+   "link": "https://www.investing.com/news/company-news/tufton-assets-shareholders-approve-all-resolutions-at-agm-93CH-4963650",
+   "source": "Investing.com",
+   "tag": "#Companies",
+   "time": 1792596879
+  },
+  {
+   "title": "EOS Climbs 10% In Bullish Trade",
+   "summary": "",
+   "link": "https://www.investing.com/news/cryptocurrency-news/eos-climbs-10-in-bullish-trade-4963651",
+   "source": "Investing.com",
+   "tag": "#Crypto",
+   "time": 1792596900
+  },
+  {
+   "title": "Poland stocks higher at close of trade; WIG30 up 1.54%",
+   "summary": "",
+   "link": "https://www.investing.com/news/stock-market-news/poland-stocks-higher-at-close-of-trade-wig30-up-154-4963652",
+   "source": "Investing.com",
+   "tag": "#StockMarket",
+   "time": 1792596903
+  },
+  {
+   "title": "How Ukraine’s drone strikes on Russia crippled the world’s second largest diesel supplier",
+   "summary": "President Donald Trump has blamed Ukraine for surging diesel prices that are hurting Republicans' election chances with the midterms just two weeks away.",
+   "link": "https://www.cnbc.com/2026/10/21/ukraine-russia-drone-diesel-refinery-trump-putin-zelenskyy.html",
+   "source": "CNBC",
+   "tag": "#Markets",
+   "time": 1792596953
   }
  ]
 }
