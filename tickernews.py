@@ -11,6 +11,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -26,6 +27,7 @@ import yfinance as yf
 # ---------------------------------------------------------------------------
 
 MAX_NEWS = 10                 # news per answer
+PER_SITE = 4                  # at most this many from one site, unless others have nothing
 DAYS = 7                      # how far back to look
 SITES = {                     # domain -> name shown in the answer
     "cnbc.com": "CNBC",
@@ -131,7 +133,7 @@ def google_news(symbol, name):
         if title.endswith(suffix):
             title = title[: -len(suffix)]
         t = e.get("published_parsed")
-        items.append({"title": title.strip(), "link": e.get("link"), "site": site,
+        items.append({"title": clean_title(title), "link": e.get("link"), "site": site,
                       "time": timegm(t) if t else None})
     print(f"Google News: {len(feed.entries)} results, {len(items)} from our sites")
     return items
@@ -159,9 +161,42 @@ def yahoo_news(symbol):
                 ts = int(datetime.fromisoformat(c["pubDate"].replace("Z", "+00:00")).timestamp())
             except ValueError:
                 ts = None
-        items.append({"title": (c.get("title") or "").strip(), "link": link, "site": site, "time": ts})
+        items.append({"title": clean_title(c.get("title") or ""), "link": link, "site": site, "time": ts})
     print(f"Yahoo news: {len(news)} results, {len(items)} from our sites")
     return items
+
+
+SITE_WORDS = r"(investing\.com|cnbc|marketwatch|financial times|ft\.com)"
+
+
+def clean_title(title):
+    """Removes the site name that some sites add to their headlines."""
+    t = re.sub(r"\s*[-—–|:]?\s*(by\s+)?" + SITE_WORDS + r"(['’]s)?(\s+(take|analysis|talqinida|tahlili|tahliliga ko['‘’]ra|ma['‘’]lumotlariga ko['‘’]ra))?\s*$",
+               "", title.strip(), flags=re.I)
+    t = re.sub(r"^" + SITE_WORDS + r"\s*[-—–|:]\s*", "", t, flags=re.I)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+STOP = {"a", "an", "the", "is", "are", "was", "were", "be", "to", "of", "in", "on", "for", "and", "or",
+        "its", "it", "this", "that", "with", "as", "at", "by", "from", "s", "according", "take", "says"}
+SYNONYMS = {"shares": "stock", "stocks": "stock", "share": "stock", "equity": "stock",
+            "rises": "rise", "rising": "rise", "soars": "soar", "soaring": "soar", "jumps": "jump",
+            "falls": "fall", "falling": "fall", "drops": "drop", "dropping": "drop"}
+
+
+def norm(title):
+    """The headline as a set of its meaningful words (site names and filler words removed)."""
+    t = unicodedata.normalize("NFKD", title.lower())
+    t = re.sub(SITE_WORDS, " ", t)
+    words = re.sub(r"[^a-z0-9]+", " ", t).split()
+    return frozenset(SYNONYMS.get(w, w) for w in words if w not in STOP)
+
+
+def same_story(a, b):
+    """Two headlines are one story when 80% of their meaningful words are the same."""
+    if not a or not b:
+        return a == b
+    return len(a & b) / len(a | b) >= 0.8
 
 
 def relevant(item, symbol, name):
@@ -178,19 +213,32 @@ def find_news(symbol, name):
             found += source()
         except Exception as exc:
             print(f"Source error: {exc}")
-    picked, seen = [], set()
+
+    # newest first, without old, unrelated or repeated stories
+    unique = []
     for it in sorted(found, key=lambda x: x.get("time") or 0, reverse=True):
         if not it.get("title") or not it.get("link") or not relevant(it, symbol, name):
             continue
         if it.get("time") and now - it["time"] > DAYS * 86400:
             continue
-        key = re.sub(r"[^a-z0-9]", "", it["title"].lower())[:80]
-        if key in seen:
+        key = norm(it["title"])
+        if any(same_story(key, u["key"]) for u in unique):
             continue
-        seen.add(key)
-        picked.append(it)
+        unique.append({**it, "key": key})
+
+    # mix the sites: at most PER_SITE from one site first, then fill up with the rest
+    picked, per_site = [], {}
+    for it in unique:
+        if per_site.get(it["site"], 0) < PER_SITE:
+            picked.append(it)
+            per_site[it["site"]] = per_site.get(it["site"], 0) + 1
+    for it in unique:
         if len(picked) >= MAX_NEWS:
             break
+        if it not in picked:
+            picked.append(it)
+    picked = sorted(picked[:MAX_NEWS], key=lambda x: x.get("time") or 0, reverse=True)
+    print(f"Found {len(found)}, unique {len(unique)}, sent {len(picked)}: {per_site}")
     return picked
 
 
@@ -201,7 +249,7 @@ def gemini_titles(titles):
         return {}
     prompt = ("You are a professional financial news translator. Translate each headline into Uzbek "
               "(Latin script), natural and clear. Keep tickers, company and people names, numbers and "
-              "currencies unchanged. Return ONLY a JSON array: [{\"id\": <id>, \"title\": \"...\"}].\n\n"
+              "currencies unchanged. Leave out website names such as Investing.com or CNBC. Return ONLY a JSON array: [{\"id\": <id>, \"title\": \"...\"}].\n\n"
               + json.dumps([{"id": i, "title": t} for i, t in enumerate(titles)], ensure_ascii=False))
     payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}],
                           "generationConfig": {"temperature": 0.2,
@@ -254,16 +302,22 @@ def translate(items):
 
 # ----------------------------- Message --------------------------------------
 
+def no_autolink(text):
+    """Telegram turns words like Investing.com into links; a word joiner after the dot stops it."""
+    return re.sub(r"\b([A-Za-z0-9-]+)\.(com|net|org|io|co)\b", "\\1.\u2060\\2", text)
+
+
 def format_answer(symbol, name, items):
     tz = ZoneInfo(LOCAL_TZ)
     lines = [f"📰 <b>${html.escape(symbol)} — {html.escape(name)}</b>",
-             f"<i>Oxirgi {DAYS} kundagi yangiliklar · {', '.join(SITES.values())}</i>", ""]
+             f"<i>Oxirgi {DAYS} kundagi yangiliklar · {no_autolink(', '.join(SITES.values()))}</i>", ""]
     for i, it in enumerate(items, 1):
         when = datetime.fromtimestamp(it["time"], tz).strftime("%d.%m, %H:%M") if it.get("time") else ""
         meta = " · ".join(x for x in (it["site"], when) if x)
         link = html.escape(it["link"], quote=True)
-        lines.append(f"{i}. <b>{html.escape(it.get('uz') or it['title'])}</b>")
-        lines.append(f"    <i>{html.escape(meta)}</i> · <a href=\"{link}\">Manba</a>")
+        title = clean_title(it.get("uz") or it["title"])
+        lines.append(f"{i}. <b>{no_autolink(html.escape(title))}</b>")
+        lines.append(f"    <i>{no_autolink(html.escape(meta))}</i> · <a href=\"{link}\">Manba</a>")
         lines.append("")
     return "\n".join(lines).strip()
 
