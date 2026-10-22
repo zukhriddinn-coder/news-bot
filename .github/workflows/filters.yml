@@ -43,7 +43,7 @@ jobs:
       - name: Analyse and reply
         run: python filters.py
         env:
-          VALUE_BOT_TOKEN: ${{ secrets.VALUE_BOT_TOKEN }}
+          FILTER_BOT_TOKEN: ${{ secrets.FILTER_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MODE: ${{ inputs.mode }}
           TICKER: ${{ inputs.ticker }}
