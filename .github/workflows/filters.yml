@@ -1,0 +1,53 @@
+name: TOP 10 filter request
+
+on:
+  workflow_dispatch:            # started by Google Apps Script for "Value: $TSLA", "Growth: $X", "Penny: $X"
+    inputs:
+      mode:
+        description: "penny, growth or value"
+        required: true
+      ticker:
+        description: "Ticker, e.g. TSLA"
+        required: true
+      chat_id:
+        required: true
+      thread_id:
+        required: false
+        default: ""
+      reply_to:
+        required: false
+        default: ""
+      ack_id:
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  filters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          (sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter) > /dev/null 2>&1 || true
+          pip install yfinance matplotlib feedparser
+
+      - name: Analyse and reply
+        run: python filters.py
+        env:
+          VALUE_BOT_TOKEN: ${{ secrets.VALUE_BOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MODE: ${{ inputs.mode }}
+          TICKER: ${{ inputs.ticker }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          REPLY_TO: ${{ inputs.reply_to }}
+          ACK_ID: ${{ inputs.ack_id }}
