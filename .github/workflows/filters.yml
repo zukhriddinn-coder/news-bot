@@ -34,11 +34,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip                                   # reuse downloaded packages (faster start)
+          cache-dependency-path: .github/workflows/filters.yml
 
       - name: Install
-        run: |
-          (sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter) > /dev/null 2>&1 || true
-          pip install yfinance matplotlib feedparser
+        run: pip install yfinance matplotlib feedparser
 
       - name: Analyse and reply
         run: python filters.py
