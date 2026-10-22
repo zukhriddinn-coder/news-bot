@@ -273,7 +273,14 @@ THEME = {
 
 
 def _font():
+    """Inter from the repo's fonts/ folder (fast), else an installed Inter, else DejaVu Sans."""
+    import glob
     from matplotlib import font_manager
+    for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "*.[ot]tf")):
+        try:
+            font_manager.fontManager.addfont(path)
+        except Exception as exc:
+            print(f"Font {path}: {exc}")
     names = {f.name for f in font_manager.fontManager.ttflist}
     return "Inter" if "Inter" in names else "DejaVu Sans"
 

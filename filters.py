@@ -32,6 +32,8 @@ import yfinance as yf
 GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest",
                  "gemini-2.5-flash-lite"]
 USE_GOOGLE_SEARCH = True       # let Gemini search Google too (falls back without it)
+GEMINI_BUDGET = 210            # seconds in total for Gemini (all models and retries)
+GEMINI_TIMEOUT = 150           # seconds to wait for one Gemini answer
 VALUE_COUNT_NEUTRAL = False    # True = Value verdict counts 🟡 (ehtiyotkor) together with 🟢
 DISCLAIMER = "⚠️ Bu investitsion maslahat emas. Ma'lumotlar: Yahoo Finance, Google News, StockTwits."
 
@@ -541,39 +543,43 @@ RESULTS_JSON: {{"filters": [{{"id": "F3", "status": "pass|neutral|fail", "value"
 """
     base = {"contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.2}}
-    variants = ([{**base, "tools": [{"google_search": {}}]}] if USE_GOOGLE_SEARCH else []) + [base]
-    for payload in variants:
-        searched = "tools" in payload
-        body = json.dumps(payload).encode("utf-8")
-        for model in GEMINI_MODELS:
-            for attempt in range(2):
-                req = urllib.request.Request(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                    data=body, headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY})
-                try:
-                    with urllib.request.urlopen(req, timeout=240) as resp:
-                        res = json.load(resp)
-                    parts = res["candidates"][0]["content"]["parts"]
-                    text = "\n".join(p.get("text", "") for p in parts)
-                    parsed = parse_json(text)
-                    if parsed:
-                        print(f"Gemini {model} (search: {searched}) ok")
-                        return parsed, searched
-                    print(f"Gemini {model}: no JSON in answer")
-                    break
-                except urllib.error.HTTPError as e:
-                    msg = e.read().decode("utf-8", "replace")[:300]
-                    print(f"Gemini {model} (search: {searched}): HTTP {e.code} {msg}")
-                    if e.code in (401, 403) and "API key" in msg:
-                        return None, False
-                    if e.code in (400, 403) and searched:
-                        break                          # search tool not allowed: try next model / no search
-                    if e.code == 404 or (e.code == 429 and "PerDay" in msg):
-                        break
-                    time.sleep(15 * (attempt + 1))
-                except Exception as exc:
-                    print(f"Gemini {model}: {exc}")
-                    time.sleep(5)
+    deadline = time.time() + GEMINI_BUDGET
+    # (model, use search): search is tried once with the first model only; if it is not
+    # allowed or busy, the plain models follow right away (they already have the evidence)
+    plan = ([(GEMINI_MODELS[0], True)] if USE_GOOGLE_SEARCH else []) + [(m, False) for m in GEMINI_MODELS]
+    dead = set()
+    for round_no in range(2):
+        for model, searched in plan if round_no == 0 else [(m, False) for m in GEMINI_MODELS]:
+            if model in dead and not searched:
+                continue
+            left = deadline - time.time()
+            if left < 15:
+                return None, False
+            payload = {**base, "tools": [{"google_search": {}}]} if searched else base
+            req = urllib.request.Request(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY})
+            started = time.time()
+            try:
+                with urllib.request.urlopen(req, timeout=min(GEMINI_TIMEOUT, left)) as resp:
+                    res = json.load(resp)
+                parts = res["candidates"][0]["content"]["parts"]
+                parsed = parse_json("\n".join(p.get("text", "") for p in parts))
+                if parsed:
+                    print(f"Gemini {model} (search: {searched}) ok in {time.time() - started:.0f}s")
+                    return parsed, searched
+                print(f"Gemini {model}: no JSON in answer")
+            except urllib.error.HTTPError as e:
+                msg = e.read().decode("utf-8", "replace")[:300]
+                print(f"Gemini {model} (search: {searched}): HTTP {e.code} after {time.time() - started:.0f}s {msg}")
+                if e.code in (401, 403) and "API key" in msg:
+                    return None, False
+                if not searched and (e.code == 404 or (e.code == 429 and "PerDay" in msg)):
+                    dead.add(model)
+            except Exception as exc:
+                print(f"Gemini {model} (search: {searched}): {exc} after {time.time() - started:.0f}s")
+        time.sleep(8)
     return None, False
 
 
@@ -624,7 +630,14 @@ THEME = {"bg": "#0b1220", "panel": "#111a2e", "line": "#1e2a44", "ink": "#e6edf7
 
 
 def _font():
+    """Inter from the repo's fonts/ folder (fast), else an installed Inter, else DejaVu Sans."""
+    import glob
     from matplotlib import font_manager
+    for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "*.[ot]tf")):
+        try:
+            font_manager.fontManager.addfont(path)
+        except Exception as exc:
+            print(f"Font {path}: {exc}")
     names = {f.name for f in font_manager.fontManager.ttflist}
     return "Inter" if "Inter" in names else "DejaVu Sans"
 

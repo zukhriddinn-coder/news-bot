@@ -254,27 +254,26 @@ def gemini_titles(titles):
     payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}],
                           "generationConfig": {"temperature": 0.2,
                                                "responseMimeType": "application/json"}}).encode("utf-8")
+    deadline = time.time() + 75                 # titles are short: do not wait long
     for model in GEMINI_MODELS:
-        for attempt in range(2):
-            req = urllib.request.Request(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                data=payload, headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY})
-            try:
-                with urllib.request.urlopen(req, timeout=90) as resp:
-                    res = json.load(resp)
-                out = json.loads(res["candidates"][0]["content"]["parts"][0]["text"])
-                return {int(o["id"]): str(o["title"]).strip() for o in out if str(o.get("title", "")).strip()}
-            except urllib.error.HTTPError as e:
-                msg = e.read().decode("utf-8", "replace")[:200]
-                print(f"Gemini {model}: HTTP {e.code} {msg}")
-                if e.code in (401, 403) or "API key" in msg:
-                    return {}
-                if e.code == 404 or (e.code == 429 and "PerDay" in msg):
-                    break
-                time.sleep(15 * (attempt + 1))
-            except Exception as exc:
-                print(f"Gemini {model}: {exc}")
-                time.sleep(5)
+        left = deadline - time.time()
+        if left < 10:
+            break
+        req = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            data=payload, headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY})
+        try:
+            with urllib.request.urlopen(req, timeout=min(45, left)) as resp:
+                res = json.load(resp)
+            out = json.loads(res["candidates"][0]["content"]["parts"][0]["text"])
+            return {int(o["id"]): str(o["title"]).strip() for o in out if str(o.get("title", "")).strip()}
+        except urllib.error.HTTPError as e:
+            msg = e.read().decode("utf-8", "replace")[:200]
+            print(f"Gemini {model}: HTTP {e.code} {msg}")
+            if e.code in (401, 403) or "API key" in msg:
+                return {}
+        except Exception as exc:
+            print(f"Gemini {model}: {exc}")
     return {}
 
 

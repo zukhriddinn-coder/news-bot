@@ -29,8 +29,8 @@ import yfinance as yf
 
 GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest",
                  "gemini-2.5-flash-lite"]
-GEMINI_RETRIES = 2            # attempts per model
-GEMINI_TIMEOUT = 300          # seconds to wait for one Gemini answer
+GEMINI_BUDGET = 300           # seconds in total for Gemini (all models and retries)
+GEMINI_TIMEOUT = 180          # seconds to wait for one Gemini answer
 MAX_TEXT = 3900               # Telegram allows 4096 characters per message
 
 NASDAQ_CODES = {"NMS", "NGM", "NCM", "NAS"}          # Nasdaq Global Select / Global / Capital
@@ -266,38 +266,45 @@ def build_prompt(exchange, symbol, data):
 
 
 def gemini(prompt):
+    """One try per model; a busy or limited model is skipped at once (each model has its own
+    limit). If all fail and time is left, one more round after a short pause."""
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "tools": [{"code_execution": {}}],
         "generationConfig": {"temperature": 0.3},
     }
     body = json.dumps(payload).encode("utf-8")
+    deadline = time.time() + GEMINI_BUDGET
     last_error = "Gemini javob bermadi"
-    for model in GEMINI_MODELS:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        for attempt in range(GEMINI_RETRIES):
+    dead = set()
+    for round_no in range(2):
+        for model in [m for m in GEMINI_MODELS if m not in dead]:
+            left = deadline - time.time()
+            if left < 20:
+                raise RuntimeError(last_error + " (vaqt tugadi)")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             req = urllib.request.Request(url, data=body, headers={
                 "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY})
+            started = time.time()
             try:
-                with urllib.request.urlopen(req, timeout=GEMINI_TIMEOUT) as resp:
+                with urllib.request.urlopen(req, timeout=min(GEMINI_TIMEOUT, left)) as resp:
                     res = json.load(resp)
                 parts = res["candidates"][0]["content"]["parts"]
                 runs = sum(1 for p in parts if "codeExecutionResult" in p)
-                print(f"Gemini {model}: {len(parts)} parts, Python runs: {runs}")
+                print(f"Gemini {model}: {time.time() - started:.0f}s, {len(parts)} parts, Python runs: {runs}")
                 return parts, model
             except urllib.error.HTTPError as e:
                 msg = e.read().decode("utf-8", "replace")[:300]
-                print(f"Gemini {model}: HTTP {e.code} {msg}")
+                print(f"Gemini {model}: HTTP {e.code} after {time.time() - started:.0f}s {msg}")
                 last_error = f"Gemini HTTP {e.code}"
                 if e.code in (401, 403) or "API key" in msg:
                     raise RuntimeError("Gemini kaliti noto'g'ri (GEMINI_API_KEY)")
                 if e.code == 404 or (e.code == 429 and "PerDay" in msg):
-                    break                                  # try the next model
-                time.sleep(20 * (attempt + 1))
+                    dead.add(model)
             except Exception as exc:
-                print(f"Gemini {model}: {exc}")
+                print(f"Gemini {model}: {exc} after {time.time() - started:.0f}s")
                 last_error = str(exc)
-                time.sleep(10)
+        time.sleep(8)
     raise RuntimeError(last_error)
 
 
@@ -434,7 +441,14 @@ THEME = {
 
 
 def _font():
+    """Inter from the repo's fonts/ folder (fast), else an installed Inter, else DejaVu Sans."""
+    import glob
     from matplotlib import font_manager
+    for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "*.[ot]tf")):
+        try:
+            font_manager.fontManager.addfont(path)
+        except Exception as exc:
+            print(f"Font {path}: {exc}")
     names = {f.name for f in font_manager.fontManager.ttflist}
     return "Inter" if "Inter" in names else "DejaVu Sans"
 
