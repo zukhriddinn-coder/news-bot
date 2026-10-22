@@ -1,0 +1,41 @@
+name: Superinvestors daily update
+
+on:
+  schedule:
+    - cron: "17 5 * * *"      # every day ~10:17 Tashkent (05:17 UTC)
+  workflow_dispatch:          # run by hand: Actions -> Superinvestors daily update -> Run workflow
+
+permissions:
+  contents: write
+
+concurrency:
+  group: superinvestors-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Download 13F filings from SEC
+        run: python superinvestors_build.py
+        env:
+          SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+          OPENFIGI_API_KEY: ${{ secrets.OPENFIGI_API_KEY }}
+
+      - name: Save
+        run: |
+          git config user.name "news-bot"
+          git config user.email "news-bot@users.noreply.github.com"
+          git add superinvestors.json cusip_tickers.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update superinvestors 13F data"
+            git pull --rebase
+            git push
+          fi
