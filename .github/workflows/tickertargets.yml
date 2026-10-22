@@ -1,0 +1,48 @@
+name: Ticker targets request
+
+on:
+  workflow_dispatch:            # started by Google Apps Script when someone writes $TICKER in Targets
+    inputs:
+      ticker:
+        description: "Ticker, e.g. NVDA"
+        required: true
+      chat_id:
+        required: true
+      thread_id:
+        required: false
+        default: ""
+      reply_to:
+        required: false
+        default: ""
+      ack_id:
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  ticker-targets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          (sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter) > /dev/null 2>&1 || true
+          pip install yfinance matplotlib
+
+      - name: Collect targets and reply
+        run: python tickertargets.py
+        env:
+          TARGETS_BOT_TOKEN: ${{ secrets.TARGETS_BOT_TOKEN }}
+          TICKER: ${{ inputs.ticker }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          REPLY_TO: ${{ inputs.reply_to }}
+          ACK_ID: ${{ inputs.ack_id }}
