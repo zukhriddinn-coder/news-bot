@@ -21,17 +21,18 @@ from datetime import datetime, timezone
 # SETTINGS (you can edit these)
 # ---------------------------------------------------------------------------
 
-# person, fund, SEC CIK number, a word that must be in the SEC name (safety check)
+# person, fund, SEC CIK number, a word that must be in the SEC name (safety check).
+# If a fund moved to a new filer, give a list [(cik, word), (cik, word)] - the newest filing wins.
 MANAGERS = [
     ("Warren Buffett", "Berkshire Hathaway", 1067983, "BERKSHIRE"),
-    ("Bill Ackman", "Pershing Square", 1336528, "PERSHING SQUARE"),
+    ("Bill Ackman", "Pershing Square", [(2026053, "PERSHING SQUARE"), (1336528, "PERSHING SQUARE")]),
     ("Michael Burry", "Scion Asset Management", 1649339, "SCION"),
     ("Li Lu", "Himalaya Capital", 1709323, "HIMALAYA"),
     ("Mohnish Pabrai", "Dalal Street", 1549575, "DALAL"),
     ("Stanley Druckenmiller", "Duquesne Family Office", 1536411, "DUQUESNE"),
     ("David Tepper", "Appaloosa", 1656456, "APPALOOSA"),
     ("Seth Klarman", "Baupost Group", 1061768, "BAUPOST"),
-    ("David Einhorn", "Greenlight Capital", 1079114, "GREENLIGHT"),
+    ("David Einhorn", "Greenlight Capital", [(1489933, "DME CAPITAL"), (1079114, "GREENLIGHT")]),
     ("Dan Loeb", "Third Point", 1040273, "THIRD POINT"),
     ("Carl Icahn", "Icahn Capital", 921669, "ICAHN"),
     ("George Soros", "Soros Fund Management", 1029160, "SOROS"),
@@ -204,14 +205,29 @@ def main():
         cusip_map = {}
 
     managers, problems = [], []
-    for person, fund, cik, keyword in MANAGERS:
+    for entry in MANAGERS:
+        person, fund = entry[0], entry[1]
+        candidates = entry[2] if isinstance(entry[2], list) else [(entry[2], entry[3])]
         try:
-            sec_name, quarters = latest_13f(cik, keyword)
+            found, names, errors = {}, {}, []
+            for cik, keyword in candidates:          # a fund can move to a new SEC filer: merge them
+                try:
+                    sec_name, quarters = latest_13f(cik, keyword)
+                except Exception as exc:
+                    errors.append(str(exc))
+                    continue
+                names[cik] = sec_name
+                for q in quarters:
+                    if q["report_date"] not in found or q["filed"] > found[q["report_date"]]["filed"]:
+                        found[q["report_date"]] = {**q, "cik": cik}
+            quarters = sorted(found.values(), key=lambda f: f["report_date"], reverse=True)[:2]
             if not quarters:
-                raise ValueError("no 13F-HR filings")
+                raise ValueError("; ".join(errors) or "no 13F-HR filings")
+            cik = quarters[0]["cik"]
+            sec_name = names.get(cik, "")
             snaps = []
             for q in quarters:
-                holdings = parse_holdings(info_table(cik, q["accession"]), q["report_date"])
+                holdings = parse_holdings(info_table(q["cik"], q["accession"]), q["report_date"])
                 snaps.append({**q, "total_value": sum(h["value"] for h in holdings.values() if h["kind"] == "SH"),
                               "holdings": holdings})
             managers.append({"person": person, "fund": fund, "cik": cik, "sec_name": sec_name,
