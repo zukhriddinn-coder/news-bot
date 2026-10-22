@@ -49,7 +49,7 @@ TOP_FUNDS = re.compile(r"vanguard|blackrock|fidelity|fmr|tiger|state street|t\. 
 
 # ---------------------------------------------------------------------------
 
-BOT_TOKEN = re.sub(r"\s+", "", os.environ.get("VALUE_BOT_TOKEN", ""))
+BOT_TOKEN = re.sub(r"\s+", "", os.environ.get("FILTER_BOT_TOKEN", ""))
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 MODE = os.environ.get("MODE", "").strip().lower()
 TICKER_IN = os.environ.get("TICKER", "").strip()
