@@ -1,0 +1,48 @@
+name: Short interest request
+
+on:
+  workflow_dispatch:            # started by Google Apps Script when someone writes $TICKER in Short interest
+    inputs:
+      ticker:
+        description: "Ticker, e.g. AAPL"
+        required: true
+      chat_id:
+        required: true
+      thread_id:
+        required: false
+        default: ""
+      reply_to:
+        required: false
+        default: ""
+      ack_id:
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  short:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip                                   # reuse downloaded packages (faster start)
+          cache-dependency-path: .github/workflows/short.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib
+
+      - name: Reply
+        run: python short.py
+        env:
+          SHORT_BOT_TOKEN: ${{ secrets.SHORT_BOT_TOKEN }}
+          TICKER: ${{ inputs.ticker }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          REPLY_TO: ${{ inputs.reply_to }}
+          ACK_ID: ${{ inputs.ack_id }}
