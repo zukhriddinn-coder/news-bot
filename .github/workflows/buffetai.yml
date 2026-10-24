@@ -1,0 +1,55 @@
+name: Buffet AI request
+
+on:
+  workflow_dispatch:            # started by Google Apps Script when someone sends a chart in Buffet AI
+    inputs:
+      file_id:
+        description: "Telegram file_id of the chart picture (empty for a text request)"
+        required: false
+        default: ""
+      caption:
+        description: "Caption or text, e.g. $TSLA 4h"
+        required: false
+        default: ""
+      chat_id:
+        required: true
+      thread_id:
+        required: false
+        default: ""
+      reply_to:
+        required: false
+        default: ""
+      ack_id:
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  buffetai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip                                   # reuse downloaded packages (faster start)
+          cache-dependency-path: .github/workflows/buffetai.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib
+
+      - name: Analyse chart and reply
+        run: python buffetai.py
+        env:
+          BUFFET_BOT_TOKEN: ${{ secrets.BUFFET_BOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FILE_ID: ${{ inputs.file_id }}
+          CAPTION: ${{ inputs.caption }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          REPLY_TO: ${{ inputs.reply_to }}
+          ACK_ID: ${{ inputs.ack_id }}
