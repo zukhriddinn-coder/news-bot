@@ -216,6 +216,12 @@ Rules:
 - From the picture you may describe chart patterns (triangle, flag, wedge, channel, double top/bottom,
   head and shoulders, cup and handle, ...), trend lines and drawings the user made.
 - Say clearly when a pattern is only forming and not confirmed. Be honest when the picture is unclear.
+- "extras" holds: "mc" = Monte Carlo replays of the plan (odds TP1 first / stop first / neither within
+  horizon_bars, built from the instrument's own past bars), "history" = how the SAME Buffet AI rule did on
+  past bars, "setups" = scanner setups, "risk" = warnings, "events" = earnings date and last move.
+  Mention the odds honestly in plan_comment (a coin flip is a coin flip; never call it a sure thing), and
+  say that replays are a simulation, not a prediction. If risk has a "block" item (earnings inside the
+  plan), say clearly that the plan is risky because of it.
 - Short sentences. No markdown, no asterisks, no emoji.
 - Each text field: 1-4 sentences.
 
@@ -424,7 +430,7 @@ def r2(x):
     return float(f"{x:.4g}") if abs(x) < 1 else round(float(x), 2 if abs(x) >= 1 else 4)
 
 
-def analyse(df):
+def analyse(df, light=False):
     o, h, l, c, v = (df[k].to_numpy(dtype=float) for k in ("Open", "High", "Low", "Close", "Volume"))
     n = len(c)
     price = c[-1]
@@ -452,6 +458,7 @@ def analyse(df):
 
     div = divergence(c, h, l, rs, highs, lows, n)
     cnd = candles(o, h, l, c, tscore < 0)
+    stp = setups(c, rs)
     r_now = float(rs[-1])
     vol_ratio = float(v[-1] / np.mean(v[-21:-1])) if v[-21:-1].mean() > 0 else None
 
@@ -459,6 +466,7 @@ def analyse(df):
     if div:
         score += (1 if div["side"] == "bullish" else -1) * (2 if div["kind"] == "regular" else 1)
     score += sum(x["score"] for x in cnd)
+    score += 1 if sum(x["score"] for x in stp) > 0 and tscore >= 0 else 0      # scanner setup with the trend
     if r_now >= 70:
         score -= 1
     elif r_now <= 30:
@@ -478,7 +486,8 @@ def analyse(df):
         "ema20": r2(e20[-1]), "ema50": r2(e50[-1]), "ema200": r2(e200[-1]) if n >= 200 else None,
         "rsi": round(r_now, 1), "rsi_state": "overbought (70+)" if r_now >= 70 else "oversold (30-)"
         if r_now <= 30 else "neytral",
-        "trend": trend, "structure": structure, "divergence": div, "candles": cnd,
+        "trend": trend, "structure": structure, "divergence": div, "candles": cnd, "setups": stp,
+        "volume_confirmed": bool(vol_ratio and vol_ratio >= 1.5),
         "volume_vs_20avg": round(vol_ratio, 2) if vol_ratio else None,
         "supports": [{"price": r2(p), "touches": t} for p, t in sup[:3]],
         "resistances": [{"price": r2(p), "touches": t} for p, t in res[:3]],
@@ -537,6 +546,233 @@ def make_plan(bias, price, A, sup, res, l, h, lows, highs):
             "breakout_down": short_plan(down, down + 1.5 * A)}
 
 
+# ----------------------------- Extras (ideas from day-trader-skill) ---------
+# Ideas adapted from github.com/Jakeschincariol/day-trader-skill (MIT, (c) 2026 Jake Schincariol):
+# scanner setups, the Time Machine (Monte Carlo replays + the same rule on past bars), the news /
+# earnings guard, the risk gate and position sizing. Rewritten for Buffet AI's timeframes.
+
+HORIZON = {"1m": 60, "3m": 40, "5m": 78, "15m": 26, "30m": 26, "1h": 35, "2h": 30, "4h": 30,
+           "1D": 20, "1W": 12, "1M": 6}          # bars a plan has to work out (TP1 or stop)
+REPLAYS, SEED = 5000, 19
+COIN_FLIP, STRONG = 0.05, 0.15                    # verdict thresholds (points from break-even)
+HISTORY_BARS = 250                                # past bars the rule is re-run on
+BAR_MINUTES = {"1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240,
+               "1D": 1440, "1W": 10080, "1M": 43200}
+
+
+def setups(c, rs):
+    """Scanner setups on closes (trader-scanner's daily rules)."""
+    out = []
+    n = len(c)
+    ma20 = np.convolve(c, np.ones(20) / 20, mode="valid") if n >= 21 else None
+    if n >= 21 and c[-1] > c[-21:-1].max():
+        out.append(("20 shamlik yopilish cho'qqisi yorib o'tildi", 1))
+    if n >= 16:
+        run = c[-6] / c[-16] - 1
+        box = c[-5:].max() / c[-5:].min() - 1
+        if run > 0.10 and box < 0.05:
+            out.append(("Bull flag: kuchli o'sishdan keyin tor diapazon", 1))
+    if ma20 is not None and len(ma20) >= 2 and c[-2] < ma20[-2] and c[-1] > ma20[-1]:
+        out.append(("20 shamlik o'rtacha (MA20) qayta egallandi", 1))
+    if not np.isnan(rs[-1]) and rs[-1] < 30:
+        out.append(("Oversold: RSI 30 dan past", 0))
+    if n >= 2 and not np.isnan(rs[-2]) and rs[-2] < 30 and c[-1] > c[-2]:
+        out.append(("Oversold bounce: RSI 30 dan pastdan yuqoriga yopildi", 1))
+    return [{"name": a, "score": b} for a, b in out]
+
+
+def bar_pool(df, look=500):
+    """Every bar as (open, high, low, close) over the previous close, from the recent past."""
+    o, h, l, c = (df[k].to_numpy(dtype=float) for k in ("Open", "High", "Low", "Close"))
+    prev = c[:-1]
+    pool = np.stack([o[1:] / prev, h[1:] / prev, l[1:] / prev, c[1:] / prev], axis=1)
+    pool = pool[np.all(np.isfinite(pool), axis=1)]
+    return pool[-look:]
+
+
+def simulate(pool, side, entry, stop, target, bars, replays=REPLAYS, seed=SEED):
+    """Monte Carlo: rebuild the next `bars` bars from the stock's own past bars, `replays` times.
+    Stop is checked before the target inside a bar (conservative)."""
+    rng = np.random.default_rng(seed)
+    long = side == "LONG"
+    risk = (entry - stop) if long else (stop - entry)
+    r_t = ((target - entry) if long else (entry - target)) / risk
+    draws = pool[rng.integers(0, len(pool), size=(replays, bars))]
+    closes = entry * np.cumprod(draws[:, :, 3], axis=1)
+    prev = np.concatenate([np.full((replays, 1), entry), closes[:, :-1]], axis=1)
+    hi, lo = prev * draws[:, :, 1], prev * draws[:, :, 2]
+    hit_stop = lo <= stop if long else hi >= stop
+    hit_tgt = hi >= target if long else lo <= target
+    big = bars + 1
+    first_stop = np.where(hit_stop.any(1), hit_stop.argmax(1), big)
+    first_tgt = np.where(hit_tgt.any(1), hit_tgt.argmax(1), big)
+    stop_first = (first_stop <= first_tgt) & (first_stop < big)
+    tgt_first = (first_tgt < first_stop)
+    neither = ~(stop_first | tgt_first)
+    end = closes[:, -1]
+    r_end = ((end - entry) if long else (entry - end)) / risk
+    R = np.where(tgt_first, r_t, np.where(stop_first, -1.0, r_end))
+    return {"replays": replays, "seed": seed, "bars": bars, "r_target": round(float(r_t), 2),
+            "p_target": round(float(tgt_first.mean()), 4), "p_stop": round(float(stop_first.mean()), 4),
+            "p_neither": round(float(neither.mean()), 4), "avg_R": round(float(R.mean()), 3),
+            "p5": r2(float(np.percentile(end, 5))), "p50": r2(float(np.percentile(end, 50))),
+            "p95": r2(float(np.percentile(end, 95)))}
+
+
+def mc_verdict(p_target, p_stop, r_target):
+    """trader-timemachine's verdict: the target's share of the replays that hit a side, against the
+    share that breaks even at the target's R, 1 / (1 + R)."""
+    if p_target + p_stop <= 0:
+        return "neutral", "Hech bir replay TP1 yoki stop'ga yetmadi: natijani muddat oxiridagi narx hal qiladi"
+    share, even = p_target / (p_target + p_stop), 1 / (1 + r_target)
+    d = share - even
+    if abs(d) < COIN_FLIP:
+        return "neutral", f"Tanga tashlashga yaqin: TP1 {r_target:g}R da kamida {even * 100:.0f}% kerak, {share * 100:.0f}% chiqdi"
+    if abs(d) < STRONG:
+        return ("good" if d > 0 else "bad"), (f"TP1 tomonga og'adi ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)"
+                                               if d > 0 else f"Stop tomonga og'adi ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)")
+    return ("good" if d > 0 else "bad"), (f"Kuchli TP1 tomonga ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)"
+                                           if d > 0 else f"Kuchli stop tomonga ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)")
+
+
+def history_test(df, side, bars, max_tests=HISTORY_BARS, deadline=None):
+    """The same Buffet AI rule on past bars: every past bar where it said the same side, its own
+    plan (entry, stop, TP1) played forward on the real bars that followed."""
+    h_all, l_all, c_all = (df[k].to_numpy(dtype=float) for k in ("High", "Low", "Close"))
+    n = len(df)
+    start = max(60, n - bars - max_tests)
+    fired = win = loss = 0
+    Rs = []
+    t = start
+    while t < n - bars:
+        if deadline and time.time() > deadline:
+            break
+        a = analyse(df.iloc[:t + 1], light=True)
+        p = a["plan"]
+        if p["side"] != side or not p.get("targets"):
+            t += 1
+            continue
+        fired += 1
+        e, st, tg = p["entry"], p["stop"], p["targets"][0]["price"]
+        risk = abs(e - st)
+        out = None
+        for j in range(t + 1, t + 1 + bars):
+            if side == "LONG":
+                if l_all[j] <= st:
+                    out = -1.0
+                    break
+                if h_all[j] >= tg:
+                    out = (tg - e) / risk
+                    break
+            else:
+                if h_all[j] >= st:
+                    out = -1.0
+                    break
+                if l_all[j] <= tg:
+                    out = (e - tg) / risk
+                    break
+        if out is None:
+            last = c_all[t + bars]
+            out = ((last - e) if side == "LONG" else (e - last)) / risk
+        else:
+            win += out > 0
+            loss += out < 0
+        Rs.append(out)
+        t += max(1, bars // 4)            # do not count one long signal as many trades
+    return {"fired": fired, "target": int(win), "stop": int(loss), "neither": fired - int(win) - int(loss),
+            "avg_R": round(float(np.mean(Rs)), 2) if Rs else None, "tested_bars": n - bars - start}
+
+
+def events(ysym, tf, df):
+    """News guard: next earnings date inside the plan's horizon, and today's move."""
+    out = {"earnings": None, "earnings_in_window": False, "move_pct": None}
+    try:
+        c = df["Close"].to_numpy(dtype=float)
+        out["move_pct"] = round(float(c[-1] / c[-2] - 1) * 100, 2)
+    except Exception:
+        pass
+    if "=" in ysym or ysym.startswith("^") or ysym.endswith("-USD"):
+        return out                                        # no earnings for fx, futures, indices, crypto
+    try:
+        import yfinance as yf
+        cal = yf.Ticker(ysym).calendar or {}
+        dates = cal.get("Earnings Date") if isinstance(cal, dict) else None
+        if dates:
+            d = min(dates)
+            if isinstance(d, datetime):
+                d = d.date()
+            out["earnings"] = d.isoformat()
+            days = (d - datetime.now(timezone.utc).date()).days
+            m = BAR_MINUTES[tf]
+            trading_days = HORIZON[tf] * m / 390 if m < 1440 else HORIZON[tf] * {1440: 1, 10080: 5, 43200: 21}[m]
+            horizon_days = trading_days * 7 / 5
+            out["earnings_days"] = days
+            out["earnings_in_window"] = 0 <= days <= max(1, round(horizon_days))
+    except Exception as exc:
+        print(f"calendar {ysym}: {exc}")
+    return out
+
+
+def risk_gate(plan, a, df, ev, asset):
+    """trader-risk style checks on the plan. Returns a list of (level, text); level 'block' or 'warn'."""
+    notes = []
+    sides = [plan] if plan["side"] != "KUTISH" else [plan["breakout_up"], plan["breakout_down"]]
+    for p in sides:
+        if p.get("targets") and p["targets"][0]["rr"] < 1.0:
+            notes.append(("warn", f"{p['side']}: TP1 risk/reward 1:{p['targets'][0]['rr']} — 1:1 dan past"))
+        if p["risk_pct"] > 10:
+            notes.append(("warn", f"{p['side']}: stop narxdan {p['risk_pct']}% uzoq — pozitsiyani kichik tuting"))
+    try:
+        v = df["Volume"].to_numpy(dtype=float)[-20:]
+        c = df["Close"].to_numpy(dtype=float)[-20:]
+        dollar = float(np.mean(v * c))
+        if asset not in ("forex", "index", "futures") and 0 < dollar < 5e6 and a["bars"] and v.sum() > 0:
+            notes.append(("warn", f"Likvidlik past: o'rtacha shamda ~${dollar / 1e6:.1f}M savdo — spred va slippage katta bo'lishi mumkin"))
+    except Exception:
+        pass
+    if a["price"] < 5 and asset in ("stock", "etf", ""):
+        notes.append(("warn", "Narx $5 dan past (penny aksiya): tebranish va manipulyatsiya xavfi yuqori"))
+    if ev.get("earnings_in_window"):
+        notes.append(("block", f"Hisobot {ev['earnings']} da — reja muddati ichida. Hisobotdagi gap stop'dan o'tib ketishi mumkin"))
+    if ev.get("move_pct") is not None and abs(ev["move_pct"]) >= 3:
+        notes.append(("warn", f"Oxirgi shamda {ev['move_pct']:+.1f}% harakat — sababini News bo'limida tekshiring"))
+    return notes
+
+
+def sizing(plan, deposit=1000.0, risk_pct=1.0, fractional=False):
+    """trader-budget: shares that lose `risk_pct` of the deposit at the stop, capped by the deposit."""
+    if plan["side"] == "KUTISH":
+        return None
+    risk_share = abs(plan["entry"] - plan["stop"])
+    if risk_share <= 0:
+        return None
+    qty = deposit * risk_pct / 100 / risk_share
+    qty = min(qty, deposit / plan["entry"])
+    qty = round(qty, 4) if fractional else int(qty)
+    return {"deposit": deposit, "risk_pct": risk_pct, "qty": qty, "cost": round(qty * plan["entry"], 2),
+            "max_loss": round(qty * risk_share, 2)}
+
+
+def extras(df, a, meta, ysym, deadline):
+    """Everything above for the current plan."""
+    tf = meta["tf"]
+    bars = HORIZON.get(tf, 20)
+    p = a["plan"]
+    out = {"horizon_bars": bars}
+    pool = bar_pool(df)
+    if p["side"] != "KUTISH" and p.get("targets") and len(pool) >= 60:
+        mc = simulate(pool, p["side"], p["entry"], p["stop"], p["targets"][0]["price"], bars)
+        mc["verdict_kind"], mc["verdict"] = mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
+        out["mc"] = mc
+        if len(df) >= bars + 120:
+            out["history"] = history_test(df, p["side"], bars, deadline=deadline)
+    ev = events(ysym, tf, df)
+    out["events"] = ev
+    out["risk"] = risk_gate(p, a, df, ev, meta.get("asset", ""))
+    out["size"] = sizing(p, fractional=ysym.endswith("-USD"))
+    return out
+
+
 # ----------------------------- Formatting -----------------------------------
 
 def esc(s):
@@ -555,6 +791,52 @@ def plan_lines(p):
     for k, t in enumerate(p["targets"], 1):
         lines.append(f"   🎯 TP{k}: <b>{fp(t['price'])}</b> · R/R 1:{t['rr']}")
     return lines
+
+
+def extras_lines(a):
+    x = a.get("extras") or {}
+    out = []
+    mc = x.get("mc")
+    if mc:
+        icon = {"good": "🟢", "bad": "🔴", "neutral": "⚖️"}[mc["verdict_kind"]]
+        reps = f"{mc['replays']:,}".replace(",", " ")
+        out += [f"🎲 <b>Time Machine</b> ({reps} ta replay, keyingi {mc['bars']} sham)",
+                f"   TP1 birinchi: <b>{mc['p_target'] * 100:.1f}%</b> · stop birinchi: <b>{mc['p_stop'] * 100:.1f}%</b>"
+                f" · hech biri: {mc['p_neither'] * 100:.1f}%",
+                f"   O'rtacha natija: {mc['avg_R']:+.2f}R · muddat oxiridagi narx: {fp(mc['p5'])} – {fp(mc['p95'])}"
+                f" (90%), mediana {fp(mc['p50'])}",
+                f"   {icon} {esc(mc['verdict'])}"]
+        if mc["p_neither"] > 0.4:
+            out.append(f"   ℹ️ Replaylarning {mc['p_neither'] * 100:.0f}% i {mc['bars']} shamda TP1 ham, stop ham "
+                       "urmagan — ularni muddat oxiridagi narx hal qiladi")
+        if mc["verdict_kind"] in ("good", "bad") and (mc["avg_R"] > 0) != (mc["verdict_kind"] == "good") \
+                and mc["avg_R"] != 0:
+            out.append(f"   ℹ️ Shunga qaramay o'rtacha natija {mc['avg_R']:+.2f}R: buni hech biriga yetmagan replaylar "
+                       "teskari tomonga tortadi")
+        h = x.get("history")
+        if h and h["fired"]:
+            out.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta {a['plan']['side']} degan: "
+                       f"{h['target']} ta TP1, {h['stop']} ta stop, {h['neither']} ta hech biri"
+                       + (f" · o'rtacha {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+        elif h:
+            out.append(f"   📜 Shu qoida oxirgi {h['tested_bars']} shamda bu signalni bermagan")
+        out += ["   <i>Simulyatsiya — bashorat emas: kelajakda o'tmishda bo'lmagan voqealar ham bo'lishi mumkin.</i>", ""]
+    st = a.get("setups") or []
+    if st:
+        out += ["🔎 <b>Skaner setaplari</b>"] + [f"   • {esc(s_['name'])}" for s_ in st] + [""]
+    if a.get("volume_confirmed"):
+        out += ["📊 Oxirgi sham hajmi o'rtachadan 1,5 barobar yuqori — harakat hajm bilan tasdiqlangan", ""]
+    risk = x.get("risk") or []
+    if risk:
+        out += ["🛡 <b>Risk tekshiruvi</b>"] + [f"   {'⛔' if lv == 'block' else '⚠️'} {esc(t)}" for lv, t in risk] + [""]
+    elif x:
+        out += ["🛡 <b>Risk tekshiruvi:</b> ✅ jiddiy ogohlantirish yo'q", ""]
+    sz = x.get("size")
+    if sz and sz["qty"]:
+        out += [f"💼 <b>Pozitsiya hajmi</b> (misol: ${sz['deposit']:,.0f} depozit, {sz['risk_pct']:g}% risk)",
+                f"   {sz['qty']:g} ta ≈ ${sz['cost']:,.2f} · stop urilsa zarar ≈ ${sz['max_loss']:,.2f}",
+                "   <i>Formula: (depozit × risk %) ÷ (kirish − stop)</i>", ""]
+    return out
 
 
 def format_text(meta, a, ex, image_only):
@@ -586,6 +868,7 @@ def format_text(meta, a, ex, image_only):
                 word = "pullback" if p["side"] == "LONG" else "qaytish"
                 lines.append(f"   💡 Yaxshiroq kirish ({word}): {fp(p['zone'])} atrofi")
         lines.append("")
+        lines += extras_lines(a)
         lv = " · ".join(fp(x["price"]) for x in a["supports"]) or "—"
         lr = " · ".join(fp(x["price"]) for x in a["resistances"]) or "— (narx eng yuqori nuqtalar yaqinida)"
         lines += [f"🧱 Qo'llab-quvvatlash: {lv}", f"🧱 Qarshilik: {lr}", ""]
@@ -639,6 +922,10 @@ def make_chart(meta, a):
     head.text(0.04, 0.24, f"{TF_NAMES.get(meta['tf'], meta['tf'])} · narx {fp(a['price'])} · RSI {a['rsi']} · "
                           f"trend: {a['trend']}", fontsize=10, color=T["muted"], va="center")
     p = a["plan"]
+    mc = (a.get("extras") or {}).get("mc")
+    if mc:
+        head.text(0.955, 0.12, f"Time Machine: TP1 {mc['p_target'] * 100:.0f}% · stop {mc['p_stop'] * 100:.0f}%",
+                  fontsize=9, color=T["muted"], va="center", ha="right")
     color = {"LONG": T["up"], "SHORT": T["down"], "KUTISH": T["wait"]}[p["side"]]
     head.text(0.955, 0.55, p["side"], fontsize=15, fontweight="bold", color=color, va="center", ha="right",
               bbox=dict(boxstyle="round,pad=0.45,rounding_size=0.6", facecolor=T["panel"], edgecolor=color,
@@ -775,6 +1062,12 @@ def main():
         except Exception as exc:
             print(f"prices {ysym}: {exc}")
             a = None
+    if a:
+        try:
+            a["extras"] = extras(df, a, meta, ysym, deadline=time.time() + 45)
+        except Exception as exc:
+            print(f"extras: {exc}")
+            a["extras"] = {}
     print(f"{ysym} {meta['tf']}: {'data' if a else 'picture only'}")
     if not a and not image:
         send_text(f"❌ {meta['title']} uchun narx ma'lumoti topilmadi. Tikerni tekshiring yoki grafik rasmini "
