@@ -32,7 +32,7 @@ import buffetai as B
 TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
-MIN_AVG_VOLUME = 1_000_000     # shares per day (20-day average)
+MIN_DOLLAR_VOLUME = 25e6       # $ traded per day (20-day average): keeps high-priced stocks like BKNG
 RUN_AT_NY = (10, 0)            # 10:00 New York time = 30 minutes after the open
 RUN_WINDOW_MIN = 50            # GitHub cron can be late; run if within 50 minutes after RUN_AT_NY
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
@@ -139,7 +139,12 @@ def nasdaq_caps():
     except Exception as exc:
         print(f"Nasdaq screener: {exc}")
     out = {}                                           # fallback: the symbol file, caps from Yahoo later
-    for line in get(NASDAQ_LISTED).splitlines()[1:]:
+    try:
+        listed = get(NASDAQ_LISTED).splitlines()[1:]
+    except Exception as exc:
+        print(f"nasdaqlisted.txt: {exc} -> S&P 500 and NASDAQ-100 only today")
+        return out
+    for line in listed:
         p = line.split("|")
         if len(p) < 8 or p[3] != "N" or p[6] != "N" or BAD_NAME.search(p[1]):
             continue
@@ -234,7 +239,7 @@ def evaluate(sym, df, info):
     kind, verdict = B.mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
     hit = mc["p_target"] + mc["p_stop"]
     edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
-    if edge < MIN_EDGE:
+    if edge < MIN_EDGE or mc["p_target"] <= mc["p_stop"]:     # TP1 must also come first more often
         return True, None
     mc.update(verdict_kind=kind, verdict=verdict, edge=round(edge, 3))
     risk = B.risk_gate(p, a, df, {}, "stock")
@@ -287,11 +292,15 @@ def format_text(day, picks, stats):
                          + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
         ev = c.get("events") or {}
         if ev.get("earnings"):
-            lines.append(f"   📅 Keyingi hisobot: {datetime.fromisoformat(ev['earnings']):%d.%m.%Y}")
+            d = datetime.fromisoformat(ev["earnings"])
+            if d.date() >= day.date():
+                lines.append(f"   📅 Keyingi hisobot: {d:%d.%m.%Y}")
+            else:
+                lines.append(f"   📅 Oxirgi hisobot: {d:%d.%m.%Y} (keyingisi sanasi hali e'lon qilinmagan)")
         for lv, txt in c["risk"]:
             lines.append(f"   ⚠️ {esc(txt)}")
         lines.append("")
-    lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx va hajm filtridan {stats['liquid']} ta "
+    lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va kunlik savdo ($25M+) filtridan {stats['liquid']} ta "
               f"→ Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan {stats['passed']} ta → "
               f"eng yaxshi {len(picks)} ta. Hisoboti reja muddati (~4 hafta) ichida bo'lganlar chiqarib tashlangan.",
               "", "💬 Batafsil tahlil uchun shu bo'limga yozing: <b>$TIKER</b> (masalan $" +
@@ -377,7 +386,9 @@ def send(png, text, caption):
 
 def main():
     if not CHAT_ID or not B.BOT_TOKEN:
-        raise SystemExit("BUFFET_BOT_TOKEN va BUFFET_CHAT_ID secret'larini qo'shing")
+        raise SystemExit("XATO: GitHub secret topilmadi — " + ", ".join(
+            n for n, v in (("BUFFET_BOT_TOKEN", B.BOT_TOKEN), ("BUFFET_CHAT_ID", CHAT_ID)) if not v)
+            + " ni Settings → Secrets and variables → Actions ga qo'shing")
     now = ny_now()
     target = now.replace(hour=RUN_AT_NY[0], minute=RUN_AT_NY[1], second=0, microsecond=0)
     if not FORCE and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
@@ -400,7 +411,7 @@ def main():
     liquid = {}
     for s, df in prices.items():
         c, v = df["Close"].to_numpy(dtype=float), df["Volume"].to_numpy(dtype=float)
-        if c[-1] >= MIN_PRICE and np.mean(v[-21:-1]) >= MIN_AVG_VOLUME:
+        if c[-1] >= MIN_PRICE and np.mean(v[-21:-1] * c[-21:-1]) >= MIN_DOLLAR_VOLUME:
             liquid[s] = df
     unknown = [s for s in liquid if stocks[s]["cap"] is None and "S&P 500" not in stocks[s]["tags"]
                and "NASDAQ-100" not in stocks[s]["tags"]]
@@ -432,7 +443,7 @@ def main():
             break
         c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
     cands = [c for c in cands if not (c.get("history") and c["history"]["fired"] >= 5
-                                      and (c["history"]["avg_R"] or 0) < 0)]
+                                      and (c["history"]["avg_R"] or 0) <= 0.05)]
     cands.sort(key=rank_key, reverse=True)
 
     picks = []
