@@ -1,0 +1,43 @@
+name: Buffet AI daily scanner
+
+on:
+  schedule:
+    - cron: "2 14 * * 1-5"      # 10:00 New York in summer time (EDT)
+    - cron: "2 15 * * 1-5"      # 10:00 New York in winter time (EST); the script runs only on the right one
+  workflow_dispatch:            # run by hand: Actions -> Buffet AI daily scanner -> Run workflow
+    inputs:
+      force:
+        description: "Run now even outside 10:00 New York (test)"
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: buffet-scanner
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/scanner.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib lxml
+
+      - name: Scan the market and post candidates
+        run: python scanner.py
+        env:
+          BUFFET_BOT_TOKEN: ${{ secrets.BUFFET_BOT_TOKEN }}
+          BUFFET_CHAT_ID: ${{ secrets.BUFFET_CHAT_ID }}
+          BUFFET_THREAD_ID: ${{ secrets.BUFFET_THREAD_ID }}
+          FORCE: ${{ inputs.force }}
