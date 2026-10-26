@@ -1,0 +1,43 @@
+name: Buffet AI weekly calibration
+
+on:
+  schedule:
+    - cron: "17 6 * * 6"        # every Saturday ~11:17 Tashkent (markets closed); a late start does not matter
+  workflow_dispatch:            # run by hand: Actions -> Buffet AI weekly calibration -> Run workflow
+
+permissions:
+  contents: write
+
+concurrency:
+  group: buffet-calibration
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/calibrate.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib lxml
+
+      - name: Re-run the scanner rule on 5 years of every stock
+        run: python calibrate.py
+
+      - name: Save
+        run: |
+          git config user.name "news-bot"
+          git config user.email "news-bot@users.noreply.github.com"
+          git add calibration.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Buffet AI calibration"
+            git pull --rebase
+            git push
+          fi
