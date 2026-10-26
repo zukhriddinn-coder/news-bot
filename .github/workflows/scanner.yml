@@ -1,11 +1,11 @@
 name: Buffet AI daily scanner
 
 on:
-  workflow_dispatch:            # started every trading day at 10:00 New York by Google Apps Script (scanner.gs),
+  workflow_dispatch:            # started every trading day at 15:00 New York by Google Apps Script (scanner.gs),
                                 # or by hand: Actions -> Buffet AI daily scanner -> Run workflow
     inputs:
       force:
-        description: "Run now even outside 10:00 New York (test)"
+        description: "Run now even outside 15:00 New York (test)"
         required: false
         default: "true"
 
