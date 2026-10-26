@@ -5,7 +5,7 @@ on:
                                 # or by hand: Actions -> Buffet AI daily scanner -> Run workflow
     inputs:
       mode:
-        description: "morning (9:30 New York open) or close (15:00 New York)"
+        description: "morning (10:00 New York) or close (15:00 New York)"
         required: false
         default: "close"
       force:
