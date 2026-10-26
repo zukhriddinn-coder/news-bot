@@ -1,10 +1,8 @@
 name: Buffet AI daily scanner
 
 on:
-  schedule:
-    - cron: "2 14 * * 1-5"      # 10:00 New York in summer time (EDT)
-    - cron: "2 15 * * 1-5"      # 10:00 New York in winter time (EST); the script runs only on the right one
-  workflow_dispatch:            # run by hand: Actions -> Buffet AI daily scanner -> Run workflow
+  workflow_dispatch:            # started every trading day at 10:00 New York by Google Apps Script (scanner.gs),
+                                # or by hand: Actions -> Buffet AI daily scanner -> Run workflow
     inputs:
       force:
         description: "Run now even outside 10:00 New York (test)"
@@ -41,3 +39,4 @@ jobs:
           BUFFET_CHAT_ID: ${{ secrets.BUFFET_CHAT_ID }}
           BUFFET_THREAD_ID: ${{ secrets.BUFFET_THREAD_ID }}
           FORCE: ${{ inputs.force }}
+          SCHEDULE: ${{ github.event.schedule }}
