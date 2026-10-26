@@ -1,8 +1,9 @@
 """
 Trading Laboratory -> Buffet AI daily scanner ("Kunlik nomzodlar")
 Twice every trading day (started by Google Apps Script, scanner.gs):
-  - "morning": 09:25 New York, candidates arrive by the 09:30 open (closed daily candles only);
-  - "close":   15:00 New York, one hour before the close (12:00 on 13:00 early-close days).
+  - "morning": starts 09:57 New York, candidates arrive about 10:00 (30 minutes after the open);
+  - "close":   starts 14:57 New York, candidates arrive about 15:00, one hour before the close
+               (12:00 on 13:00 early-close days).
   1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B
      (NASDAQ-100 members are tagged). Sources: datasets/s-and-p-500-companies (GitHub), Nasdaq's
      screener (market caps), Wikipedia (NASDAQ-100 list). Fallbacks are built in.
@@ -51,7 +52,7 @@ WIKI_NDX = "https://en.wikipedia.org/wiki/Nasdaq-100"
 CHAT_ID = os.environ.get("BUFFET_CHAT_ID", "").strip()
 THREAD_ID = os.environ.get("BUFFET_THREAD_ID", "").strip()
 FORCE = os.environ.get("FORCE", "").strip().lower() in ("1", "true", "yes")
-MODE = (os.environ.get("MODE", "") or "close").strip().lower()   # "morning" (09:25 NY) or "close" (15:00 NY)
+MODE = (os.environ.get("MODE", "") or "close").strip().lower()   # "morning" (10:00 NY) or "close" (15:00 NY)
 
 # NYSE calendar (from day-trader-skill's trader-alerts, nyse.com hours-calendars, read 2026-10-13)
 NYSE_HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26",
@@ -425,10 +426,10 @@ def main():
             return
         mins = now.hour * 60 + now.minute
         if MODE == "morning":
-            ok = 9 * 60 + 15 <= mins <= 10 * 60 + 30            # started at 09:25 New York (late at most ~1 hour)
+            ok = 9 * 60 + 50 <= mins <= 10 * 60 + 40            # started at 09:57 New York
         else:
             start = (12 if day in NYSE_EARLY_CLOSE else 15) * 60   # one hour before the close
-            ok = start <= mins <= start + RUN_WINDOW_MIN
+            ok = start - 5 <= mins <= start + RUN_WINDOW_MIN      # started at 14:57 (11:57 on short days)
         if not ok:
             print(f"New York {now:%Y-%m-%d %H:%M}: not the {MODE} scan time, nothing to do")
             return
