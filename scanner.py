@@ -1,6 +1,7 @@
 """
 Trading Laboratory -> Buffet AI daily scanner ("Kunlik nomzodlar")
-Every trading day, 30 minutes after the US open (10:00 New York time), GitHub Actions runs this script.
+Every trading day, one hour before the US close (15:00 New York time), GitHub Actions runs this script
+(started by Google Apps Script, scanner.gs). The daily candle is ~85% formed by then.
   1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B
      (NASDAQ-100 members are tagged). Sources: datasets/s-and-p-500-companies (GitHub), Nasdaq's
      screener (market caps), Wikipedia (NASDAQ-100 list). Fallbacks are built in.
@@ -33,8 +34,8 @@ TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
 MIN_DOLLAR_VOLUME = 25e6       # $ traded per day (20-day average): keeps high-priced stocks like BKNG
-RUN_AT_NY = (10, 0)            # 10:00 New York time = 30 minutes after the open
-RUN_WINDOW_MIN = 50            # GitHub cron can be late; run if within 50 minutes after RUN_AT_NY
+RUN_AT_NY = (15, 0)            # 15:00 New York time = one hour before the close
+RUN_WINDOW_MIN = 40            # start late at most 40 minutes (the market closes at 16:00)
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
 MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
 MAX_RSI = 80                   # skip stocks that are already extremely overbought
@@ -271,7 +272,7 @@ fp = B.fp
 
 def format_text(day, picks, stats):
     lines = [f"📡 <b>Buffet AI · Kunlik nomzodlar</b>",
-             f"<i>{day:%d.%m.%Y} · AQSh sessiyasi ochilganidan 30 daqiqa keyin · kunlik grafik</i>", ""]
+             f"<i>{day:%d.%m.%Y} · bozor yopilishiga 1 soat qolganda · kunlik grafik</i>", ""]
     if not picks:
         lines += ["Bugun barcha shartlardan o'tgan nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
                   "kerak bo'lgan kunlar bo'ladi.", ""]
@@ -392,12 +393,12 @@ def main():
             + " ni Settings → Secrets and variables → Actions ga qo'shing")
     now = ny_now()
     summer = (datetime.now(timezone.utc).replace(tzinfo=None) - now) < timedelta(hours=4, minutes=30)
-    right_cron = "2 14 * * 1-5" if summer else "2 15 * * 1-5"      # the cron that means 10:00 New York today
+    right_cron = "2 19 * * 1-5" if summer else "2 20 * * 1-5"      # the cron that means 15:00 New York today
     if FORCE:
         pass
     elif SCHEDULE:
         # GitHub may start a scheduled run late: run if this is today's right cron and the market is open
-        if SCHEDULE != right_cron or now.weekday() >= 5 or now.hour >= 15:
+        if SCHEDULE != right_cron or now.weekday() >= 5 or now.hour >= 16:
             print(f"New York {now:%Y-%m-%d %H:%M}: cron '{SCHEDULE}' is not today's 10:00 run, nothing to do")
             return
     else:
