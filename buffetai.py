@@ -44,7 +44,7 @@ DISCLAIMER = ("⚠️ Investitsion maslahat emas. Darajalar texnik qoidalar asos
 TIMEFRAMES = {
     "1m": ("1m", "5d", None), "3m": ("1m", "5d", "3min"), "5m": ("5m", "30d", None),
     "15m": ("15m", "60d", None), "30m": ("30m", "60d", None), "1h": ("60m", "180d", None),
-    "2h": ("60m", "365d", "2h"), "4h": ("60m", "700d", "4h"), "1D": ("1d", "3y", None),
+    "2h": ("60m", "365d", "2h"), "4h": ("60m", "700d", "4h"), "1D": ("1d", "6y", None),
     "1W": ("1wk", "12y", None), "1M": ("1mo", "max", None),
 }
 TF_NAMES = {"1m": "1 daqiqa", "3m": "3 daqiqa", "5m": "5 daqiqa", "15m": "15 daqiqa", "30m": "30 daqiqa",
@@ -555,7 +555,9 @@ HORIZON = {"1m": 60, "3m": 40, "5m": 78, "15m": 26, "30m": 26, "1h": 35, "2h": 3
            "1D": 20, "1W": 12, "1M": 6}          # bars a plan has to work out (TP1 or stop)
 REPLAYS, SEED = 5000, 19
 COIN_FLIP, STRONG = 0.05, 0.15                    # verdict thresholds (points from break-even)
-HISTORY_BARS = 250                                # past bars the rule is re-run on
+HISTORY_BARS = 1250                               # past bars the rule is re-run on (~5 years of daily bars)
+MIN_TRADES = 15                                   # fewer independent trades = not enough to judge
+ANALYSE_WINDOW = 400                              # bars each past signal sees (EMA 200 + levels)
 BAR_MINUTES = {"1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240,
                "1D": 1440, "1W": 10080, "1M": 43200}
 
@@ -635,52 +637,101 @@ def mc_verdict(p_target, p_stop, r_target):
                                            if d > 0 else f"Kuchli stop tomonga ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)")
 
 
-def history_test(df, side, bars, max_tests=HISTORY_BARS, deadline=None):
-    """The same Buffet AI rule on past bars: every past bar where it said the same side, its own
-    plan (entry, stop, TP1) played forward on the real bars that followed."""
-    h_all, l_all, c_all = (df[k].to_numpy(dtype=float) for k in ("High", "Low", "Close"))
+def replay_signals(df, side, bars, start=260, end=None, gate=None, deadline=None, window=ANALYSE_WINDOW):
+    """Re-run the Buffet AI rule bar by bar on the past and play each signal's own plan (entry, stop, TP1)
+    forward on the real bars that followed. Trades never overlap: after a signal the next one is looked for
+    only after this trade has ended (TP1, stop, or `bars` bars later). Each bar sees only the past
+    (the last `window` bars, enough for EMA 200, levels and divergences)."""
+    o_all, h_all, l_all, c_all = (df[k].to_numpy(dtype=float) for k in ("Open", "High", "Low", "Close"))
     n = len(df)
-    start = max(60, n - bars - max_tests)
-    fired = win = loss = 0
-    Rs = []
-    t = start
-    while t < n - bars:
+    end = n - 1 if end is None else end
+    trades = []
+    t = max(start, 60)
+    while t < end:
         if deadline and time.time() > deadline:
             break
-        a = analyse(df.iloc[:t + 1], light=True)
+        a = analyse(df.iloc[max(0, t + 1 - window):t + 1], light=True)
         p = a["plan"]
-        if p["side"] != side or not p.get("targets"):
+        if p["side"] != side or not p.get("targets") or (gate and not gate(a, df.iloc[:t + 1])):
             t += 1
             continue
-        fired += 1
         e, st, tg = p["entry"], p["stop"], p["targets"][0]["price"]
         risk = abs(e - st)
-        out = None
-        for j in range(t + 1, t + 1 + bars):
+        out, result, last_j = None, "neither", min(t + bars, n - 1)
+        for j in range(t + 1, last_j + 1):
             if side == "LONG":
-                if l_all[j] <= st:
-                    out = -1.0
-                    break
-                if h_all[j] >= tg:
-                    out = (tg - e) / risk
-                    break
+                if l_all[j] <= st:                     # stop first when both are inside one bar
+                    out, result = (min(o_all[j], st) - e) / risk, "stop"     # a gap below the stop fills worse
+                elif h_all[j] >= tg:
+                    out, result = (tg - e) / risk, "target"
             else:
                 if h_all[j] >= st:
-                    out = -1.0
-                    break
-                if l_all[j] <= tg:
-                    out = (e - tg) / risk
-                    break
+                    out, result = (e - max(o_all[j], st)) / risk, "stop"
+                elif l_all[j] <= tg:
+                    out, result = (e - tg) / risk, "target"
+            if out is not None:
+                last_j = j
+                break
         if out is None:
-            last = c_all[t + bars]
-            out = ((last - e) if side == "LONG" else (e - last)) / risk
-        else:
-            win += out > 0
-            loss += out < 0
-        Rs.append(out)
-        t += max(1, bars // 4)            # do not count one long signal as many trades
-    return {"fired": fired, "target": int(win), "stop": int(loss), "neither": fired - int(win) - int(loss),
-            "avg_R": round(float(np.mean(Rs)), 2) if Rs else None, "tested_bars": n - bars - start}
+            if t + bars > n - 1:                       # not finished yet: not a trade
+                break
+            out = ((c_all[last_j] - e) if side == "LONG" else (e - c_all[last_j])) / risk
+        trades.append({"date": str(df.index[t].date()), "R": round(float(out), 3), "result": result,
+                       "score": a["score"], "trend": a["trend"], "rr": p["targets"][0]["rr"],
+                       "setups": [x["name"] for x in a["setups"]], "rsi": a["rsi"]})
+        t = last_j + 1                                 # the next trade starts after this one ended
+    return trades
+
+
+def summarize(trades):
+    if not trades:
+        return {"trades": 0, "target": 0, "stop": 0, "neither": 0, "avg_R": None, "win_pct": None}
+    tg = sum(1 for x in trades if x["result"] == "target")
+    st = sum(1 for x in trades if x["result"] == "stop")
+    return {"trades": len(trades), "target": tg, "stop": st, "neither": len(trades) - tg - st,
+            "avg_R": round(float(np.mean([x["R"] for x in trades])), 3),
+            "win_pct": round(tg / len(trades) * 100, 1)}
+
+
+def history_test(df, side, bars, max_tests=HISTORY_BARS, deadline=None):
+    """The same rule on this instrument's own past (independent trades only). A result counts only
+    with at least MIN_TRADES trades; fewer = 'ma'lumot kam'."""
+    n = len(df)
+    trades = replay_signals(df, side, bars, start=max(260, n - max_tests - bars), deadline=deadline)
+    s = summarize(trades)
+    s.update(fired=s["trades"], tested_bars=min(max_tests, n - 260), enough=s["trades"] >= MIN_TRADES,
+             avg_R=round(s["avg_R"], 2) if s["avg_R"] is not None else None)
+    return s
+
+
+_CAL = {}
+
+
+def load_calibration(path="calibration.json"):
+    """Weekly market-wide statistics made by calibrate.py (None if the file is not there yet)."""
+    if "data" not in _CAL:
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), path), encoding="utf-8") as f:
+                _CAL["data"] = json.load(f)
+        except Exception:
+            _CAL["data"] = None
+    return _CAL["data"]
+
+
+def calibration_group(cal, a):
+    """The most specific market-wide group for this LONG signal: its setup, else its score, else all."""
+    if not cal:
+        return None
+    g = cal.get("groups", {})
+    for st in a.get("setups") or []:
+        key = f"setap: {st['name']}"
+        if key in g:
+            return dict(g[key], group=key)
+    sc = a["score"]
+    key = "ball +2" if sc <= 2 else "ball +3" if sc == 3 else "ball +4 va yuqori"
+    if key in g:
+        return dict(g[key], group=key)
+    return dict(g["all"], group="all") if g.get("all", {}).get("trades") else None
 
 
 def events(ysym, tf, df):
@@ -764,8 +815,10 @@ def extras(df, a, meta, ysym, deadline):
         mc = simulate(pool, p["side"], p["entry"], p["stop"], p["targets"][0]["price"], bars)
         mc["verdict_kind"], mc["verdict"] = mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
         out["mc"] = mc
-        if len(df) >= bars + 120:
+        if len(df) >= bars + 300:
             out["history"] = history_test(df, p["side"], bars, deadline=deadline)
+        if tf == "1D" and p["side"] == "LONG":
+            out["calibration"] = calibration_group(load_calibration(), a)
     ev = events(ysym, tf, df)
     out["events"] = ev
     out["risk"] = risk_gate(p, a, df, ev, meta.get("asset", ""))
@@ -815,11 +868,20 @@ def extras_lines(a):
                        "teskari tomonga tortadi")
         h = x.get("history")
         if h and h["fired"]:
-            out.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta {a['plan']['side']} degan: "
-                       f"{h['target']} ta TP1, {h['stop']} ta stop, {h['neither']} ta hech biri"
-                       + (f" · o'rtacha {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+            years = max(1, round(h["tested_bars"] / 252))
+            line = (f"   📜 Shu qoida o'tmishda (~{years} yil) {h['fired']} ta mustaqil savdo: "
+                    f"{h['target']} TP1, {h['stop']} stop, {h['neither']} hech biri"
+                    + (f" · o'rtacha {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+            if not h.get("enough", True):
+                line += f" — <i>ma'lumot kam ({MIN_TRADES} tadan kam), xulosa uchun yetarli emas</i>"
+            out.append(line)
         elif h:
             out.append(f"   📜 Shu qoida oxirgi {h['tested_bars']} shamda bu signalni bermagan")
+        cal = x.get("calibration")
+        if cal:
+            n_tr = f"{cal['trades']:,}".replace(",", " ")
+            out.append(f"   📊 Butun bozor (5 yil, skaner signallari, {esc(cal['group'])}): {n_tr} ta → TP1 {cal['win_pct']:.0f}% · "
+                       f"stop {cal['stop'] / cal['trades'] * 100:.0f}% · o'rtacha {cal['avg_R']:+.2f}R")
         out += ["   <i>Simulyatsiya — bashorat emas: kelajakda o'tmishda bo'lmagan voqealar ham bo'lishi mumkin.</i>", ""]
     st = a.get("setups") or []
     if st:
