@@ -50,6 +50,7 @@ WIKI_NDX = "https://en.wikipedia.org/wiki/Nasdaq-100"
 CHAT_ID = os.environ.get("BUFFET_CHAT_ID", "").strip()
 THREAD_ID = os.environ.get("BUFFET_THREAD_ID", "").strip()
 FORCE = os.environ.get("FORCE", "").strip().lower() in ("1", "true", "yes")
+SCHEDULE = os.environ.get("SCHEDULE", "").strip()          # which cron started this run (empty when manual)
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0 Safari/537.36", "Accept": "application/json, text/plain, */*",
       "Accept-Language": "en-US,en;q=0.9"}
@@ -390,10 +391,20 @@ def main():
             n for n, v in (("BUFFET_BOT_TOKEN", B.BOT_TOKEN), ("BUFFET_CHAT_ID", CHAT_ID)) if not v)
             + " ni Settings → Secrets and variables → Actions ga qo'shing")
     now = ny_now()
-    target = now.replace(hour=RUN_AT_NY[0], minute=RUN_AT_NY[1], second=0, microsecond=0)
-    if not FORCE and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
-        print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
-        return
+    summer = (datetime.now(timezone.utc).replace(tzinfo=None) - now) < timedelta(hours=4, minutes=30)
+    right_cron = "2 14 * * 1-5" if summer else "2 15 * * 1-5"      # the cron that means 10:00 New York today
+    if FORCE:
+        pass
+    elif SCHEDULE:
+        # GitHub may start a scheduled run late: run if this is today's right cron and the market is open
+        if SCHEDULE != right_cron or now.weekday() >= 5 or now.hour >= 15:
+            print(f"New York {now:%Y-%m-%d %H:%M}: cron '{SCHEDULE}' is not today's 10:00 run, nothing to do")
+            return
+    else:
+        target = now.replace(hour=RUN_AT_NY[0], minute=RUN_AT_NY[1], second=0, microsecond=0)
+        if not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
+            print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
+            return
     print(f"New York {now:%Y-%m-%d %H:%M}: scanning")
 
     stocks = universe()
