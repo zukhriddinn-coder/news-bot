@@ -1,11 +1,15 @@
 name: Buffet AI daily scanner
 
 on:
-  workflow_dispatch:            # started every trading day at 15:00 New York by Google Apps Script (scanner.gs),
+  workflow_dispatch:            # started twice every trading day by Google Apps Script (scanner.gs),
                                 # or by hand: Actions -> Buffet AI daily scanner -> Run workflow
     inputs:
+      mode:
+        description: "morning (9:30 New York open) or close (15:00 New York)"
+        required: false
+        default: "close"
       force:
-        description: "Run now even outside 15:00 New York (test)"
+        description: "Run now even outside the scan time (test)"
         required: false
         default: "true"
 
@@ -39,4 +43,4 @@ jobs:
           BUFFET_CHAT_ID: ${{ secrets.BUFFET_CHAT_ID }}
           BUFFET_THREAD_ID: ${{ secrets.BUFFET_THREAD_ID }}
           FORCE: ${{ inputs.force }}
-          SCHEDULE: ${{ github.event.schedule }}
+          MODE: ${{ inputs.mode }}
