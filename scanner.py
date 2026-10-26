@@ -1,7 +1,8 @@
 """
 Trading Laboratory -> Buffet AI daily scanner ("Kunlik nomzodlar")
-Every trading day, one hour before the US close (15:00 New York time), GitHub Actions runs this script
-(started by Google Apps Script, scanner.gs). The daily candle is ~85% formed by then.
+Twice every trading day (started by Google Apps Script, scanner.gs):
+  - "morning": 09:25 New York, candidates arrive by the 09:30 open (closed daily candles only);
+  - "close":   15:00 New York, one hour before the close (12:00 on 13:00 early-close days).
   1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B
      (NASDAQ-100 members are tagged). Sources: datasets/s-and-p-500-companies (GitHub), Nasdaq's
      screener (market caps), Wikipedia (NASDAQ-100 list). Fallbacks are built in.
@@ -34,7 +35,6 @@ TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
 MIN_DOLLAR_VOLUME = 25e6       # $ traded per day (20-day average): keeps high-priced stocks like BKNG
-RUN_AT_NY = (15, 0)            # 15:00 New York time = one hour before the close
 RUN_WINDOW_MIN = 40            # start late at most 40 minutes (the market closes at 16:00)
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
 MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
@@ -51,7 +51,12 @@ WIKI_NDX = "https://en.wikipedia.org/wiki/Nasdaq-100"
 CHAT_ID = os.environ.get("BUFFET_CHAT_ID", "").strip()
 THREAD_ID = os.environ.get("BUFFET_THREAD_ID", "").strip()
 FORCE = os.environ.get("FORCE", "").strip().lower() in ("1", "true", "yes")
-SCHEDULE = os.environ.get("SCHEDULE", "").strip()          # which cron started this run (empty when manual)
+MODE = (os.environ.get("MODE", "") or "close").strip().lower()   # "morning" (09:25 NY) or "close" (15:00 NY)
+
+# NYSE calendar (from day-trader-skill's trader-alerts, nyse.com hours-calendars, read 2026-10-13)
+NYSE_HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26",
+                 "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
+NYSE_EARLY_CLOSE = {"2026-11-27", "2026-12-24", "2027-11-26"}      # the market closes at 13:00
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0 Safari/537.36", "Accept": "application/json, text/plain, */*",
       "Accept-Language": "en-US,en;q=0.9"}
@@ -270,9 +275,26 @@ def esc(s):
 fp = B.fp
 
 
+def phase(now):
+    """(title, subtitle, candle note, pre_open) for this run."""
+    open_t = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    if MODE == "morning" and now < open_t:
+        return ("Bozor ochilishidan oldin", "bozor ochilishidan oldin · kechagi yopilgan kunlik sham",
+                "Tahlil kechagi to'liq yopilgan shamlar bo'yicha.", True)
+    if MODE == "morning":
+        mins = int((now - open_t).total_seconds() // 60)
+        return ("Sessiya boshida", f"sessiya ochilganidan {mins} daqiqa keyin · bugungi sham endi shakllanmoqda",
+                "Bugungi sham endi shakllanmoqda: kun oxirigacha signal o'zgarishi mumkin.", False)
+    short = now.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE
+    return ("Yopilishga 1 soat", "bozor yopilishiga 1 soat qolganda" + (" (bugun qisqa kun, 13:00 da yopiladi)"
+                                                                         if short else "") + " · kunlik grafik",
+            "Bugungi sham ~85% shakllangan.", False)
+
+
 def format_text(day, picks, stats):
-    lines = [f"📡 <b>Buffet AI · Kunlik nomzodlar</b>",
-             f"<i>{day:%d.%m.%Y} · bozor yopilishiga 1 soat qolganda · kunlik grafik</i>", ""]
+    title, subtitle, candle_note, pre_open = phase(day)
+    lines = [f"📡 <b>Buffet AI · Nomzodlar · {title}</b>",
+             f"<i>{day:%d.%m.%Y} · {subtitle}</i>", ""]
     if not picks:
         lines += ["Bugun barcha shartlardan o'tgan nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
                   "kerak bo'lgan kunlar bo'ladi.", ""]
@@ -301,6 +323,9 @@ def format_text(day, picks, stats):
                 lines.append(f"   📅 Oxirgi hisobot: {d:%d.%m.%Y} (keyingisi sanasi hali e'lon qilinmagan)")
         for lv, txt in c["risk"]:
             lines.append(f"   ⚠️ {esc(txt)}")
+        if pre_open:
+            lines.append(f"   ⏰ Ochilishda: {fp(p['entry'] + a['atr'])} dan yuqori bo'lsa — kutib turing (gap), "
+                         f"{fp(p['stop'])} dan past bo'lsa — reja bekor")
         lines.append("")
     lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va kunlik savdo ($25M+) filtridan {stats['liquid']} ta "
               f"→ Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan {stats['passed']} ta → "
@@ -309,8 +334,8 @@ def format_text(day, picks, stats):
               (picks[0]["symbol"] if picks else "AAPL") + ")", ""]
     if stats.get("partial"):
         lines += [f"<i>ℹ️ {stats['partial']}</i>", ""]
-    lines.append("<i>⚠️ Bu qoidalar asosida topilgan NOMZODLAR, sotib olish signali emas. Bugungi sham hali "
-                 "yopilmagan. Ehtimollar o'tmishdagi shamlarga asoslangan simulyatsiya. Investitsion maslahat emas. "
+    lines.append(f"<i>⚠️ Bu qoidalar asosida topilgan NOMZODLAR, sotib olish signali emas. {candle_note} "
+                 "Ehtimollar o'tmishdagi shamlarga asoslangan simulyatsiya. Investitsion maslahat emas. "
                  "Buffet AI Warren Buffett bilan bog'liq emas.</i>")
     return "\n".join(lines)
 
@@ -330,8 +355,9 @@ def make_card(day, picks, stats):
     ax.set_axis_off()
     ax.set_xlim(0, 1)
     ax.set_ylim(0, H)
-    ax.text(0.04, H - 0.55, "Kunlik nomzodlar", fontsize=24, fontweight="bold", color=T["ink"], va="center")
-    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · kunlik grafik",
+    title, subtitle, _, _ = phase(day)
+    ax.text(0.04, H - 0.55, f"Nomzodlar · {title}", fontsize=24, fontweight="bold", color=T["ink"], va="center")
+    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · {subtitle.split(' · ')[0]}",
             fontsize=10, color=T["muted"], va="center")
     ax.text(0.96, H - 0.5, f"{stats['universe']} → {len(picks)}", fontsize=20, fontweight="bold", color=T["up"],
             va="center", ha="right")
@@ -392,28 +418,27 @@ def main():
             n for n, v in (("BUFFET_BOT_TOKEN", B.BOT_TOKEN), ("BUFFET_CHAT_ID", CHAT_ID)) if not v)
             + " ni Settings → Secrets and variables → Actions ga qo'shing")
     now = ny_now()
-    summer = (datetime.now(timezone.utc).replace(tzinfo=None) - now) < timedelta(hours=4, minutes=30)
-    right_cron = "2 19 * * 1-5" if summer else "2 20 * * 1-5"      # the cron that means 15:00 New York today
-    if FORCE:
-        pass
-    elif SCHEDULE:
-        # GitHub may start a scheduled run late: run if this is today's right cron and the market is open
-        if SCHEDULE != right_cron or now.weekday() >= 5 or now.hour >= 16:
-            print(f"New York {now:%Y-%m-%d %H:%M}: cron '{SCHEDULE}' is not today's 10:00 run, nothing to do")
+    day = now.strftime("%Y-%m-%d")
+    if not FORCE:
+        if now.weekday() >= 5 or day in NYSE_HOLIDAYS:
+            print(f"New York {day}: market closed (weekend or holiday), nothing to do")
             return
-    else:
-        target = now.replace(hour=RUN_AT_NY[0], minute=RUN_AT_NY[1], second=0, microsecond=0)
-        if not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
-            print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
+        mins = now.hour * 60 + now.minute
+        if MODE == "morning":
+            ok = 9 * 60 + 15 <= mins <= 10 * 60 + 30            # started at 09:25 New York (late at most ~1 hour)
+        else:
+            start = (12 if day in NYSE_EARLY_CLOSE else 15) * 60   # one hour before the close
+            ok = start <= mins <= start + RUN_WINDOW_MIN
+        if not ok:
+            print(f"New York {now:%Y-%m-%d %H:%M}: not the {MODE} scan time, nothing to do")
             return
     print(f"New York {now:%Y-%m-%d %H:%M}: scanning")
 
     stocks = universe()
-    spy = download(["SPY"], period="1mo", min_bars=5).get("SPY")
-    if spy is not None and not FORCE and spy.index[-1].date() != now.date():
-        print(f"SPY last bar {spy.index[-1].date()}: market closed today (holiday)")
-        return
     prices = download(stocks)
+    if phase(now)[3]:                                    # before the open: use only closed daily candles
+        prices = {k: v[v.index.date < now.date()] for k, v in prices.items()}
+        prices = {k: v for k, v in prices.items() if len(v) >= 220}
     if len(prices) < len(stocks) * 0.5:
         B.CHAT_ID, B.THREAD_ID, B.REPLY_TO = CHAT_ID, THREAD_ID, ""
         B.send_text(f"⚠️ Buffet AI kunlik skani: Yahoo Finance'dan ma'lumot yetarli yuklanmadi "
@@ -474,7 +499,7 @@ def main():
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
                             "(qolganlari Yahoo'da topilmadi yoki cheklov).")
-    caption = (f"📡 <b>Buffet AI · Kunlik nomzodlar</b> · {now:%d.%m.%Y}\n"
+    caption = (f"📡 <b>Buffet AI · Nomzodlar · {phase(now)[0]}</b> · {now:%d.%m.%Y}\n"
                + (" · ".join(f"${c['symbol']}" for c in picks) if picks else "Bugun nomzod yo'q"))
     send(make_card(now, picks, stats), format_text(now, picks, stats), caption)
     print(f"Sent {len(picks)} candidates in {time.time() - STARTED:.0f}s")
