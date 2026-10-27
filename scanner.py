@@ -36,7 +36,10 @@ import rules as R
 TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
-MIN_DOLLAR_VOLUME = 25e6       # $ traded per day (20-day average): keeps high-priced stocks like BKNG
+ALGO = "classic"               # "classic" = the 26.10 algorithm (NTNX, NTAP): 250-bar history, softer filters
+                               # "evidence" = only rules that passed the 5-year test (calibration.json)
+MIN_AVG_VOLUME = 1_000_000     # classic: 20-day average volume in shares
+MIN_DOLLAR_VOLUME = 25e6       # evidence: $ traded per day (20-day average)
 RUN_WINDOW_MIN = 40            # start late at most 40 minutes (the market closes at 16:00)
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
 MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
@@ -313,6 +316,70 @@ def rank_key_v2(c):
             - max(0, c["a"]["plan"]["risk_pct"] - 8))            # prefer tighter stops
 
 
+# ----------------------------- Classic algorithm (26.10) --------------------
+
+def evaluate_classic(sym, df, info):
+    """Buffet AI LONG plan + Time Machine edge of 5+ points + no blocking risk (the 26.10 rules)."""
+    a = B.analyse(df)
+    p = a["plan"]
+    if p["side"] != "LONG":
+        return False, None
+    if not p.get("targets") or p["targets"][0]["rr"] < 1.0:
+        return True, None
+    mc = B.simulate(B.bar_pool(df), "LONG", p["entry"], p["stop"], p["targets"][0]["price"], B.HORIZON["1D"])
+    kind, verdict = B.mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
+    hit = mc["p_target"] + mc["p_stop"]
+    edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
+    if edge < MIN_EDGE:
+        return True, None
+    mc.update(verdict_kind=kind, verdict=verdict, edge=round(edge, 3))
+    risk = B.risk_gate(p, a, df, {}, "stock")
+    if any(lv == "block" for lv, _ in risk):
+        return True, None
+    return True, {"symbol": sym, "info": info, "a": a, "mc": mc, "risk": risk, "df": df}
+
+
+def classic_history(df, bars, last=250):
+    """The 26.10 history test: the same rule on the last 250 bars, a new signal looked for every bars/4 bars."""
+    h_all, l_all, c_all = (df[k].to_numpy(dtype=float) for k in ("High", "Low", "Close"))
+    n = len(df)
+    t = max(60, n - bars - last)
+    fired = win = loss = 0
+    Rs = []
+    while t < n - bars:
+        a = B.analyse(df.iloc[max(0, t + 1 - B.ANALYSE_WINDOW):t + 1], light=True)
+        p = a["plan"]
+        if p["side"] != "LONG" or not p.get("targets"):
+            t += 1
+            continue
+        fired += 1
+        e, st, tg = p["entry"], p["stop"], p["targets"][0]["price"]
+        risk = abs(e - st)
+        out = None
+        for j in range(t + 1, t + 1 + bars):
+            if l_all[j] <= st:
+                out = -1.0
+                break
+            if h_all[j] >= tg:
+                out = (tg - e) / risk
+                break
+        if out is None:
+            out = (c_all[t + bars] - e) / risk
+        else:
+            win += out > 0
+            loss += out < 0
+        Rs.append(out)
+        t += max(1, bars // 4)
+    return {"fired": fired, "target": int(win), "stop": int(loss), "neither": fired - int(win) - int(loss),
+            "avg_R": round(float(np.mean(Rs)), 2) if Rs else None, "classic": True}
+
+
+def rank_key_classic(c):
+    h = c.get("history") or {}
+    hist = (h.get("avg_R") or 0) if h.get("fired", 0) >= 5 else 0
+    return c["mc"]["edge"] * 100 + hist * 10 + c["a"]["score"] * 2
+
+
 # ----------------------------- Output ---------------------------------------
 
 def esc(s):
@@ -377,7 +444,10 @@ def format_text(day, picks, stats):
             lines.append(f"   📊 Butun bozor, 5 yil ({esc(b['group'])}): {n_tr} savdo → TP1 {b['win_pct']:.0f}% · "
                          f"stop {b['stop'] / b['trades'] * 100:.0f}% · {b['avg_R']:+.2f}R")
         h = c.get("history")
-        if h and h["fired"]:
+        if h and h["fired"] and h.get("classic"):
+            lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
+                         + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+        elif h and h["fired"]:
             lines.append(f"   📜 Shu aksiyada: {h['fired']} mustaqil savdo · {h['target']} TP1 / {h['stop']} stop"
                          + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
                          + ("" if h.get("enough") else f" <i>(ma'lumot kam, {B.MIN_TRADES} tadan kam)</i>"))
@@ -401,7 +471,7 @@ def format_text(day, picks, stats):
                f"Qoidalar 2021–24 yillarda topilgan va 2025–26 yillarda alohida tekshirilgan, natijalar komissiya "
                f"va slippage ayirilgan holda. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
     else:
-        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va kunlik savdo ($25M+) filtridan "
+        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va hajm (1 mln+ aksiya) filtridan "
                f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan "
                f"{stats['passed']} ta → eng yaxshi {len(picks)} ta. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
     lines += [how + (f" Kalibrlash: {stats['cal']}." if stats.get("cal") else ""),
@@ -523,7 +593,9 @@ def main():
     liquid = {}
     for s, df in prices.items():
         c, v = df["Close"].to_numpy(dtype=float), df["Volume"].to_numpy(dtype=float)
-        if c[-1] >= MIN_PRICE and np.mean(v[-21:-1] * c[-21:-1]) >= MIN_DOLLAR_VOLUME:
+        liquid_ok = (np.mean(v[-21:-1]) >= MIN_AVG_VOLUME if ALGO == "classic"
+                     else np.mean(v[-21:-1] * c[-21:-1]) >= MIN_DOLLAR_VOLUME)
+        if c[-1] >= MIN_PRICE and liquid_ok:
             liquid[s] = df
     unknown = [s for s in liquid if stocks[s]["cap"] is None and "S&P 500" not in stocks[s]["tags"]
                and "NASDAQ-100" not in stocks[s]["tags"]]
@@ -537,6 +609,8 @@ def main():
 
     cal = B.load_calibration()
     approved = cal.get("approved") if cal and cal.get("version", 1) >= 2 else None
+    if ALGO == "classic":
+        cal, approved = None, None
     if approved is not None:                             # strict: 150+ trades in the check period too
         approved = [r for r in approved if r["val"]["trades"] >= R.MIN_VAL_TRADES]
     regime = None
@@ -560,13 +634,12 @@ def main():
                 cands.append(c)
         print(f"Regime {regime}, approved rules {len(approved)}, LONG plans {longs}, matched rules {len(cands)}")
         cands.sort(key=rank_key_v2, reverse=True)
-    else:
-        cands, longs = [], 0
+    else:                                                # classic (26.10): the algorithm that found NTNX, NTAP
         for s, df in liquid.items():
             if time.time() - STARTED > TIME_BUDGET * 0.6:
                 break
             try:
-                is_long, c = evaluate(s, df, stocks[s])
+                is_long, c = evaluate_classic(s, df, stocks[s])
             except Exception as exc:
                 print(f"{s}: {exc}")
                 continue
@@ -574,24 +647,14 @@ def main():
             if c:
                 cands.append(c)
         print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
-
-        for c in cands:
-            c["base"] = B.calibration_group(cal, c["a"])
-            own = (cal or {}).get("per_stock", {}).get(c["symbol"])
-            if own:
-                c["history"] = dict(own, fired=own["trades"], enough=own["trades"] >= B.MIN_TRADES,
-                                    tested_bars=1260, source="calibration")
-        cands.sort(key=rank_key, reverse=True)
-        for c in cands[:25]:                                     # no weekly record yet: test the stock's own past now
-            if "history" in c or time.time() - STARTED > TIME_BUDGET * 0.85:
-                continue
-            c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
-        before = len(cands)
-        cands = [c for c in cands
-                 if not (c.get("history") and c["history"].get("enough") and (c["history"]["avg_R"] or 0) <= 0.05)
-                 and not (c.get("base") and c["base"]["trades"] >= 100 and (c["base"]["avg_R"] or 0) <= 0)]
-        print(f"Calibration {'loaded' if cal else 'missing'}: {before - len(cands)} removed by the 5-year records")
-        cands.sort(key=rank_key, reverse=True)
+        cands.sort(key=rank_key_classic, reverse=True)
+        for c in cands[:25]:                                 # the same rule on the last 250 bars
+            if time.time() - STARTED > TIME_BUDGET * 0.85:
+                break
+            c["history"] = classic_history(c["df"], B.HORIZON["1D"])
+        cands = [c for c in cands if not (c.get("history") and c["history"]["fired"] >= 5
+                                          and (c["history"]["avg_R"] or 0) < 0)]
+        cands.sort(key=rank_key_classic, reverse=True)
 
     picks = []
     for c in cands:
