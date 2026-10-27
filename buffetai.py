@@ -915,12 +915,17 @@ def one_line(s):
     return re.sub(r"\s+", " ", str(s or "")).strip()
 
 
+def pct(x):
+    return f"{'+' if x >= 0 else '−'}{abs(x):.1f}%"
+
+
 def plan_block(p):
-    q = [f"▶️ Kirish <code>{num(p['entry'])}</code>",
-         f"🛑 Stop <code>{num(p['stop'])}</code> <i>risk {p['risk_pct']}%</i>"]
-    for k, t in enumerate(p["targets"], 1):
-        q.append(f"🎯 TP{k} <code>{num(t['price'])}</code> <i>{(t['price'] / p['entry'] - 1) * 100:+.1f}%, 1:{t['rr']}</i>")
-    return q
+    """The plan as an aligned monospace block (one tap copies it in Telegram)."""
+    e = p["entry"]
+    rows = [("Kirish", e, ""), ("Stop", p["stop"], pct(p["stop"] / e * 100 - 100))]
+    rows += [(f"TP{k}", t["price"], f"{pct(t['price'] / e * 100 - 100):<7} 1:{t['rr']}")
+             for k, t in enumerate(p["targets"], 1)]
+    return "<pre>" + "\n".join(f"{n:<7}{num(v):>10}   {d}".rstrip() for n, v, d in rows) + "</pre>"
 
 
 def quote(lines, expandable=False):
@@ -954,15 +959,14 @@ def format_text(meta, a, ex, image_only):
 
         lines.append("🧭 <b>Savdo rejasi</b>")
         if p["side"] == "KUTISH":
-            q = [f"<i>{esc(p.get('reason', ''))}</i>",
-                 f"⬆️ {fp(p['breakout_up']['entry'])} dan yuqorida yopilsa: LONG"] + plan_block(p["breakout_up"])
-            q += [f"⬇️ {fp(p['breakout_down']['entry'])} dan pastda yopilsa: SHORT"] + plan_block(p["breakout_down"])
+            lines += [f"<i>{esc(p.get('reason', '')).capitalize()}</i>",
+                      f"⬆️ {fp(p['breakout_up']['entry'])} dan yuqorida yopilsa, LONG", plan_block(p["breakout_up"]),
+                      f"⬇️ {fp(p['breakout_down']['entry'])} dan pastda yopilsa, SHORT", plan_block(p["breakout_down"])]
         else:
-            q = plan_block(p)
+            lines.append(plan_block(p))
             if p.get("zone"):
-                q.append(f"💡 Yaxshiroq kirish ({'pullback' if p['side'] == 'LONG' else 'qaytish'}): "
-                         f"<code>{num(p['zone'])}</code> atrofi")
-        lines += quote(q)
+                lines.append(f"💡 Yaxshiroq kirish ({'pullback' if p['side'] == 'LONG' else 'qaytish'}): "
+                             f"<code>{num(p['zone'])}</code> atrofi")
         if ex.get("plan_comment"):
             lines.append(f"<i>{esc(one_line(ex['plan_comment']))}</i>")
         lines.append("")
@@ -982,16 +986,16 @@ def format_text(meta, a, ex, image_only):
             reps = f"{mc['replays']:,}".replace(",", " ")
             q = [f"TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi <b>{mc['p_stop'] * 100:.0f}%</b>, "
                  f"hech biri {mc['p_neither'] * 100:.0f}%",
-                 f"{mc['bars']} shamdan keyin narx {fp(mc['p5'])}–{fp(mc['p95'])} oralig'ida (90%), mediana {fp(mc['p50'])}",
-                 f"{v_icon} {esc(mc['verdict'])}"]
+                 f"{v_icon} {esc(mc['verdict'])}",
+                 f"<i>{mc['bars']} shamdan keyin narx {fp(mc['p5'])}–{fp(mc['p95'])} oralig'ida (90%), "
+                 f"mediana {fp(mc['p50'])}</i>"]
             h = x.get("history")
             if h and h["fired"]:
                 years = max(1, round(h["tested_bars"] / 252))
                 q.append(f"📜 Shu qoida ~{years} yilda: {h['fired']} savdo, {h['target']} TP1 / {h['stop']} stop"
                          + (f", {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
                          + ("" if h.get("enough", True) else " <i>(ma'lumot kam)</i>"))
-            lines += [f"🎲 <b>Time Machine</b>  <i>{reps} replay, {mc['bars']} sham</i>"] + quote(q)
-            lines += ["<i>Simulyatsiya o'tmishdagi shamlardan tuzilgan, bashorat emas.</i>", ""]
+            lines += [f"🎲 <b>Time Machine</b>  <i>{reps} replay, bashorat emas</i>"] + q + [""]
 
         q = []
         for icon_, title, key in (("📈", "Trend", "trend"), ("🕯", "Shamlar", "candles"),
@@ -1006,9 +1010,9 @@ def format_text(meta, a, ex, image_only):
         if q:
             lines += ["🔍 <b>Grafik tahlili</b>  <i>ochish uchun bosing</i>"] + quote(q, expandable=True) + [""]
 
-        lv = "  ".join(f"<code>{num(x_['price'])}</code>" for x_ in a["supports"]) or "—"
-        lr = "  ".join(f"<code>{num(x_['price'])}</code>" for x_ in a["resistances"]) or "— (narx cho'qqilar yaqinida)"
-        lines += ["🧱 <b>Darajalar</b>"] + quote([f"Qo'llab-quvvatlash  {lv}", f"Qarshilik  {lr}"]) + [""]
+        lv = "  ".join(num(x_["price"]) for x_ in a["supports"]) or "—"
+        lr = "  ".join(num(x_["price"]) for x_ in a["resistances"]) or "— cho'qqi yaqinida"
+        lines += ["🧱 <b>Darajalar</b>", f"<pre>Qarshilik  {lr}\nTayanch    {lv}</pre>", ""]
 
         risk = x.get("risk") or []
         sz = x.get("size")
@@ -1017,7 +1021,7 @@ def format_text(meta, a, ex, image_only):
             q.append(f"💼 ${sz['deposit']:,.0f} depozit va {sz['risk_pct']:g}% risk bilan: {sz['qty']:g} ta "
                      f"(≈ ${sz['cost']:,.2f}), stopda zarar ≈ ${sz['max_loss']:,.2f}")
         if q:
-            lines += ["🛡 <b>Risk va pozitsiya</b>"] + quote(q) + [""]
+            lines += ["🛡 <b>Risk va pozitsiya</b>"] + q + [""]
     else:
         if ex.get("summary"):
             lines += quote([esc(one_line(ex["summary"]))]) + [""]

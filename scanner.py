@@ -266,54 +266,67 @@ def num(x):
     return f"{x:,.2f}" if abs(x) >= 1 else f"{x:.4g}"
 
 
+def pct(x):
+    return f"{'+' if x >= 0 else '−'}{abs(x):.1f}%"
+
+
+def plan_pre(p):
+    """The plan as an aligned block (monospace, one tap copies it)."""
+    e = p["entry"]
+    rows = [("Kirish", e, ""), ("Stop", p["stop"], pct(p["stop"] / e * 100 - 100))]
+    rows += [(f"TP{k}", t["price"], pct(t["price"] / e * 100 - 100)) for k, t in enumerate(p["targets"][:2], 1)]
+    return "<pre>" + "\n".join(f"{n:<7}{num(v):>10}   {d}".rstrip() for n, v, d in rows) + "</pre>"
+
+
 def pick_lines(k, c, day):
     a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
-    t = p["targets"]
-    e = p["entry"]
-    up = (t[0]["price"] / e - 1) * 100
-    tags = ", ".join(info["tags"])
-    out = [f"{MEDALS[k]} <b>${esc(c['symbol'])}</b>  {esc(info['name'][:34])} <i>({esc(tags)})</i>"]
-    q = [f"▶️ Kirish <code>{num(e)}</code>   🛑 Stop <code>{num(p['stop'])}</code> <i>−{p['risk_pct']}%</i>",
-         f"🎯 TP1 <code>{num(t[0]['price'])}</code> <i>+{up:.1f}%, 1:{t[0]['rr']}</i>"
-         + (f"   TP2 <code>{num(t[1]['price'])}</code>" if len(t) > 1 else ""),
-         f"🎲 20 kunda TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"]
+    out = [f"{MEDALS[k]} <b>${esc(c['symbol'])}</b>  <i>{esc(info['name'][:38])}</i>", plan_pre(p),
+           f"🎲 TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"
+           f"  <i>(1:{p['targets'][0]['rr']})</i>"]
     h = c.get("history")
     if h and h["fired"]:
-        q.append(f"📜 Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
-                 + (f", <b>{h['avg_R']:+.2f}R</b>" if h["avg_R"] is not None else ""))
-    setups = ", ".join(x["name"] for x in a["setups"])
-    q.append(f"📈 {esc(a['trend']).capitalize()}, RSI {a['rsi']:.0f}" + (f". {esc(setups)}" if setups else ""))
+        out.append(f"📊 Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
+                   + (f", <b>{h['avg_R']:+.2f}R</b>" if h["avg_R"] is not None else ""))
+    ctx = f"{a['trend'].capitalize()}, RSI {a['rsi']:.0f}"
+    if a["setups"]:
+        nm = a["setups"][0]["name"]
+        ctx += ", " + nm[0].lower() + nm[1:]
     ev = c.get("events") or {}
     if ev.get("earnings"):
         d = datetime.fromisoformat(ev["earnings"])
-        q.append(f"📅 Keyingi hisobot {uz_date(d)}" if d.date() >= day.date() else
-                 f"📅 Oxirgi hisobot {uz_date(d)}, keyingisi hali e'lon qilinmagan")
+        ctx += f". Hisobot {uz_date(d)}" if d.date() >= day.date() else f". Oxirgi hisobot {uz_date(d)}"
+    out.append(f"<i>{esc(ctx)}</i>")
     for lv, txt in c["risk"]:
-        q.append(f"⚠️ {esc(txt)}")
-    return out + ["<blockquote>" + "\n".join(q) + "</blockquote>", ""]
+        out.append(f"⚠️ <i>{esc(txt)}</i>")
+    return out + [""]
 
 
 def format_text(day, picks, stats):
     short = day.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE
-    when = "bozor yopilishiga 30 daqiqa qolganda" if not stats.get("as_of") else "o'sha kungi yopilish bo'yicha (backtest)"
+    when = "yopilishga 30 daqiqa qolganda" if not stats.get("as_of") else "o'sha kungi yopilish bo'yicha (backtest)"
     lines = ["📡 <b>Kunlik nomzodlar</b>",
-             f"<i>{uz_date(day)} {day.year}, {when}" + (", bugun bozor 13:00 da yopiladi" if short and not stats.get("as_of") else "")
-             + "</i>", ""]
+             f"<i>{uz_date(day)} {day.year}, {when}" + (". Bugun bozor 13:00 da yopiladi" if short and not stats.get("as_of") else "")
+             + "</i>"]
+    if picks:
+        lines.append("<b>" + "   ".join(f"${c['symbol']}" for c in picks) + "</b>")
+    lines.append("")
     if not picks:
         lines += ["Bugun barcha shartlardan o'tgan aksiya yo'q. Shart bajarilmagan kuni savdo qilmaslik ham strategiya.", ""]
     for k, c in enumerate(picks):
         lines += pick_lines(k, c, day)
     f = stats
-    funnel = [f"{f['universe']} aksiya", f"{f['liquid']} likvid", f"{f['long']} LONG reja",
-              f"{f['tm']} Time Machine va riskdan o'tdi", f"{f['hist']} oxirgi yil tarixidan o'tdi",
-              f"{len(picks)} nomzod"]
+    steps = [(f["universe"], "aksiya tekshirildi"), (f["liquid"], "narx $5+ va kuniga 1 mln+ aksiya savdo"),
+             (f["long"], "Buffet AI LONG reja"), (f["tm"], "Time Machine va risk tekshiruvidan o'tdi"),
+             (f["hist"], "oxirgi yil tarixi zararsiz")]
+    if f.get("earn"):
+        steps.append((f["hist"] - f["earn"], f"hisobot yaqin bo'lgan {f['earn']} tasi chiqarildi"))
+    steps.append((len(picks), "nomzod" + (f" (eng yaxshi {TOP_N} tasi)" if f.get("ok", 0) > len(picks) else "")))
     lines += ["<blockquote expandable>🔬 <b>Qanday tanlandi</b>",
-              "\n".join(("   " if i else "") + ("↓ " if i else "") + x for i, x in enumerate(funnel)),
-              "Qoidalar: Buffet AI LONG reja, TP1 kamida 1:1, RSI 80 dan past, stop 12% ichida. Time Machine'da TP1 "
-              "zararsizlik chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yilda shu aksiyada qoida zarar "
-              "qilmagan. Hisoboti 4 hafta ichida bo'lganlar olinmaydi.",
-              "</blockquote>",
-              "💬 Batafsil tahlil uchun shu yerga yozing: <b>$" + (picks[0]["symbol"] if picks else "AAPL") + "</b>",
+              "\n".join(f"{'↓ ' if i else ''}<b>{n}</b> {t}" for i, (n, t) in enumerate(steps)),
+              "<i>Qoidalar: TP1 kamida 1:1, RSI 80 dan past, stop 12% ichida. Time Machine'da TP1 zararsizlik "
+              "chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yilda shu aksiyada qoida zarar qilmagan. "
+              "Hisoboti 4 hafta ichida bo'lganlar olinmaydi.</i></blockquote>",
+              "💬 Batafsil tahlil: shu yerga <b>$" + (picks[0]["symbol"] if picks else "AAPL") + "</b> deb yozing",
               ""]
     if f.get("partial"):
         lines += [f"<i>ℹ️ {f['partial']}</i>", ""]
@@ -469,19 +482,23 @@ def main():
     cands.sort(key=rank_key, reverse=True)
     n_hist = len(cands)
 
-    picks = []
-    for c in cands:
-        if len(picks) >= TOP_N:
+    picks, n_earn, n_ok = [], 0, 0
+    for c in cands:                                      # all of them are checked, so the count is complete
+        if len(picks) >= TOP_N and time.time() - STARTED > TIME_BUDGET * 0.95:
             break
         ev = B.events(c["symbol"], "1D", c["df"])
         if ev.get("earnings_in_window"):
             print(f"{c['symbol']}: earnings {ev['earnings']} inside the plan, skipped")
+            n_earn += 1
             continue
-        c["events"] = ev
-        c["risk"] = [r for r in B.risk_gate(c["a"]["plan"], c["a"], c["df"], ev, "stock") if r[0] == "warn"]
-        picks.append(c)
+        n_ok += 1
+        if len(picks) < TOP_N:
+            c["events"] = ev
+            c["risk"] = [r for r in B.risk_gate(c["a"]["plan"], c["a"], c["df"], ev, "stock") if r[0] == "warn"]
+            picks.append(c)
 
     stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "tm": n_tm, "hist": n_hist,
+             "earn": n_earn, "ok": n_ok,
              "as_of": as_of}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
