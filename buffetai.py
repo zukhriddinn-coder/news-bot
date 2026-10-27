@@ -719,19 +719,30 @@ def load_calibration(path="calibration.json"):
 
 
 def calibration_group(cal, a):
-    """The most specific market-wide group for this LONG signal: its setup, else its score, else all."""
+    """The most specific market-wide group for this LONG signal (Buffet AI's own exit, all 5 years):
+    its setup, else its score, else all."""
     if not cal:
         return None
     g = cal.get("groups", {})
+
+    def pick(key):
+        v = g.get(key)
+        if not v:
+            return None
+        st = v.get("A", {}).get("all") if cal.get("version", 1) >= 2 else v
+        return dict(st, group=key) if st and st.get("trades") else None
+
     for st in a.get("setups") or []:
-        key = f"setap: {st['name']}"
-        if key in g:
-            return dict(g[key], group=key)
+        r = pick(f"setap: {st['name']}")
+        if r:
+            return r
     sc = a["score"]
-    key = "ball +2" if sc <= 2 else "ball +3" if sc == 3 else "ball +4 va yuqori"
-    if key in g:
-        return dict(g[key], group=key)
-    return dict(g["all"], group="all") if g.get("all", {}).get("trades") else None
+    keys = (["ball +2"] if sc <= 2 else ["ball +3"] if sc == 3 else ["ball +4+", "ball +4 va yuqori"]) + ["all"]
+    for key in keys:
+        r = pick(key)
+        if r:
+            return r
+    return None
 
 
 def events(ysym, tf, df):

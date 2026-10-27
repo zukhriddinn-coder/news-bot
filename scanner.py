@@ -27,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 
 import buffetai as B
+import rules as R
 
 # ---------------------------------------------------------------------------
 # SETTINGS (you can edit these)
@@ -269,6 +270,49 @@ def rank_key(c):
             - max(0, a["plan"]["risk_pct"] - 6) * 2)   # prefer tighter stops
 
 
+def evaluate_v2(sym, df, info, approved, spy_ctx, cal):
+    """v2: a candidate only when the signal matches a rule that worked in BOTH test periods.
+    Returns (said LONG?, candidate or None)."""
+    a = B.analyse(df)
+    if a["plan"]["side"] != "LONG":
+        return False, None
+    if not R.basic_gate(a):
+        return True, None
+    f = R.features(a, df.iloc[-501:], spy_ctx)
+    matches = [r for r in approved if R.rule_matches(r["rule"], f)]
+    if not matches:
+        return True, None
+    rule = max(matches, key=lambda r: (r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2)
+    v = rule["variant"]
+    own = ((cal or {}).get("per_stock", {}).get(sym) or {}).get(v)
+    if own and own["trades"] >= B.MIN_TRADES and (own["avg_R"] or 0) <= 0:
+        return True, None                                   # this stock's own 5-year record is negative
+    e, st, tp = R.variant_plan(v, a)
+    risk = e - st
+    plan = {"side": "LONG", "entry": B.r2(e), "stop": B.r2(st), "risk_pct": round(risk / e * 100, 2),
+            "targets": [{"price": B.r2(tp), "rr": round((tp - e) / risk, 1)},
+                        {"price": B.r2(e + 2 * (tp - e)), "rr": round(2 * (tp - e) / risk, 1)}]}
+    a = dict(a, plan=plan)
+    mc = B.simulate(B.bar_pool(df), "LONG", e, st, tp, B.HORIZON["1D"])
+    hit = mc["p_target"] + mc["p_stop"]
+    mc["edge"] = round((mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1, 3)
+    risk_notes = B.risk_gate(plan, a, df, {}, "stock")
+    if any(lv == "block" for lv, _ in risk_notes):
+        return True, None
+    hist = (dict(own, fired=own["trades"], enough=own["trades"] >= B.MIN_TRADES) if own else None)
+    return True, {"symbol": sym, "info": info, "a": a, "mc": mc, "risk": risk_notes, "df": df,
+                  "rule": rule, "features": f, "history": hist}
+
+
+def rank_key_v2(c):
+    r, mc, h = c["rule"], c["mc"], c.get("history") or {}
+    own = (h.get("avg_R") or 0) if h.get("enough") else 0
+    return ((r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2 * 100   # the rule's 5-year result (both periods)
+            + mc["p_target"] * 20                                # Time Machine for this stock today
+            + own * 5                                            # this stock's own record with this exit
+            - max(0, c["a"]["plan"]["risk_pct"] - 8))            # prefer tighter stops
+
+
 # ----------------------------- Output ---------------------------------------
 
 def esc(s):
@@ -298,9 +342,16 @@ def format_text(day, picks, stats):
     title, subtitle, candle_note, pre_open = phase(day)
     lines = [f"📡 <b>Buffet AI · Nomzodlar · {title}</b>",
              f"<i>{day:%d.%m.%Y} · {subtitle}</i>", ""]
+    if stats.get("regime"):
+        lines += [("🟢 Bozor rejimi: SPY 200 kunlik o'rtachadan yuqori (o'sish rejimi)" if stats["regime"] == "SPY>MA200"
+                   else "🔴 Bozor rejimi: SPY 200 kunlik o'rtachadan past — LONG savdolar uchun xavfli davr"), ""]
     if not picks:
-        lines += ["Bugun barcha shartlardan o'tgan nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
-                  "kerak bo'lgan kunlar bo'ladi.", ""]
+        if stats.get("v2") and not stats.get("rules"):
+            lines += ["Hozircha birorta qoida 5 yillik sinovning ikkala davridan ham o'tmadi, shuning uchun nomzod "
+                      "berilmaydi. Ishlamaydigan signal yuborgandan ko'ra signal bermagan yaxshi.", ""]
+        else:
+            lines += ["Bugun tasdiqlangan qoidalarga mos nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
+                      "kerak bo'lgan kunlar bo'ladi.", ""]
     for k, c in enumerate(picks, 1):
         a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
         t = p["targets"]
@@ -313,6 +364,13 @@ def format_text(day, picks, stats):
                   f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
                   f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
                   f"(20 kun ichida)"]
+        ru = c.get("rule")
+        if ru:
+            d, v = ru["disc"], ru["val"]
+            lines += [f"   ✅ Qoida: {esc(R.human(ru['rule']))}",
+                      f"   🚪 Chiqish: {esc(R.VARIANTS.get(ru['variant'], ru['variant']))}",
+                      f"   📊 5 yillik sinov: 2021–24 → {d['trades']} savdo, TP {d['win_pct']:.0f}%, {d['avg_R']:+.2f}R · "
+                      f"2025–26 → {v['trades']} savdo, TP {v['win_pct']:.0f}%, {v['avg_R']:+.2f}R"]
         b = c.get("base")
         if b:
             n_tr = f"{b['trades']:,}".replace(",", " ")
@@ -336,10 +394,17 @@ def format_text(day, picks, stats):
             lines.append(f"   ⏰ Ochilishda: {fp(p['entry'] + a['atr'])} dan yuqori bo'lsa — kutib turing (gap), "
                          f"{fp(p['stop'])} dan past bo'lsa — reja bekor")
         lines.append("")
-    lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va kunlik savdo ($25M+) filtridan {stats['liquid']} ta "
-              f"→ Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan {stats['passed']} ta → "
-              f"eng yaxshi {len(picks)} ta. 5 yillik natijasi zaif signal turlari va aksiyalar, hisoboti ~4 hafta ichida "
-              f"bo'lganlar chiqarib tashlangan." + (f" Kalibrlash: {stats['cal']}." if stats.get("cal") else ""),
+    if stats.get("v2"):
+        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va savdo ($25M+) filtridan "
+               f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → 5 yillik sinovdan o'tgan "
+               f"{stats['rules']} ta qoidadan biriga mos {stats['passed']} ta → eng yaxshi {len(picks)} ta. "
+               f"Qoidalar 2021–24 yillarda topilgan va 2025–26 yillarda alohida tekshirilgan, natijalar komissiya "
+               f"va slippage ayirilgan holda. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
+    else:
+        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va kunlik savdo ($25M+) filtridan "
+               f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan "
+               f"{stats['passed']} ta → eng yaxshi {len(picks)} ta. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
+    lines += [how + (f" Kalibrlash: {stats['cal']}." if stats.get("cal") else ""),
               "", "💬 Batafsil tahlil uchun shu bo'limga yozing: <b>$TIKER</b> (masalan $" +
               (picks[0]["symbol"] if picks else "AAPL") + ")", ""]
     if stats.get("partial"):
@@ -470,38 +535,61 @@ def main():
                 liquid.pop(s, None)
     print(f"Liquid: {len(liquid)} of {len(prices)} with prices")
 
-    cands, longs = [], 0
-    for s, df in liquid.items():
-        if time.time() - STARTED > TIME_BUDGET * 0.6:
-            break
-        try:
-            is_long, c = evaluate(s, df, stocks[s])
-        except Exception as exc:
-            print(f"{s}: {exc}")
-            continue
-        longs += is_long
-        if c:
-            cands.append(c)
-    print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
-
     cal = B.load_calibration()
-    for c in cands:
-        c["base"] = B.calibration_group(cal, c["a"])
-        own = (cal or {}).get("per_stock", {}).get(c["symbol"])
-        if own:
-            c["history"] = dict(own, fired=own["trades"], enough=own["trades"] >= B.MIN_TRADES,
-                                tested_bars=1260, source="calibration")
-    cands.sort(key=rank_key, reverse=True)
-    for c in cands[:25]:                                     # no weekly record yet: test the stock's own past now
-        if "history" in c or time.time() - STARTED > TIME_BUDGET * 0.85:
-            continue
-        c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
-    before = len(cands)
-    cands = [c for c in cands
-             if not (c.get("history") and c["history"].get("enough") and (c["history"]["avg_R"] or 0) <= 0.05)
-             and not (c.get("base") and c["base"]["trades"] >= 100 and (c["base"]["avg_R"] or 0) <= 0)]
-    print(f"Calibration {'loaded' if cal else 'missing'}: {before - len(cands)} removed by the 5-year records")
-    cands.sort(key=rank_key, reverse=True)
+    approved = cal.get("approved") if cal and cal.get("version", 1) >= 2 else None
+    regime = None
+    cands, longs = [], 0
+    if approved is not None:                             # v2: only rules that passed both test periods
+        spy = download(["SPY"], period="2y", min_bars=250).get("SPY")
+        spy_ctx = R.spy_context(spy) if spy is not None else {}
+        if spy is not None:
+            last = spy_ctx[spy.index[-1].date()][0]
+            regime = "SPY>MA200" if last else "SPY<MA200"
+        for s, df in liquid.items():
+            if time.time() - STARTED > TIME_BUDGET * 0.7:
+                break
+            try:
+                is_long, c = evaluate_v2(s, df, stocks[s], approved, spy_ctx, cal)
+            except Exception as exc:
+                print(f"{s}: {exc}")
+                continue
+            longs += is_long
+            if c:
+                cands.append(c)
+        print(f"Regime {regime}, approved rules {len(approved)}, LONG plans {longs}, matched rules {len(cands)}")
+        cands.sort(key=rank_key_v2, reverse=True)
+    else:
+        cands, longs = [], 0
+        for s, df in liquid.items():
+            if time.time() - STARTED > TIME_BUDGET * 0.6:
+                break
+            try:
+                is_long, c = evaluate(s, df, stocks[s])
+            except Exception as exc:
+                print(f"{s}: {exc}")
+                continue
+            longs += is_long
+            if c:
+                cands.append(c)
+        print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
+
+        for c in cands:
+            c["base"] = B.calibration_group(cal, c["a"])
+            own = (cal or {}).get("per_stock", {}).get(c["symbol"])
+            if own:
+                c["history"] = dict(own, fired=own["trades"], enough=own["trades"] >= B.MIN_TRADES,
+                                    tested_bars=1260, source="calibration")
+        cands.sort(key=rank_key, reverse=True)
+        for c in cands[:25]:                                     # no weekly record yet: test the stock's own past now
+            if "history" in c or time.time() - STARTED > TIME_BUDGET * 0.85:
+                continue
+            c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
+        before = len(cands)
+        cands = [c for c in cands
+                 if not (c.get("history") and c["history"].get("enough") and (c["history"]["avg_R"] or 0) <= 0.05)
+                 and not (c.get("base") and c["base"]["trades"] >= 100 and (c["base"]["avg_R"] or 0) <= 0)]
+        print(f"Calibration {'loaded' if cal else 'missing'}: {before - len(cands)} removed by the 5-year records")
+        cands.sort(key=rank_key, reverse=True)
 
     picks = []
     for c in cands:
@@ -516,6 +604,7 @@ def main():
         picks.append(c)
 
     stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "passed": len(cands),
+             "v2": approved is not None, "rules": len(approved or []), "regime": regime,
              "cal": datetime.fromisoformat(cal["updated"]).strftime("%d.%m.%Y") if cal else None}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
