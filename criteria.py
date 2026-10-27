@@ -7,11 +7,6 @@ The 26.10 rules (the ones that found NTNX, NTAP, CME, ERIC, UNP), unchanged:
   3. Risk check: nothing blocking
   4. The same rule on this stock's last 250 bars: removed if it fired 5+ times and lost on average
   5. No earnings inside the plan (~4 weeks)
-Added on 27.10:
-  6. 5-year test: this stock's own record with the same rule over 5 years (independent trades, after costs,
-     from the weekly calibration). Removed if it has 15+ trades and lost on average.
-  7. Weekly calibration (whole market, 5 years, two periods): removed if the signal belongs to a group of
-     signals that lost money in BOTH 2021-24 and 2025-26. A group that made money in both is marked.
 """
 
 import time
@@ -26,10 +21,6 @@ MAX_RISK_PCT = 12
 MIN_EDGE = 0.05                 # Time Machine: 5+ points above break-even
 HIST_BARS = 250                 # the 26.10 history test: last 250 bars
 HIST_MIN_FIRED = 5
-FIVE_Y_MIN_TRADES = 15          # fewer trades in 5 years = not enough to judge
-CAL_MIN_DISC, CAL_MIN_VAL = 200, 150             # trades a market-wide group needs in each period
-CAL_BAD = (-0.05, -0.03)        # avg R in 2021-24 and 2025-26 at or below these = a losing group
-CAL_GOOD = (0.05, 0.03)         # ... at or above these = a winning group
 
 
 # ----------------------------- 1-3: the plan and Time Machine ---------------
@@ -116,54 +107,3 @@ def history_250(df, side="LONG", bars=None, max_tests=HIST_BARS, deadline=None):
 
 def history_ok(h):
     return not (h and h["fired"] >= HIST_MIN_FIRED and (h["avg_R"] or 0) < 0)
-
-
-# ----------------------------- 6: 5-year test of this stock -----------------
-
-def five_year(sym, cal, df=None, deadline=None):
-    """This stock's own 5-year record with the same rule and the same exit (Buffet AI's plan).
-    From the weekly calibration (independent trades, after costs); if the stock is not in it and 5 years of
-    bars are given, it is computed here."""
-    st = (((cal or {}).get("per_stock") or {}).get(sym) or {}).get("A")
-    if st:
-        return dict(st, source="calibration", enough=st["trades"] >= FIVE_Y_MIN_TRADES)
-    if df is not None and len(df) >= 1000:
-        h = B.history_test(df, "LONG", B.HORIZON["1D"], deadline=deadline)
-        return {"trades": h["trades"], "target": h["target"], "stop": h["stop"], "neither": h["neither"],
-                "avg_R": h["avg_R"], "win_pct": h["win_pct"], "source": "here", "enough": h["enough"]}
-    return None
-
-
-def five_year_ok(f5):
-    return not (f5 and f5["enough"] and (f5["avg_R"] or 0) < 0)
-
-
-# ----------------------------- 7: weekly calibration ------------------------
-
-def calibration_check(a, df, cal, spy_ctx):
-    """Which market-wide groups (5 years, Buffet AI's own exit) this LONG signal belongs to.
-    Returns {"ok", "bad": worst losing group or None, "good": best winning group or None} or None."""
-    if not cal or cal.get("version", 1) < 2:
-        return None
-    import rules as R
-    f = R.features(a, df.iloc[-501:], spy_ctx)
-    groups = cal.get("groups", {})
-    bad, good = [], []
-    for key in R.keys_of(f):
-        if key == "all":
-            continue
-        st = (groups.get(key) or {}).get("A")
-        if not st:
-            continue
-        d, v = st["disc"], st["val"]
-        if d["trades"] < CAL_MIN_DISC or v["trades"] < CAL_MIN_VAL:
-            continue
-        item = {"key": key, "label": R.human(key), "disc": d, "val": v}
-        if d["avg_R"] <= CAL_BAD[0] and v["avg_R"] <= CAL_BAD[1]:
-            bad.append(item)
-        elif d["avg_R"] >= CAL_GOOD[0] and v["avg_R"] >= CAL_GOOD[1]:
-            good.append(item)
-    worst = min(bad, key=lambda x: x["disc"]["avg_R"] + x["val"]["avg_R"]) if bad else None
-    best = max(good, key=lambda x: x["disc"]["avg_R"] + x["val"]["avg_R"]) if good else None
-    return {"ok": not bad, "bad": worst, "good": best, "regime": f["bozor"],
-            "updated": (cal.get("updated") or "")[:10]}

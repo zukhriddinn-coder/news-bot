@@ -4,9 +4,8 @@ Every US trading day at 15:30 New York time (30 minutes before the close) Google
 script on GitHub Actions.
   1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B (NASDAQ-100 tagged).
   2. Daily bars for all of them (Yahoo Finance, 2 years); price $5+ and 1M+ shares a day.
-  3-7. The 26.10 rules (criteria.py): Buffet AI LONG plan, Time Machine, risk check, 250-bar history.
-  8. 5-year test of each stock and the weekly calibration (calibration.json, made every Saturday).
-  9. The best 5 without earnings inside the plan are posted to the Buffet AI topic.
+  3-6. The 26.10 rules (criteria.py): Buffet AI LONG plan, Time Machine, risk check, 250-bar history.
+  7. The best 5 without earnings inside the plan are posted to the Buffet AI topic.
 These are CANDIDATES found by rules, not buy signals.
 """
 
@@ -24,7 +23,6 @@ import numpy as np
 
 import buffetai as B
 import criteria as K
-import rules as R
 
 # ---------------------------------------------------------------------------
 # SETTINGS (you can edit these)
@@ -34,7 +32,6 @@ TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
 MIN_AVG_VOLUME = 1_000_000     # shares per day (20-day average)
-MIN_DOLLAR_VOLUME = 25e6       # used only by the weekly calibration (calibrate.py)
 RUN_AT_NY = (15, 30)           # 15:30 New York = 30 minutes before the close (12:30 on 13:00 early-close days)
 RUN_WINDOW_MIN = 25            # Apps Script may be a little late; never after the close
 NYSE_EARLY_CLOSE = {"2026-11-27", "2026-12-24", "2027-11-26"}
@@ -284,16 +281,6 @@ def pick_lines(k, c, day):
     if h and h["fired"]:
         q.append(f"📜 Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
                  + (f", <b>{h['avg_R']:+.2f}R</b>" if h["avg_R"] is not None else ""))
-    f5 = c.get("five")
-    if f5 and f5["trades"]:
-        q.append(f"📚 5 yil: {f5['trades']} savdo, {f5['target']} TP1 / {f5['stop']} stop, <b>{f5['avg_R']:+.2f}R</b>"
-                 + ("" if f5["enough"] else " <i>(ma'lumot kam)</i>"))
-    else:
-        q.append("📚 5 yil: <i>ma'lumot yo'q</i>")
-    cal = c.get("cal")
-    if cal and cal.get("good"):
-        g = cal["good"]
-        q.append(f"⭐ Kuchli guruh: {esc(g['label'])} <i>({g['disc']['avg_R']:+.2f}R / {g['val']['avg_R']:+.2f}R)</i>")
     setups = ", ".join(x["name"] for x in a["setups"])
     q.append(f"📈 {esc(a['trend']).capitalize()}, RSI {a['rsi']:.0f}" + (f". {esc(setups)}" if setups else ""))
     ev = c.get("events") or {}
@@ -319,14 +306,12 @@ def format_text(day, picks, stats):
     f = stats
     funnel = [f"{f['universe']} aksiya", f"{f['liquid']} likvid", f"{f['long']} LONG reja",
               f"{f['tm']} Time Machine va riskdan o'tdi", f"{f['hist']} oxirgi yil tarixidan o'tdi",
-              f"{f['five']} 5 yillik sinovdan o'tdi", f"{f['cal']} kalibrlashdan o'tdi", f"{len(picks)} nomzod"]
+              f"{len(picks)} nomzod"]
     lines += ["<blockquote expandable>🔬 <b>Qanday tanlandi</b>",
               "\n".join(("   " if i else "") + ("↓ " if i else "") + x for i, x in enumerate(funnel)),
               "Qoidalar: Buffet AI LONG reja, TP1 kamida 1:1, RSI 80 dan past, stop 12% ichida. Time Machine'da TP1 "
-              "zararsizlik chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yil va 5 yil davomida shu aksiyada "
-              "qoida zarar qilmagan. Butun bozor bo'yicha ikkala davrda (2021–24 va 2025–26) zarar bergan guruhga "
-              "kirmaydi. Hisoboti 4 hafta ichida bo'lganlar olinmaydi."
-              + (f" Kalibrlash: {f['cal_date']}." if f.get("cal_date") else " Kalibrlash fayli hali yo'q."),
+              "zararsizlik chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yilda shu aksiyada qoida zarar "
+              "qilmagan. Hisoboti 4 hafta ichida bo'lganlar olinmaydi.",
               "</blockquote>",
               "💬 Batafsil tahlil uchun shu yerga yozing: <b>$" + (picks[0]["symbol"] if picks else "AAPL") + "</b>",
               ""]
@@ -389,12 +374,8 @@ def make_card(day, picks, stats):
         ax.text(0.66, top - 0.82, f"TP1 {fp(t0['price'])}  (1:{t0['rr']})", fontsize=9.5, color=T["tp"], va="center")
         ax.text(0.955, top - 0.42, f"{mc['p_target'] * 100:.0f}%", fontsize=18, fontweight="bold", color=T["up"],
                 va="center", ha="right")
-        ax.text(0.955, top - 0.72, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["muted"], va="center",
+        ax.text(0.955, top - 0.78, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["muted"], va="center",
                 ha="right")
-        f5 = c.get("five")
-        if f5 and f5["trades"]:
-            ax.text(0.955, top - 0.94, f"5 yil {f5['avg_R']:+.2f}R", fontsize=8.5, va="center", ha="right",
-                    color=T["up"] if f5["avg_R"] > 0 else T["muted"])
     ax.text(0.04, 0.3, "Nomzodlar — sotib olish signali emas · Time Machine: 5 000 replay, 20 kun",
             fontsize=8, color=T["muted"], va="center")
     ax.text(0.96, 0.3, "Trading Laboratory · Investitsion maslahat emas", fontsize=8, color=T["muted"],
@@ -488,31 +469,6 @@ def main():
     cands.sort(key=rank_key, reverse=True)
     n_hist = len(cands)
 
-    # ---- added 27.10: 5-year test and weekly calibration ----
-    cal = B.load_calibration()
-    spy_ctx = R.spy_context(spy) if spy is not None else {}
-    for c in cands:
-        c["five"] = K.five_year(c["symbol"], cal)
-    cands = [c for c in cands if K.five_year_ok(c["five"])]
-    n_five = len(cands)
-    kept = []
-    for c in cands:
-        if time.time() - STARTED > TIME_BUDGET * 0.9:
-            kept.append(c)                                   # out of time: not checked, kept
-            continue
-        try:
-            c["cal"] = K.calibration_check(c["a"], c["df"], cal, spy_ctx)
-        except Exception as exc:
-            print(f"{c['symbol']} calibration: {exc}")
-            c["cal"] = None
-        if c["cal"] and not c["cal"]["ok"]:
-            print(f"{c['symbol']}: losing market-wide group {c['cal']['bad']['key']}, skipped")
-            continue
-        kept.append(c)
-    cands = kept
-    n_cal = len(cands)
-    print(f"History: {n_hist}, 5 years: {n_five}, calibration: {n_cal}")
-
     picks = []
     for c in cands:
         if len(picks) >= TOP_N:
@@ -526,8 +482,7 @@ def main():
         picks.append(c)
 
     stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "tm": n_tm, "hist": n_hist,
-             "five": n_five, "cal": n_cal, "as_of": as_of,
-             "cal_date": uz_date(datetime.fromisoformat(cal["updated"][:10])) if cal and cal.get("updated") else None}
+             "as_of": as_of}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
                             "(qolganlari Yahoo'da topilmadi yoki cheklov).")

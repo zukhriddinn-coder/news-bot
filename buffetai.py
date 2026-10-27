@@ -223,8 +223,8 @@ Rules:
   say that replays are a simulation, not a prediction. If risk has a "block" item (earnings inside the
   plan), say clearly that the plan is risky because of it.
 - "screen" (daily charts) = the checks of the group's daily scanner for this ticker (Buffet AI LONG plan,
-  TP1 at least 1:1, RSI below 80, stop within 12%%, Time Machine edge, last-year history, 5-year test of this
-  stock, weekly market-wide calibration, no earnings inside the plan). If "passed" is false, say briefly in
+  TP1 at least 1:1, RSI below 80, stop within 12%%, Time Machine edge, last-year history, no earnings
+  inside the plan). If "passed" is false, say briefly in
   summary which important check failed; if it is true, say it passes the scanner's checks. Never call it a sure thing.
 - Short sentences. No markdown, no asterisks, no emoji.
 - Each text field: 1-4 sentences.
@@ -861,9 +861,6 @@ def screen(a, df, meta, ex, deadline):
     if meta.get("tf") != "1D" or meta.get("asset") in ("forex", "index", "futures", "crypto"):
         return None
     import criteria as K                                  # lazy: criteria.py imports this file
-    import rules as R
-    sym = meta["title"].lstrip("$")
-    cal = load_calibration()
     p = a["plan"]
     gates = K.plan_gates(a)
     out = {"long": p["side"] == "LONG"}
@@ -883,25 +880,6 @@ def screen(a, df, meta, ex, deadline):
         out["hist"] = h
         checks.append((K.history_ok(h), f"Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
                        + (f", {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")))
-    f5 = K.five_year(sym, cal, df, deadline=deadline)
-    out["five"] = f5
-    if f5 and f5["trades"]:
-        checks.append((K.five_year_ok(f5), f"5 yillik sinov: {f5['trades']} savdo, {f5['target']} TP1 / "
-                       f"{f5['stop']} stop, {f5['avg_R']:+.2f}R" + ("" if f5["enough"] else " (ma'lumot kam)")))
-    else:
-        checks.append((True, "5 yillik sinov: ma'lumot yo'q"))
-    if out["long"] and p.get("targets"):
-        spy = load_prices("SPY", "1D")
-        c = K.calibration_check(a, df, cal, R.spy_context(spy) if spy is not None else {})
-        out["cal"] = c
-        if c is None:
-            checks.append((True, "Haftalik kalibrlash: fayl hali yo'q"))
-        elif c["bad"]:
-            b = c["bad"]
-            checks.append((False, f"Kalibrlash: «{b['label']}» guruhi ikkala davrda zarar bergan "
-                           f"({b['disc']['avg_R']:+.2f}R / {b['val']['avg_R']:+.2f}R)"))
-        else:
-            checks.append((True, "Kalibrlash: zarar bergan guruhga kirmaydi"))
     evs = (ex or {}).get("events") or {}
     checks.append((not evs.get("earnings_in_window"),
                    f"Hisobot 4 hafta ichida emas" + (f" (keyingisi {uz_date(evs['earnings'])})"
@@ -993,9 +971,6 @@ def format_text(meta, a, ex, image_only):
             ok_n = sum(1 for ok, _ in sc["checks"] if ok)
             lines.append(f"📋 <b>Skaner shartlari</b>  {ok_n}/{len(sc['checks'])}")
             q = [f"{'✅' if ok else '❌'} {esc(t)}" for ok, t in sc["checks"]]
-            g = (sc.get("cal") or {}).get("good")
-            if g:
-                q.append(f"⭐ Kuchli guruh: {esc(g['label'])} ({g['disc']['avg_R']:+.2f}R / {g['val']['avg_R']:+.2f}R)")
             if not sc["long"]:
                 q.append("<i>Skaner faqat LONG signallarni tanlaydi. Buffet AI LONG desa, shartlar qayta tekshiriladi.</i>")
             lines += quote(q) + [""]
