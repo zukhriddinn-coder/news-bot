@@ -271,17 +271,18 @@ def pct(x):
 
 
 def plan_pre(p):
-    """The plan as an aligned block (monospace, one tap copies it)."""
+    """The plan as plain lines: Kirish, Stop, TP1, TP2."""
     e = p["entry"]
-    rows = [("Kirish", e, ""), ("Stop", p["stop"], pct(p["stop"] / e * 100 - 100))]
-    rows += [(f"TP{k}", t["price"], pct(t["price"] / e * 100 - 100)) for k, t in enumerate(p["targets"][:2], 1)]
-    return "<pre>" + "\n".join(f"{n:<7}{num(v):>10}   {d}".rstrip() for n, v, d in rows) + "</pre>"
+    rows = [f"Kirish <b>{num(e)}</b>", f"Stop <b>{num(p['stop'])}</b>  <i>{pct(p['stop'] / e * 100 - 100)}</i>"]
+    rows += [f"TP{k} <b>{num(t['price'])}</b>  <i>{pct(t['price'] / e * 100 - 100)}</i>"
+             for k, t in enumerate(p["targets"][:2], 1)]
+    return "\n".join(rows)
 
 
 def pick_lines(k, c, day):
     a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
     out = [f"{MEDALS[k]} <b>${esc(c['symbol'])}</b>  <i>{esc(info['name'][:38])}</i>", plan_pre(p),
-           f"🎲 TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"
+           f"✅ TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"
            f"  <i>(1:{p['targets'][0]['rr']})</i>"]
     h = c.get("history")
     if h and h["fired"]:
@@ -321,7 +322,7 @@ def format_text(day, picks, stats):
     if f.get("earn"):
         steps.append((f["hist"] - f["earn"], f"hisobot yaqin bo'lgan {f['earn']} tasi chiqarildi"))
     steps.append((len(picks), "nomzod" + (f" (eng yaxshi {TOP_N} tasi)" if f.get("ok", 0) > len(picks) else "")))
-    lines += ["<blockquote expandable>🔬 <b>Qanday tanlandi</b>",
+    lines += ["<blockquote expandable>🔎 <b>Qanday tanlandi</b>",
               "\n".join(f"{'↓ ' if i else ''}<b>{n}</b> {t}" for i, (n, t) in enumerate(steps)),
               "<i>Qoidalar: TP1 kamida 1:1, RSI 80 dan past, stop 12% ichida. Time Machine'da TP1 zararsizlik "
               "chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yilda shu aksiyada qoida zarar qilmagan. "
@@ -387,7 +388,7 @@ def make_card(day, picks, stats):
         ax.text(0.66, top - 0.82, f"TP1 {fp(t0['price'])}  (1:{t0['rr']})", fontsize=9.5, color=T["tp"], va="center")
         ax.text(0.955, top - 0.42, f"{mc['p_target'] * 100:.0f}%", fontsize=18, fontweight="bold", color=T["up"],
                 va="center", ha="right")
-        ax.text(0.955, top - 0.78, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["muted"], va="center",
+        ax.text(0.955, top - 0.78, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["sl"], va="center",
                 ha="right")
     ax.text(0.04, 0.3, "Nomzodlar — sotib olish signali emas · Time Machine: 5 000 replay, 20 kun",
             fontsize=8, color=T["muted"], va="center")

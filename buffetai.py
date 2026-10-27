@@ -920,12 +920,12 @@ def pct(x):
 
 
 def plan_block(p):
-    """The plan as an aligned monospace block (one tap copies it in Telegram)."""
+    """The plan as plain lines: Kirish, Stop, TP1, TP2, ..."""
     e = p["entry"]
-    rows = [("Kirish", e, ""), ("Stop", p["stop"], pct(p["stop"] / e * 100 - 100))]
-    rows += [(f"TP{k}", t["price"], f"{pct(t['price'] / e * 100 - 100):<7} 1:{t['rr']}")
+    rows = [f"Kirish <b>{num(e)}</b>", f"Stop <b>{num(p['stop'])}</b>  <i>{pct(p['stop'] / e * 100 - 100)}</i>"]
+    rows += [f"TP{k} <b>{num(t['price'])}</b>  <i>{pct(t['price'] / e * 100 - 100)}, 1:{t['rr']}</i>"
              for k, t in enumerate(p["targets"], 1)]
-    return "<pre>" + "\n".join(f"{n:<7}{num(v):>10}   {d}".rstrip() for n, v, d in rows) + "</pre>"
+    return "\n".join(rows)
 
 
 def quote(lines, expandable=False):
@@ -947,7 +947,7 @@ def format_text(meta, a, ex, image_only):
     if a:
         p = a["plan"]
         sc = a.get("screen")
-        icon = {"LONG": "🟢", "SHORT": "🔴", "KUTISH": "⏸"}[p["side"]]
+        icon = {"LONG": "🟢", "SHORT": "🔴", "KUTISH": "🟡"}[p["side"]]
         verdict = ""
         if sc and sc["long"]:
             verdict = ("  ✅ skaner shartlarining hammasidan o'tdi" if sc["passed"]
@@ -966,7 +966,7 @@ def format_text(meta, a, ex, image_only):
             lines.append(plan_block(p))
             if p.get("zone"):
                 lines.append(f"💡 Yaxshiroq kirish ({'pullback' if p['side'] == 'LONG' else 'qaytish'}): "
-                             f"<code>{num(p['zone'])}</code> atrofi")
+                             f"<b>{num(p['zone'])}</b> atrofi")
         if ex.get("plan_comment"):
             lines.append(f"<i>{esc(one_line(ex['plan_comment']))}</i>")
         lines.append("")
@@ -982,7 +982,7 @@ def format_text(meta, a, ex, image_only):
         x = a.get("extras") or {}
         mc = x.get("mc")
         if mc:
-            v_icon = {"good": "🟢", "bad": "🔴", "neutral": "⚖️"}[mc["verdict_kind"]]
+            v_icon = {"good": "🟢", "bad": "🔴", "neutral": "🟡"}[mc["verdict_kind"]]
             reps = f"{mc['replays']:,}".replace(",", " ")
             q = [f"TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi <b>{mc['p_stop'] * 100:.0f}%</b>, "
                  f"hech biri {mc['p_neither'] * 100:.0f}%",
@@ -1010,9 +1010,9 @@ def format_text(meta, a, ex, image_only):
         if q:
             lines += ["🔍 <b>Grafik tahlili</b>  <i>ochish uchun bosing</i>"] + quote(q, expandable=True) + [""]
 
-        lv = "  ".join(num(x_["price"]) for x_ in a["supports"]) or "—"
-        lr = "  ".join(num(x_["price"]) for x_ in a["resistances"]) or "— cho'qqi yaqinida"
-        lines += ["🧱 <b>Darajalar</b>", f"<pre>Qarshilik  {lr}\nTayanch    {lv}</pre>", ""]
+        lv = ", ".join(f"<b>{num(x_['price'])}</b>" for x_ in a["supports"]) or "—"
+        lr = ", ".join(f"<b>{num(x_['price'])}</b>" for x_ in a["resistances"]) or "<i>yo'q, narx cho'qqi yaqinida</i>"
+        lines += ["🧱 <b>Darajalar</b>", f"Qarshilik: {lr}", f"Tayanch: {lv}", ""]
 
         risk = x.get("risk") or []
         sz = x.get("size")
@@ -1044,7 +1044,7 @@ def format_text(meta, a, ex, image_only):
 
 THEME = {"bg": "#0b1220", "panel": "#111a2e", "line": "#1e2a44", "ink": "#e6edf7", "muted": "#8a99b8",
          "up": "#22c55e", "down": "#ef4444", "e20": "#38bdf8", "e50": "#f59e0b", "entry": "#e6edf7",
-         "tp": "#22c55e", "sl": "#ef4444", "wait": "#94a3b8", "rsi": "#a78bfa"}
+         "tp": "#22c55e", "sl": "#ef4444", "wait": "#facc15", "rsi": "#a78bfa"}   # 🟢 LONG/TP · 🔴 SHORT/SL · 🟡 KUTISH
 
 
 def _font():
@@ -1077,7 +1077,7 @@ def make_chart(meta, a):
     head.set_xlim(0, 1)
     head.set_ylim(0, 1)
     head.text(0.04, 0.62, meta["title"], fontsize=24, fontweight="bold", color=T["ink"], va="center")
-    head.text(0.04, 0.24, f"{TF_NAMES.get(meta['tf'], meta['tf'])} · narx {fp(a['price'])} · RSI {a['rsi']} · "
+    head.text(0.04, 0.24, f"{'Kunlik grafik' if meta['tf'] == '1D' else TF_NAMES.get(meta['tf'], meta['tf'])} · narx {fp(a['price'])} · RSI {a['rsi']} · "
                           f"trend: {a['trend']}", fontsize=10, color=T["muted"], va="center")
     p = a["plan"]
     mc = (a.get("extras") or {}).get("mc")
@@ -1266,7 +1266,7 @@ def main():
         side = a["plan"]["side"]
         sc = a.get("screen") or {}
         cap_line = (f"🧠 <b>{esc(meta['title'])}</b>  {'kunlik' if meta['tf'] == '1D' else esc(TF_NAMES.get(meta['tf'], meta['tf']))} grafik\n"
-                    f"{ {'LONG': '🟢', 'SHORT': '🔴', 'KUTISH': '⏸'}[side]} <b>{side}</b>, RSI {a['rsi']:.0f}, {esc(a['trend'])}"
+                    f"{ {'LONG': '🟢', 'SHORT': '🔴', 'KUTISH': '🟡'}[side]} <b>{side}</b>, RSI {a['rsi']:.0f}, {esc(a['trend'])}"
                     + (("\n✅ Skaner shartlarining hammasidan o'tdi" if sc.get("passed")
                         else f"\n⚠️ {sc.get('failed')} ta skaner sharti bajarilmadi") if sc.get("long") else ""))
         send_photo(make_chart(meta, a), cap_line)
