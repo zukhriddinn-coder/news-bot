@@ -1,13 +1,12 @@
 """
 Trading Laboratory -> Buffet AI daily scanner ("Kunlik nomzodlar")
-Every trading day, 30 minutes after the US open (10:00 New York time), GitHub Actions runs this script.
-  1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B
-     (NASDAQ-100 members are tagged). Sources: datasets/s-and-p-500-companies (GitHub), Nasdaq's
-     screener (market caps), Wikipedia (NASDAQ-100 list). Fallbacks are built in.
-  2. Daily bars for all of them (Yahoo Finance, 2 years), liquidity filter.
-  3. The full Buffet AI rule on every stock (trend, divergence, candles, setups, levels, plan).
-  4. LONG plans only: Time Machine (5,000 replays) + the same rule on past bars + risk gate.
-  5. The best 5 that pass (no earnings inside the plan) are posted to the Buffet AI topic.
+Every US trading day at 15:30 New York time (30 minutes before the close) Google Apps Script starts this
+script on GitHub Actions.
+  1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B (NASDAQ-100 tagged).
+  2. Daily bars for all of them (Yahoo Finance, 2 years); price $5+ and 1M+ shares a day.
+  3-7. The 26.10 rules (criteria.py): Buffet AI LONG plan, Time Machine, risk check, 250-bar history.
+  8. 5-year test of each stock and the weekly calibration (calibration.json, made every Saturday).
+  9. The best 5 without earnings inside the plan are posted to the Buffet AI topic.
 These are CANDIDATES found by rules, not buy signals.
 """
 
@@ -23,7 +22,9 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 
-import buffetai_2510 as B          # frozen copy of buffetai.py from 26.10 03:06 (the version that found NTNX, NTAP)
+import buffetai as B
+import criteria as K
+import rules as R
 
 # ---------------------------------------------------------------------------
 # SETTINGS (you can edit these)
@@ -33,12 +34,11 @@ TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
 MIN_AVG_VOLUME = 1_000_000     # shares per day (20-day average)
-RUN_AT_NY = (10, 0)            # 10:00 New York time = 30 minutes after the open
-RUN_WINDOW_MIN = 50            # GitHub cron can be late; run if within 50 minutes after RUN_AT_NY
+MIN_DOLLAR_VOLUME = 25e6       # used only by the weekly calibration (calibrate.py)
+RUN_AT_NY = (15, 30)           # 15:30 New York = 30 minutes before the close (12:30 on 13:00 early-close days)
+RUN_WINDOW_MIN = 25            # Apps Script may be a little late; never after the close
+NYSE_EARLY_CLOSE = {"2026-11-27", "2026-12-24", "2027-11-26"}
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
-MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
-MAX_RSI = 80                   # skip stocks that are already extremely overbought
-MAX_RISK_PCT = 12              # skip plans whose stop is more than 12% away
 SP500_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
 NASDAQ_SCREENER = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&download=true&exchange=nasdaq"
 NASDAQ_LISTED = "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
@@ -219,25 +219,17 @@ def yahoo_caps(symbols):
 # ----------------------------- Ranking --------------------------------------
 
 def evaluate(sym, df, info):
-    """Buffet AI on one stock -> (said LONG?, candidate or None when a gate fails)."""
+    """The 26.10 rules 1-3 on one stock -> (said LONG?, candidate or None when a gate fails)."""
     a = B.analyse(df)
-    p = a["plan"]
-    if p["side"] != "LONG":
+    gates = K.plan_gates(a)
+    if not gates[0][0]:
         return False, None
-    if not p.get("targets") or p["targets"][0]["rr"] < 1.0:
+    if not all(ok for ok, _ in gates):
         return True, None
-    if a["rsi"] >= MAX_RSI or p["risk_pct"] > MAX_RISK_PCT:     # too hot to chase / stop too far
+    mc = K.time_machine(df, a)
+    if not K.tm_ok(mc):
         return True, None
-    bars = B.HORIZON["1D"]
-    pool = B.bar_pool(df)
-    mc = B.simulate(pool, "LONG", p["entry"], p["stop"], p["targets"][0]["price"], bars)
-    kind, verdict = B.mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
-    hit = mc["p_target"] + mc["p_stop"]
-    edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
-    if edge < MIN_EDGE:
-        return True, None
-    mc.update(verdict_kind=kind, verdict=verdict, edge=round(edge, 3))
-    risk = B.risk_gate(p, a, df, {}, "stock")
+    risk = B.risk_gate(a["plan"], a, df, {}, "stock")
     if any(lv == "block" for lv, _ in risk):
         return True, None
     return True, {"symbol": sym, "info": info, "a": a, "mc": mc, "risk": risk, "df": df}
@@ -263,44 +255,85 @@ def esc(s):
 fp = B.fp
 
 
+OYLAR = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr",
+         "dekabr"]
+MEDALS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+
+
+def uz_date(d):
+    return f"{d.day} {OYLAR[d.month - 1]}"
+
+
+def num(x):
+    """Price without the $ sign, for <code> (tap to copy in Telegram)."""
+    return f"{x:,.2f}" if abs(x) >= 1 else f"{x:.4g}"
+
+
+def pick_lines(k, c, day):
+    a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
+    t = p["targets"]
+    e = p["entry"]
+    up = (t[0]["price"] / e - 1) * 100
+    tags = ", ".join(info["tags"])
+    out = [f"{MEDALS[k]} <b>${esc(c['symbol'])}</b>  {esc(info['name'][:34])} <i>({esc(tags)})</i>"]
+    q = [f"▶️ Kirish <code>{num(e)}</code>   🛑 Stop <code>{num(p['stop'])}</code> <i>−{p['risk_pct']}%</i>",
+         f"🎯 TP1 <code>{num(t[0]['price'])}</code> <i>+{up:.1f}%, 1:{t[0]['rr']}</i>"
+         + (f"   TP2 <code>{num(t[1]['price'])}</code>" if len(t) > 1 else ""),
+         f"🎲 20 kunda TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"]
+    h = c.get("history")
+    if h and h["fired"]:
+        q.append(f"📜 Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
+                 + (f", <b>{h['avg_R']:+.2f}R</b>" if h["avg_R"] is not None else ""))
+    f5 = c.get("five")
+    if f5 and f5["trades"]:
+        q.append(f"📚 5 yil: {f5['trades']} savdo, {f5['target']} TP1 / {f5['stop']} stop, <b>{f5['avg_R']:+.2f}R</b>"
+                 + ("" if f5["enough"] else " <i>(ma'lumot kam)</i>"))
+    else:
+        q.append("📚 5 yil: <i>ma'lumot yo'q</i>")
+    cal = c.get("cal")
+    if cal and cal.get("good"):
+        g = cal["good"]
+        q.append(f"⭐ Kuchli guruh: {esc(g['label'])} <i>({g['disc']['avg_R']:+.2f}R / {g['val']['avg_R']:+.2f}R)</i>")
+    setups = ", ".join(x["name"] for x in a["setups"])
+    q.append(f"📈 {esc(a['trend']).capitalize()}, RSI {a['rsi']:.0f}" + (f". {esc(setups)}" if setups else ""))
+    ev = c.get("events") or {}
+    if ev.get("earnings"):
+        d = datetime.fromisoformat(ev["earnings"])
+        q.append(f"📅 Keyingi hisobot {uz_date(d)}" if d.date() >= day.date() else
+                 f"📅 Oxirgi hisobot {uz_date(d)}, keyingisi hali e'lon qilinmagan")
+    for lv, txt in c["risk"]:
+        q.append(f"⚠️ {esc(txt)}")
+    return out + ["<blockquote>" + "\n".join(q) + "</blockquote>", ""]
+
+
 def format_text(day, picks, stats):
-    lines = [f"📡 <b>Buffet AI · Kunlik nomzodlar</b>",
-             f"<i>{day:%d.%m.%Y} · AQSh sessiyasi ochilganidan 30 daqiqa keyin · kunlik grafik</i>", ""]
+    short = day.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE
+    when = "bozor yopilishiga 30 daqiqa qolganda" if not stats.get("as_of") else "o'sha kungi yopilish bo'yicha (backtest)"
+    lines = ["📡 <b>Kunlik nomzodlar</b>",
+             f"<i>{uz_date(day)} {day.year}, {when}" + (", bugun bozor 13:00 da yopiladi" if short and not stats.get("as_of") else "")
+             + "</i>", ""]
     if not picks:
-        lines += ["Bugun barcha shartlardan o'tgan nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
-                  "kerak bo'lgan kunlar bo'ladi.", ""]
-    for k, c in enumerate(picks, 1):
-        a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
-        t = p["targets"]
-        setups = ", ".join(s["name"] for s in a["setups"]) or "—"
-        lines += [f"{k}️⃣ <b>${esc(c['symbol'])}</b> · {esc(info['name'][:40])} · "
-                  f"<i>{esc(', '.join(info['tags']))}</i>",
-                  f"   Narx {fp(a['price'])} · trend: {esc(a['trend'])} · RSI {a['rsi']}",
-                  f"   🔎 Setap: {esc(setups)}",
-                  f"   Kirish {fp(p['entry'])} · 🛑 SL {fp(p['stop'])} ({p['risk_pct']}%) · "
-                  f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
-                  f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
-                  f"(20 kun ichida)"]
-        h = c.get("history")
-        if h and h["fired"]:
-            lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
-                         + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
-        ev = c.get("events") or {}
-        if ev.get("earnings"):
-            lines.append(f"   📅 Keyingi hisobot: {datetime.fromisoformat(ev['earnings']):%d.%m.%Y}")
-        for lv, txt in c["risk"]:
-            lines.append(f"   ⚠️ {esc(txt)}")
-        lines.append("")
-    lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx va hajm filtridan {stats['liquid']} ta "
-              f"→ Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan {stats['passed']} ta → "
-              f"eng yaxshi {len(picks)} ta. Hisoboti reja muddati (~4 hafta) ichida bo'lganlar chiqarib tashlangan.",
-              "", "💬 Batafsil tahlil uchun shu bo'limga yozing: <b>$TIKER</b> (masalan $" +
-              (picks[0]["symbol"] if picks else "AAPL") + ")", ""]
-    if stats.get("partial"):
-        lines += [f"<i>ℹ️ {stats['partial']}</i>", ""]
-    lines.append("<i>⚠️ Bu qoidalar asosida topilgan NOMZODLAR, sotib olish signali emas. Bugungi sham hali "
-                 "yopilmagan. Ehtimollar o'tmishdagi shamlarga asoslangan simulyatsiya. Investitsion maslahat emas. "
-                 "Buffet AI Warren Buffett bilan bog'liq emas.</i>")
+        lines += ["Bugun barcha shartlardan o'tgan aksiya yo'q. Shart bajarilmagan kuni savdo qilmaslik ham strategiya.", ""]
+    for k, c in enumerate(picks):
+        lines += pick_lines(k, c, day)
+    f = stats
+    funnel = [f"{f['universe']} aksiya", f"{f['liquid']} likvid", f"{f['long']} LONG reja",
+              f"{f['tm']} Time Machine va riskdan o'tdi", f"{f['hist']} oxirgi yil tarixidan o'tdi",
+              f"{f['five']} 5 yillik sinovdan o'tdi", f"{f['cal']} kalibrlashdan o'tdi", f"{len(picks)} nomzod"]
+    lines += ["<blockquote expandable>🔬 <b>Qanday tanlandi</b>",
+              "\n".join(("   " if i else "") + ("↓ " if i else "") + x for i, x in enumerate(funnel)),
+              "Qoidalar: Buffet AI LONG reja, TP1 kamida 1:1, RSI 80 dan past, stop 12% ichida. Time Machine'da TP1 "
+              "zararsizlik chegarasidan kamida 5 punkt ko'p birinchi keladi. Oxirgi yil va 5 yil davomida shu aksiyada "
+              "qoida zarar qilmagan. Butun bozor bo'yicha ikkala davrda (2021–24 va 2025–26) zarar bergan guruhga "
+              "kirmaydi. Hisoboti 4 hafta ichida bo'lganlar olinmaydi."
+              + (f" Kalibrlash: {f['cal_date']}." if f.get("cal_date") else " Kalibrlash fayli hali yo'q."),
+              "</blockquote>",
+              "💬 Batafsil tahlil uchun shu yerga yozing: <b>$" + (picks[0]["symbol"] if picks else "AAPL") + "</b>",
+              ""]
+    if f.get("partial"):
+        lines += [f"<i>ℹ️ {f['partial']}</i>", ""]
+    lines.append("<i>Bu qoidalar topgan nomzodlar, sotib olish signali emas. Ehtimollar o'tmishga asoslangan "
+                 "simulyatsiya. Investitsion maslahat emas. Buffet AI Warren Buffett bilan bog'liq emas.</i>")
     return "\n".join(lines)
 
 
@@ -320,7 +353,8 @@ def make_card(day, picks, stats):
     ax.set_xlim(0, 1)
     ax.set_ylim(0, H)
     ax.text(0.04, H - 0.55, "Kunlik nomzodlar", fontsize=24, fontweight="bold", color=T["ink"], va="center")
-    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · kunlik grafik",
+    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · "
+            + ("yopilishga 30 daqiqa" if not stats.get("as_of") else "backtest"),
             fontsize=10, color=T["muted"], va="center")
     ax.text(0.96, H - 0.5, f"{stats['universe']} → {len(picks)}", fontsize=20, fontweight="bold", color=T["up"],
             va="center", ha="right")
@@ -355,8 +389,12 @@ def make_card(day, picks, stats):
         ax.text(0.66, top - 0.82, f"TP1 {fp(t0['price'])}  (1:{t0['rr']})", fontsize=9.5, color=T["tp"], va="center")
         ax.text(0.955, top - 0.42, f"{mc['p_target'] * 100:.0f}%", fontsize=18, fontweight="bold", color=T["up"],
                 va="center", ha="right")
-        ax.text(0.955, top - 0.78, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["muted"], va="center",
+        ax.text(0.955, top - 0.72, f"stop {mc['p_stop'] * 100:.0f}%", fontsize=9, color=T["muted"], va="center",
                 ha="right")
+        f5 = c.get("five")
+        if f5 and f5["trades"]:
+            ax.text(0.955, top - 0.94, f"5 yil {f5['avg_R']:+.2f}R", fontsize=8.5, va="center", ha="right",
+                    color=T["up"] if f5["avg_R"] > 0 else T["muted"])
     ax.text(0.04, 0.3, "Nomzodlar — sotib olish signali emas · Time Machine: 5 000 replay, 20 kun",
             fontsize=8, color=T["muted"], va="center")
     ax.text(0.96, 0.3, "Trading Laboratory · Investitsion maslahat emas", fontsize=8, color=T["muted"],
@@ -377,21 +415,25 @@ def send(png, text, caption):
 
 def main():
     if not CHAT_ID or not B.BOT_TOKEN:
-        raise SystemExit("BUFFET_BOT_TOKEN va BUFFET_CHAT_ID secret'larini qo'shing")
+        raise SystemExit("XATO: GitHub secret topilmadi — " + ", ".join(
+            n for n, v in (("BUFFET_BOT_TOKEN", B.BOT_TOKEN), ("BUFFET_CHAT_ID", CHAT_ID)) if not v)
+            + " ni Settings → Secrets and variables → Actions ga qo'shing")
     now = ny_now()
     as_of = os.environ.get("AS_OF", "").strip()      # backtest: "2026-10-24" = run as if on that day (bars up to it)
     if as_of:
         now = now.replace(year=int(as_of[:4]), month=int(as_of[5:7]), day=int(as_of[8:10]), hour=16, minute=0)
-    mode = (os.environ.get("MODE", "") or "morning").strip().lower()      # Apps Script: 09:57 and 14:57 New York
-    at = (9, 50) if mode == "morning" else (11, 50) if now.strftime("%Y-%m-%d") in ("2026-11-27", "2026-12-24", "2027-11-26") else (14, 50)
+    at = (12, 30) if now.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE else RUN_AT_NY
     target = now.replace(hour=at[0], minute=at[1], second=0, microsecond=0)
-    if not FORCE and not as_of and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
+    if not FORCE and not as_of and not (-5 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN
+                                        and now.weekday() < 5):
         print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
         return
     print(f"New York {now:%Y-%m-%d %H:%M}: scanning")
 
     stocks = universe()
-    spy = download(["SPY"], period="1mo", min_bars=5).get("SPY")
+    spy = download(["SPY"], period="2y", min_bars=250).get("SPY")
+    if as_of and spy is not None:
+        spy = spy[spy.index.date <= now.date()]
     if spy is not None and not FORCE and not as_of and spy.index[-1].date() != now.date():
         print(f"SPY last bar {spy.index[-1].date()}: market closed today (holiday)")
         return
@@ -421,6 +463,7 @@ def main():
                 liquid.pop(s, None)
     print(f"Liquid: {len(liquid)} of {len(prices)} with prices")
 
+    # ---- the 26.10 rules (unchanged) ----
     cands, longs = [], 0
     for s, df in liquid.items():
         if time.time() - STARTED > TIME_BUDGET * 0.6:
@@ -433,16 +476,42 @@ def main():
         longs += is_long
         if c:
             cands.append(c)
-    print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
+    n_tm = len(cands)
+    print(f"LONG plans: {longs}, passed Time Machine + risk: {n_tm}")
 
     cands.sort(key=rank_key, reverse=True)
     for c in cands[:25]:                                     # history test for the best ones only
         if time.time() - STARTED > TIME_BUDGET * 0.85:
             break
-        c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
-    cands = [c for c in cands if not (c.get("history") and c["history"]["fired"] >= 5
-                                      and (c["history"]["avg_R"] or 0) < 0)]
+        c["history"] = K.history_250(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
+    cands = [c for c in cands if K.history_ok(c.get("history"))]
     cands.sort(key=rank_key, reverse=True)
+    n_hist = len(cands)
+
+    # ---- added 27.10: 5-year test and weekly calibration ----
+    cal = B.load_calibration()
+    spy_ctx = R.spy_context(spy) if spy is not None else {}
+    for c in cands:
+        c["five"] = K.five_year(c["symbol"], cal)
+    cands = [c for c in cands if K.five_year_ok(c["five"])]
+    n_five = len(cands)
+    kept = []
+    for c in cands:
+        if time.time() - STARTED > TIME_BUDGET * 0.9:
+            kept.append(c)                                   # out of time: not checked, kept
+            continue
+        try:
+            c["cal"] = K.calibration_check(c["a"], c["df"], cal, spy_ctx)
+        except Exception as exc:
+            print(f"{c['symbol']} calibration: {exc}")
+            c["cal"] = None
+        if c["cal"] and not c["cal"]["ok"]:
+            print(f"{c['symbol']}: losing market-wide group {c['cal']['bad']['key']}, skipped")
+            continue
+        kept.append(c)
+    cands = kept
+    n_cal = len(cands)
+    print(f"History: {n_hist}, 5 years: {n_five}, calibration: {n_cal}")
 
     picks = []
     for c in cands:
@@ -456,12 +525,14 @@ def main():
         c["risk"] = [r for r in B.risk_gate(c["a"]["plan"], c["a"], c["df"], ev, "stock") if r[0] == "warn"]
         picks.append(c)
 
-    stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "passed": len(cands)}
+    stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "tm": n_tm, "hist": n_hist,
+             "five": n_five, "cal": n_cal, "as_of": as_of,
+             "cal_date": uz_date(datetime.fromisoformat(cal["updated"][:10])) if cal and cal.get("updated") else None}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
                             "(qolganlari Yahoo'da topilmadi yoki cheklov).")
-    caption = (f"📡 <b>Buffet AI · Kunlik nomzodlar</b> · {now:%d.%m.%Y}\n"
-               + (" · ".join(f"${c['symbol']}" for c in picks) if picks else "Bugun nomzod yo'q"))
+    caption = (f"📡 <b>Kunlik nomzodlar</b> · {uz_date(now)}\n"
+               + ("  ".join(f"${c['symbol']}" for c in picks) if picks else "Bugun nomzod yo'q"))
     send(make_card(now, picks, stats), format_text(now, picks, stats), caption)
     print(f"Sent {len(picks)} candidates in {time.time() - STARTED:.0f}s")
 
