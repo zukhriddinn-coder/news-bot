@@ -1,9 +1,6 @@
 """
 Trading Laboratory -> Buffet AI daily scanner ("Kunlik nomzodlar")
-Twice every trading day (started by Google Apps Script, scanner.gs):
-  - "morning": starts 09:57 New York, candidates arrive about 10:00 (30 minutes after the open);
-  - "close":   starts 14:57 New York, candidates arrive about 15:00, one hour before the close
-               (12:00 on 13:00 early-close days).
+Every trading day, 30 minutes after the US open (10:00 New York time), GitHub Actions runs this script.
   1. Universe: S&P 500 members + NASDAQ-listed common stocks with market cap >= $2B
      (NASDAQ-100 members are tagged). Sources: datasets/s-and-p-500-companies (GitHub), Nasdaq's
      screener (market caps), Wikipedia (NASDAQ-100 list). Fallbacks are built in.
@@ -22,12 +19,11 @@ import re
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 
-import buffetai as B
-import rules as R
+import buffetai_2510 as B          # frozen copy of buffetai.py from 26.10 03:06 (the version that found NTNX, NTAP)
 
 # ---------------------------------------------------------------------------
 # SETTINGS (you can edit these)
@@ -36,19 +32,13 @@ import rules as R
 TOP_N = 5                      # candidates per day
 MIN_CAP = 2e9                  # NASDAQ stocks: market cap at least $2B (S&P 500 members always included)
 MIN_PRICE = 5.0
-ALGO = "classic"               # "classic" = the 26.10 algorithm (NTNX, NTAP): 250-bar history, softer filters
-                               # "evidence" = only rules that passed the 5-year test (calibration.json)
-MIN_AVG_VOLUME = 1_000_000     # classic: 20-day average volume in shares
-MIN_DOLLAR_VOLUME = 25e6       # evidence: $ traded per day (20-day average)
-RUN_WINDOW_MIN = 40            # start late at most 40 minutes (the market closes at 16:00)
+MIN_AVG_VOLUME = 1_000_000     # shares per day (20-day average)
+RUN_AT_NY = (10, 0)            # 10:00 New York time = 30 minutes after the open
+RUN_WINDOW_MIN = 50            # GitHub cron can be late; run if within 50 minutes after RUN_AT_NY
 TIME_BUDGET = 22 * 60          # seconds for the whole scan
 MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
 MAX_RSI = 80                   # skip stocks that are already extremely overbought
 MAX_RISK_PCT = 12              # skip plans whose stop is more than 12% away
-TOP_WATCH = 5                  # waiting-list stocks per scan (extended now, entry zone given)
-MAX_EXT_ATR = 1.5              # entry check: price at most 1.5 ATR above EMA20, otherwise it is chasing
-ZONE_DAYS = 5                  # an entry zone is valid for 5 trading days
-WATCH_FILE = "watchlist.json"  # waiting list kept between scans (saved to the repo by scanner.yml)
 SP500_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
 NASDAQ_SCREENER = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&download=true&exchange=nasdaq"
 NASDAQ_LISTED = "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
@@ -60,12 +50,6 @@ WIKI_NDX = "https://en.wikipedia.org/wiki/Nasdaq-100"
 CHAT_ID = os.environ.get("BUFFET_CHAT_ID", "").strip()
 THREAD_ID = os.environ.get("BUFFET_THREAD_ID", "").strip()
 FORCE = os.environ.get("FORCE", "").strip().lower() in ("1", "true", "yes")
-MODE = (os.environ.get("MODE", "") or "close").strip().lower()   # "morning" (10:00 NY) or "close" (15:00 NY)
-
-# NYSE calendar (from day-trader-skill's trader-alerts, nyse.com hours-calendars, read 2026-10-13)
-NYSE_HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26",
-                 "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
-NYSE_EARLY_CLOSE = {"2026-11-27", "2026-12-24", "2027-11-26"}      # the market closes at 13:00
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0 Safari/537.36", "Accept": "application/json, text/plain, */*",
       "Accept-Language": "en-US,en;q=0.9"}
@@ -155,12 +139,7 @@ def nasdaq_caps():
     except Exception as exc:
         print(f"Nasdaq screener: {exc}")
     out = {}                                           # fallback: the symbol file, caps from Yahoo later
-    try:
-        listed = get(NASDAQ_LISTED).splitlines()[1:]
-    except Exception as exc:
-        print(f"nasdaqlisted.txt: {exc} -> S&P 500 and NASDAQ-100 only today")
-        return out
-    for line in listed:
+    for line in get(NASDAQ_LISTED).splitlines()[1:]:
         p = line.split("|")
         if len(p) < 8 or p[3] != "N" or p[6] != "N" or BAD_NAME.search(p[1]):
             continue
@@ -255,7 +234,7 @@ def evaluate(sym, df, info):
     kind, verdict = B.mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
     hit = mc["p_target"] + mc["p_stop"]
     edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
-    if edge < MIN_EDGE or mc["p_target"] <= mc["p_stop"]:     # TP1 must also come first more often
+    if edge < MIN_EDGE:
         return True, None
     mc.update(verdict_kind=kind, verdict=verdict, edge=round(edge, 3))
     risk = B.risk_gate(p, a, df, {}, "stock")
@@ -266,237 +245,13 @@ def evaluate(sym, df, info):
 
 def rank_key(c):
     h = c.get("history") or {}
-    own = (h.get("avg_R") or 0) if h.get("enough") else 0          # this stock's 5-year record (15+ trades only)
-    base = (c.get("base") or {}).get("avg_R") or 0                  # the whole market, same signal type
+    hist = (h.get("avg_R") or 0) if h.get("fired", 0) >= 5 else 0
     a, mc = c["a"], c["mc"]
     return (mc["edge"] * 100                       # Time Machine: how far above break-even
             + mc["p_target"] * 40                  # ... and how often TP1 actually comes within 20 days
-            + base * 15                            # market-wide 5-year result of this signal type
-            + own * 5                              # this stock's own 5-year result
+            + hist * 10                            # the same rule on past bars
             + a["score"] * 2                       # Buffet AI signal strength
             - max(0, a["plan"]["risk_pct"] - 6) * 2)   # prefer tighter stops
-
-
-def evaluate_v2(sym, df, info, approved, spy_ctx, cal):
-    """v2: a candidate only when the signal matches a rule that worked in BOTH test periods.
-    Returns (said LONG?, candidate or None)."""
-    a = B.analyse(df)
-    if a["plan"]["side"] != "LONG":
-        return False, None
-    if not R.basic_gate(a):
-        return True, None
-    f = R.features(a, df.iloc[-501:], spy_ctx)
-    matches = [r for r in approved if R.rule_matches(r["rule"], f)]
-    if not matches:
-        return True, None
-    rule = max(matches, key=lambda r: (r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2)
-    v = rule["variant"]
-    own = ((cal or {}).get("per_stock", {}).get(sym) or {}).get(v)
-    if own and own["trades"] >= B.MIN_TRADES and (own["avg_R"] or 0) <= 0:
-        return True, None                                   # this stock's own 5-year record is negative
-    e, st, tp = R.variant_plan(v, a)
-    risk = e - st
-    plan = {"side": "LONG", "entry": B.r2(e), "stop": B.r2(st), "risk_pct": round(risk / e * 100, 2),
-            "targets": [{"price": B.r2(tp), "rr": round((tp - e) / risk, 1)},
-                        {"price": B.r2(e + 2 * (tp - e)), "rr": round(2 * (tp - e) / risk, 1)}]}
-    a = dict(a, plan=plan)
-    mc = B.simulate(B.bar_pool(df), "LONG", e, st, tp, B.HORIZON["1D"])
-    hit = mc["p_target"] + mc["p_stop"]
-    mc["edge"] = round((mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1, 3)
-    risk_notes = B.risk_gate(plan, a, df, {}, "stock")
-    if any(lv == "block" for lv, _ in risk_notes):
-        return True, None
-    hist = (dict(own, fired=own["trades"], enough=own["trades"] >= B.MIN_TRADES) if own else None)
-    return True, {"symbol": sym, "info": info, "a": a, "mc": mc, "risk": risk_notes, "df": df,
-                  "rule": rule, "features": f, "history": hist}
-
-
-def rank_key_v2(c):
-    r, mc, h = c["rule"], c["mc"], c.get("history") or {}
-    own = (h.get("avg_R") or 0) if h.get("enough") else 0
-    return ((r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2 * 100   # the rule's 5-year result (both periods)
-            + mc["p_target"] * 20                                # Time Machine for this stock today
-            + own * 5                                            # this stock's own record with this exit
-            - max(0, c["a"]["plan"]["risk_pct"] - 8))            # prefer tighter stops
-
-
-# ----------------------------- Classic algorithm (26.10) --------------------
-
-def evaluate_classic(sym, df, info):
-    """Buffet AI LONG plan + Time Machine edge of 5+ points + no blocking risk (the 26.10 rules)."""
-    a = B.analyse(df)
-    p = a["plan"]
-    if p["side"] != "LONG":
-        return False, None
-    if not p.get("targets") or p["targets"][0]["rr"] < 1.0:
-        return True, None
-    mc = B.simulate(B.bar_pool(df), "LONG", p["entry"], p["stop"], p["targets"][0]["price"], B.HORIZON["1D"])
-    kind, verdict = B.mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
-    hit = mc["p_target"] + mc["p_stop"]
-    edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
-    if edge < MIN_EDGE:
-        return True, None
-    mc.update(verdict_kind=kind, verdict=verdict, edge=round(edge, 3))
-    risk = B.risk_gate(p, a, df, {}, "stock")
-    if any(lv == "block" for lv, _ in risk):
-        return True, None
-    return True, {"symbol": sym, "info": info, "a": a, "mc": mc, "risk": risk, "df": df}
-
-
-def classic_history(df, bars, last=250):
-    """The 26.10 history test: the same rule on the last 250 bars, a new signal looked for every bars/4 bars."""
-    h_all, l_all, c_all = (df[k].to_numpy(dtype=float) for k in ("High", "Low", "Close"))
-    n = len(df)
-    t = max(60, n - bars - last)
-    fired = win = loss = 0
-    Rs = []
-    while t < n - bars:
-        a = B.analyse(df.iloc[max(0, t + 1 - B.ANALYSE_WINDOW):t + 1], light=True)
-        p = a["plan"]
-        if p["side"] != "LONG" or not p.get("targets"):
-            t += 1
-            continue
-        fired += 1
-        e, st, tg = p["entry"], p["stop"], p["targets"][0]["price"]
-        risk = abs(e - st)
-        out = None
-        for j in range(t + 1, t + 1 + bars):
-            if l_all[j] <= st:
-                out = -1.0
-                break
-            if h_all[j] >= tg:
-                out = (tg - e) / risk
-                break
-        if out is None:
-            out = (c_all[t + bars] - e) / risk
-        else:
-            win += out > 0
-            loss += out < 0
-        Rs.append(out)
-        t += max(1, bars // 4)
-    return {"fired": fired, "target": int(win), "stop": int(loss), "neither": fired - int(win) - int(loss),
-            "avg_R": round(float(np.mean(Rs)), 2) if Rs else None, "classic": True}
-
-
-def rank_key_classic(c):
-    h = c.get("history") or {}
-    hist = (h.get("avg_R") or 0) if h.get("fired", 0) >= 5 else 0
-    return c["mc"]["edge"] * 100 + hist * 10 + c["a"]["score"] * 2
-
-
-
-# ----------------------------- Entry check / entry zone ---------------------
-# The classic rule chooses the direction well but gives the entry at the current price, even when the
-# price has already run far away. Every candidate is checked: is it at an entry point now?
-#   "ready" -> a signal as before;  "watch" -> extended: a limit entry zone near EMA20 / support is given.
-
-def entry_check(a):
-    """(ready?, reasons why not) on the last daily bar."""
-    sr = a["_series"]
-    o, c, rs, e20 = sr["o"], sr["c"], sr["rsi"], sr["e20"]
-    atr = a["atr"] or 1e-9
-    why = []
-    ext = (c[-1] - e20[-1]) / atr
-    if ext > MAX_EXT_ATR:
-        why.append(f"narx EMA20 dan {ext:.1f} ATR yuqorida (narx ortidan quvish bo'ladi)")
-    recent = rs[-6:-1]
-    if len(recent) and np.nanmax(recent) >= 70 and rs[-1] < np.nanmax(recent) - 3:
-        why.append(f"RSI {np.nanmax(recent):.0f} dan {rs[-1]:.0f} ga qaytmoqda")
-    body = o[-1] - c[-1]
-    engulf = c[-1] < o[-1] and c[-2] > o[-2] and o[-1] >= c[-2] and c[-1] <= o[-2]
-    if body >= 0.6 * atr or engulf:
-        why.append("oxirgi sham kuchli qizil" + (" (yutuvchi sham)" if engulf else ""))
-    return not why, why
-
-
-def entry_zone(c):
-    """Limit entry for an extended candidate: the highest support between EMA20 and the price, else EMA20.
-    Stop 1.2 ATR under the zone; TP1 = the recent high or the plan's target if it pays 1.5-3R, else 2R.
-    Time Machine is re-run from the zone: TP1 must beat break-even by 5+ points and come first more often."""
-    a, df = c["a"], c["df"]
-    p, atr, price = a["plan"], a["atr"], a["price"]
-    e20 = a["ema20"]
-    sups = [s["price"] for s in a.get("supports", []) if e20 - 0.5 * atr <= s["price"] <= price - 0.5 * atr]
-    center = max(sups) if sups else e20
-    if center >= price - 0.3 * atr or price - center > 4 * atr:   # too close to matter / too far to come back soon
-        return None
-    limit = center + 0.2 * atr
-    stop = center - 1.2 * atr
-    risk = limit - stop
-    hi20 = float(df["High"].to_numpy(dtype=float)[-20:].max())
-    plan_tps = [t["price"] for t in p["targets"]]
-    # TP1: the recent high (where the pullback started) if it pays 1.5R+, else the plan's next target, else 2R
-    tp1 = next((x for x in [hi20] + plan_tps if limit + 1.5 * risk <= x <= limit + 3 * risk), limit + 2 * risk)
-    rr = (tp1 - limit) / risk
-    tp2 = next((x for x in plan_tps if x > tp1 + 0.5 * risk), limit + 2 * (tp1 - limit))
-    mc = B.simulate(B.bar_pool(df), "LONG", limit, stop, tp1, B.HORIZON["1D"])
-    hit = mc["p_target"] + mc["p_stop"]
-    edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
-    if edge < MIN_EDGE or mc["p_target"] < mc["p_stop"]:
-        return None
-    mc["edge"] = round(edge, 3)
-    plan = {"side": "LONG", "entry": B.r2(limit), "stop": B.r2(stop), "risk_pct": round(risk / limit * 100, 2),
-            "targets": [{"price": B.r2(tp1), "rr": round(rr, 1)},
-                        {"price": B.r2(tp2), "rr": round((tp2 - limit) / risk, 1)}],
-            "zone": [B.r2(center - 0.2 * atr), B.r2(limit)]}
-    return plan, mc
-
-
-def add_days(d, n):
-    """d (date) + n trading days (weekends and NYSE holidays skipped)."""
-    k = 0
-    while k < n:
-        d += timedelta(days=1)
-        if d.weekday() < 5 and d.isoformat() not in NYSE_HOLIDAYS:
-            k += 1
-    return d
-
-
-def load_watch():
-    try:
-        with open(WATCH_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def save_watch(w):
-    with open(WATCH_FILE, "w", encoding="utf-8") as f:
-        json.dump(w, f, ensure_ascii=False, indent=1)
-
-
-def check_watch(watch, prices, today):
-    """Bars since a zone was given: did the price come into the zone? Returns (alerts, updated list)."""
-    alerts, keep = [], {}
-    for sym, z in watch.items():
-        df = prices.get(sym)
-        if df is None:
-            if z["until"] >= today.isoformat():
-                keep[sym] = z
-            continue
-        after = df[df.index.date > date.fromisoformat(z["added"])]
-        lo, cl = after["Low"].to_numpy(dtype=float), after["Close"].to_numpy(dtype=float)
-        status = z.get("status", "wait")
-        if status == "wait":
-            for j in range(len(after)):
-                if lo[j] <= z["entry"]:
-                    status = "hit"
-                    z["hit_date"] = str(after.index[j].date())
-                    break
-        if status == "hit" and not z.get("alerted"):
-            last = float(cl[-1]) if len(cl) else z["entry"]
-            if last <= z["stop"]:
-                status = "cancel"
-                alerts.append(dict(z, symbol=sym, last=last, cancel=True))
-            else:
-                alerts.append(dict(z, symbol=sym, last=last))
-                z["alerted"] = True
-        z["status"] = status
-        if status == "wait" and z["until"] >= today.isoformat():
-            keep[sym] = z
-        elif status == "hit" and z["until"] >= today.isoformat():
-            keep[sym] = z                       # kept so the same zone is not given again
-    return alerts, keep
 
 
 # ----------------------------- Output ---------------------------------------
@@ -508,124 +263,43 @@ def esc(s):
 fp = B.fp
 
 
-def phase(now):
-    """(title, subtitle, candle note, pre_open) for this run."""
-    open_t = now.replace(hour=9, minute=30, second=0, microsecond=0)
-    if MODE == "morning" and now < open_t:
-        return ("Bozor ochilishidan oldin", "bozor ochilishidan oldin · kechagi yopilgan kunlik sham",
-                "Tahlil kechagi to'liq yopilgan shamlar bo'yicha.", True)
-    if MODE == "morning":
-        mins = int((now - open_t).total_seconds() // 60)
-        return ("Sessiya boshida", f"sessiya ochilganidan {mins} daqiqa keyin · bugungi sham endi shakllanmoqda",
-                "Bugungi sham endi shakllanmoqda: kun oxirigacha signal o'zgarishi mumkin.", False)
-    short = now.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE
-    return ("Yopilishga 1 soat", "bozor yopilishiga 1 soat qolganda" + (" (bugun qisqa kun, 13:00 da yopiladi)"
-                                                                         if short else "") + " · kunlik grafik",
-            "Bugungi sham ~85% shakllangan.", False)
-
-
-def item_lines(k, c, day, pre_open, wait=False):
-    a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
-    t = p["targets"]
-    setups = ", ".join(s["name"] for s in a["setups"]) or "—"
-    lines = [f"{k}️⃣ <b>${esc(c['symbol'])}</b> · {esc(info['name'][:40])} · "
-              f"<i>{esc(', '.join(info['tags']))}</i>",
-              f"   Narx {fp(a['price'])} · trend: {esc(a['trend'])} · RSI {a['rsi']}",
-              f"   🔎 Setap: {esc(setups)}",
-              (f"   ⏳ Kirish zonasi {fp(p['zone'][0])}–{fp(p['zone'][1])} (limit {fp(p['entry'])}) · 🛑 SL"
-               if wait else f"   Kirish {fp(p['entry'])} · 🛑 SL") + f" {fp(p['stop'])} ({p['risk_pct']}%) · "
-              f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
-              f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
-              f"(20 kun ichida)"]
-    ru = c.get("rule")
-    if ru:
-        d, v = ru["disc"], ru["val"]
-        lines += [f"   ✅ Qoida: {esc(R.human(ru['rule']))}",
-                  f"   🚪 Chiqish: {esc(R.VARIANTS.get(ru['variant'], ru['variant']))}",
-                  f"   📊 5 yillik sinov: 2021–24 → {d['trades']} savdo, TP {d['win_pct']:.0f}%, {d['avg_R']:+.2f}R · "
-                  f"2025–26 → {v['trades']} savdo, TP {v['win_pct']:.0f}%, {v['avg_R']:+.2f}R"]
-    b = c.get("base")
-    if b:
-        n_tr = f"{b['trades']:,}".replace(",", " ")
-        lines.append(f"   📊 Butun bozor, 5 yil ({esc(b['group'])}): {n_tr} savdo → TP1 {b['win_pct']:.0f}% · "
-                     f"stop {b['stop'] / b['trades'] * 100:.0f}% · {b['avg_R']:+.2f}R")
-    h = c.get("history")
-    if h and h["fired"] and h.get("classic"):
-        lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
-                     + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
-    elif h and h["fired"]:
-        lines.append(f"   📜 Shu aksiyada: {h['fired']} mustaqil savdo · {h['target']} TP1 / {h['stop']} stop"
-                     + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
-                     + ("" if h.get("enough") else f" <i>(ma'lumot kam, {B.MIN_TRADES} tadan kam)</i>"))
-    ev = c.get("events") or {}
-    if ev.get("earnings"):
-        d = datetime.fromisoformat(ev["earnings"])
-        if d.date() >= day.date():
-            lines.append(f"   📅 Keyingi hisobot: {d:%d.%m.%Y}")
-        else:
-            lines.append(f"   📅 Oxirgi hisobot: {d:%d.%m.%Y} (keyingisi sanasi hali e'lon qilinmagan)")
-    for lv, txt in c["risk"]:
-        lines.append(f"   ⚠️ {esc(txt)}")
-    if wait:
-        lines.insert(3, f"   ✋ Hozir emas: {esc('; '.join(c.get('why') or []))}")
-    elif pre_open:
-        lines.append(f"   ⏰ Ochilishda: {fp(p['entry'] + a['atr'])} dan yuqori bo'lsa — kutib turing (gap), "
-                     f"{fp(p['stop'])} dan past bo'lsa — reja bekor")
-    if wait:
-        lines.append(f"   🗓 Zona {datetime.fromisoformat(add_days(day.date(), ZONE_DAYS).isoformat()):%d.%m} gacha amal qiladi; "
-                     f"narx zonaga tushsa, shu yerda xabar beriladi (agar o'sha paytda narx {fp(p['stop'])} "
-                     f"dan past bo'lsa — reja bekor).")
-    lines.append("")
-    return lines
-
-
 def format_text(day, picks, stats):
-    title, subtitle, candle_note, pre_open = phase(day)
-    lines = [f"📡 <b>Buffet AI · Nomzodlar · {title}</b>",
-             f"<i>{day:%d.%m.%Y} · {subtitle}</i>", ""]
-    if stats.get("regime"):
-        lines += [("🟢 Bozor rejimi: SPY 200 kunlik o'rtachadan yuqori (o'sish rejimi)" if stats["regime"] == "SPY>MA200"
-                   else "🔴 Bozor rejimi: SPY 200 kunlik o'rtachadan past — LONG savdolar uchun xavfli davr"), ""]
-    waits, alerts = stats.get("waits") or [], stats.get("alerts") or []
-    if alerts:
-        lines += ["✅ <b>Kutish ro'yxatidan yangiliklar</b>", ""]
-        for z in alerts:
-            if z.get("cancel"):
-                lines += [f"• <b>${esc(z['symbol'])}</b>: ❌ reja bekor — narx zonadan o'tib stop ({fp(z['stop'])}) "
-                          f"ostiga tushdi, hozir {fp(z['last'])}", ""]
-                continue
-            lines += [f"• <b>${esc(z['symbol'])}</b>: narx {fp(z['entry'])} kirish zonasiga tushdi"
-                      f" ({datetime.fromisoformat(z['hit_date']):%d.%m}), hozir {fp(z['last'])}",
-                      f"   Reja: kirish {fp(z['entry'])} · 🛑 SL {fp(z['stop'])} · 🎯 TP1 {fp(z['tp1'])} (1:{z['rr']})"
-                      f" · TP2 {fp(z['tp2'])}", ""]
-    lines += ["🟢 <b>Kirishga tayyor</b> — narx kirish nuqtasida", ""]
+    lines = [f"📡 <b>Buffet AI · Kunlik nomzodlar</b>",
+             f"<i>{day:%d.%m.%Y} · AQSh sessiyasi ochilganidan 30 daqiqa keyin · kunlik grafik</i>", ""]
     if not picks:
-        lines += ["Bugun kirish nuqtasida turgan nomzod yo'q. Bu ham natija: narx ortidan quvgandan ko'ra kutgan yaxshi.", ""]
+        lines += ["Bugun barcha shartlardan o'tgan nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
+                  "kerak bo'lgan kunlar bo'ladi.", ""]
     for k, c in enumerate(picks, 1):
-        lines += item_lines(k, c, day, pre_open)
-    if waits:
-        lines += ["⏳ <b>Kutish ro'yxati</b> — yaxshi aksiya, lekin narx uzoqlashib ketgan. Limit zonada kiriladi.", ""]
-        for k, c in enumerate(waits, 1):
-            lines += item_lines(k, c, day, pre_open, wait=True)
-    if stats.get("v2"):
-        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va savdo ($25M+) filtridan "
-               f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → 5 yillik sinovdan o'tgan "
-               f"{stats['rules']} ta qoidadan biriga mos {stats['passed']} ta → eng yaxshi {len(picks)} ta. "
-               f"Qoidalar 2021–24 yillarda topilgan va 2025–26 yillarda alohida tekshirilgan, natijalar komissiya "
-               f"va slippage ayirilgan holda. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
-    else:
-        how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va hajm (1 mln+ aksiya) filtridan "
-               f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan "
-               f"{stats['passed']} ta → kirish nuqtasi tekshiruvi: tayyor {len(picks)} ta, kutish ro'yxati "
-               f"{len(stats.get('waits') or [])} ta (narx EMA20 dan 1.5 ATR dan uzoq, RSI 70 dan qaytayotgan yoki kuchli "
-               f"qizil sham). Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
-    lines += [how + (f" Kalibrlash: {stats['cal']}." if stats.get("cal") else ""),
+        a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
+        t = p["targets"]
+        setups = ", ".join(s["name"] for s in a["setups"]) or "—"
+        lines += [f"{k}️⃣ <b>${esc(c['symbol'])}</b> · {esc(info['name'][:40])} · "
+                  f"<i>{esc(', '.join(info['tags']))}</i>",
+                  f"   Narx {fp(a['price'])} · trend: {esc(a['trend'])} · RSI {a['rsi']}",
+                  f"   🔎 Setap: {esc(setups)}",
+                  f"   Kirish {fp(p['entry'])} · 🛑 SL {fp(p['stop'])} ({p['risk_pct']}%) · "
+                  f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
+                  f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
+                  f"(20 kun ichida)"]
+        h = c.get("history")
+        if h and h["fired"]:
+            lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
+                         + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+        ev = c.get("events") or {}
+        if ev.get("earnings"):
+            lines.append(f"   📅 Keyingi hisobot: {datetime.fromisoformat(ev['earnings']):%d.%m.%Y}")
+        for lv, txt in c["risk"]:
+            lines.append(f"   ⚠️ {esc(txt)}")
+        lines.append("")
+    lines += [f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx va hajm filtridan {stats['liquid']} ta "
+              f"→ Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan {stats['passed']} ta → "
+              f"eng yaxshi {len(picks)} ta. Hisoboti reja muddati (~4 hafta) ichida bo'lganlar chiqarib tashlangan.",
               "", "💬 Batafsil tahlil uchun shu bo'limga yozing: <b>$TIKER</b> (masalan $" +
               (picks[0]["symbol"] if picks else "AAPL") + ")", ""]
     if stats.get("partial"):
         lines += [f"<i>ℹ️ {stats['partial']}</i>", ""]
-    lines.append(f"<i>⚠️ Bu qoidalar asosida topilgan NOMZODLAR, sotib olish signali emas. {candle_note} "
-                 "Ehtimollar o'tmishdagi shamlarga asoslangan simulyatsiya. Investitsion maslahat emas. "
+    lines.append("<i>⚠️ Bu qoidalar asosida topilgan NOMZODLAR, sotib olish signali emas. Bugungi sham hali "
+                 "yopilmagan. Ehtimollar o'tmishdagi shamlarga asoslangan simulyatsiya. Investitsion maslahat emas. "
                  "Buffet AI Warren Buffett bilan bog'liq emas.</i>")
     return "\n".join(lines)
 
@@ -638,36 +312,30 @@ def make_card(day, picks, stats):
 
     T = B.THEME
     plt.rcParams["font.family"] = B._font()
-    waits = stats.get("waits") or []
-    rows = [(c, False) for c in picks] + [(c, True) for c in waits]
-    n = max(len(rows), 1)
+    n = max(len(picks), 1)
     H = 2.0 + 1.25 * n + 0.6
     fig = plt.figure(figsize=(10, H), dpi=160, facecolor=T["bg"])
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_axis_off()
     ax.set_xlim(0, 1)
     ax.set_ylim(0, H)
-    title, subtitle, _, _ = phase(day)
-    ax.text(0.04, H - 0.55, f"Nomzodlar · {title}", fontsize=24, fontweight="bold", color=T["ink"], va="center")
-    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · {subtitle.split(' · ')[0]}",
+    ax.text(0.04, H - 0.55, "Kunlik nomzodlar", fontsize=24, fontweight="bold", color=T["ink"], va="center")
+    ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · kunlik grafik",
             fontsize=10, color=T["muted"], va="center")
-    ax.text(0.96, H - 0.5, f"{len(picks)} + {len(waits)}", fontsize=20, fontweight="bold", color=T["up"],
+    ax.text(0.96, H - 0.5, f"{stats['universe']} → {len(picks)}", fontsize=20, fontweight="bold", color=T["up"],
             va="center", ha="right")
-    ax.text(0.96, H - 0.95, f"{stats['universe']} aksiyadan: tayyor + kutish", fontsize=9, color=T["muted"], va="center", ha="right")
+    ax.text(0.96, H - 0.95, "aksiya tekshirildi → nomzod", fontsize=9, color=T["muted"], va="center", ha="right")
     for x, t in ((0.04, "Aksiya"), (0.34, "Oxirgi 60 kun · kirish / SL / TP1"), (0.66, "Reja"),
                  (0.955, "TP1 ehtimoli")):
         ax.text(x, H - 1.5, t, fontsize=9, color=T["muted"], va="center", ha="right" if x > 0.9 else "left")
-    if not rows:
+    if not picks:
         ax.text(0.5, H - 2.4, "Bugun shartlardan o'tgan nomzod yo'q", fontsize=13, color=T["muted"], ha="center")
-    for k, (c, wait) in enumerate(rows):
+    for k, c in enumerate(picks):
         top = H - 1.75 - k * 1.25
         a, p, mc = c["a"], c["a"]["plan"], c["mc"]
         ax.add_patch(FancyBboxPatch((0.03, top - 1.12), 0.94, 1.08, boxstyle="round,pad=0,rounding_size=0.03",
                                     facecolor=T["panel"], edgecolor=T["line"], linewidth=1))
         ax.text(0.05, top - 0.36, f"${c['symbol']}", fontsize=16, fontweight="bold", color=T["ink"], va="center")
-        ax.text(0.22, top - 0.36, "KUTISH" if wait else "TAYYOR", fontsize=8, fontweight="bold", va="center",
-                color=T["bg"], bbox=dict(boxstyle="round,pad=0.3", facecolor=T["wait"] if wait else T["up"],
-                                         edgecolor="none"))
         ax.text(0.05, top - 0.68, c["info"]["name"][:26], fontsize=8.5, color=T["muted"], va="center")
         ax.text(0.05, top - 0.92, " · ".join(c["info"]["tags"]), fontsize=7.5, color=T["e20"], va="center")
         # sparkline with levels
@@ -682,7 +350,7 @@ def make_card(day, picks, stats):
         sx.set_ylim(lo - (hi - lo) * 0.05, hi + (hi - lo) * 0.05)
         sx.set_axis_off()
         t0 = p["targets"][0]
-        ax.text(0.66, top - 0.3, (f"Zona {fp(p['zone'][0])}–{fp(p['zone'][1])}" if wait else f"Kirish {fp(p['entry'])}"), fontsize=9.5, color=T["ink"], va="center")
+        ax.text(0.66, top - 0.3, f"Kirish {fp(p['entry'])}", fontsize=9.5, color=T["ink"], va="center")
         ax.text(0.66, top - 0.56, f"SL {fp(p['stop'])}  ({p['risk_pct']}%)", fontsize=9.5, color=T["sl"], va="center")
         ax.text(0.66, top - 0.82, f"TP1 {fp(t0['price'])}  (1:{t0['rr']})", fontsize=9.5, color=T["tp"], va="center")
         ax.text(0.955, top - 0.42, f"{mc['p_target'] * 100:.0f}%", fontsize=18, fontweight="bold", color=T["up"],
@@ -709,31 +377,22 @@ def send(png, text, caption):
 
 def main():
     if not CHAT_ID or not B.BOT_TOKEN:
-        raise SystemExit("XATO: GitHub secret topilmadi — " + ", ".join(
-            n for n, v in (("BUFFET_BOT_TOKEN", B.BOT_TOKEN), ("BUFFET_CHAT_ID", CHAT_ID)) if not v)
-            + " ni Settings → Secrets and variables → Actions ga qo'shing")
+        raise SystemExit("BUFFET_BOT_TOKEN va BUFFET_CHAT_ID secret'larini qo'shing")
     now = ny_now()
-    day = now.strftime("%Y-%m-%d")
-    if not FORCE:
-        if now.weekday() >= 5 or day in NYSE_HOLIDAYS:
-            print(f"New York {day}: market closed (weekend or holiday), nothing to do")
-            return
-        mins = now.hour * 60 + now.minute
-        if MODE == "morning":
-            ok = 9 * 60 + 50 <= mins <= 10 * 60 + 40            # started at 09:57 New York
-        else:
-            start = (12 if day in NYSE_EARLY_CLOSE else 15) * 60   # one hour before the close
-            ok = start - 5 <= mins <= start + RUN_WINDOW_MIN      # started at 14:57 (11:57 on short days)
-        if not ok:
-            print(f"New York {now:%Y-%m-%d %H:%M}: not the {MODE} scan time, nothing to do")
-            return
+    mode = (os.environ.get("MODE", "") or "morning").strip().lower()      # Apps Script: 09:57 and 14:57 New York
+    at = (9, 50) if mode == "morning" else (11, 50) if now.strftime("%Y-%m-%d") in ("2026-11-27", "2026-12-24", "2027-11-26") else (14, 50)
+    target = now.replace(hour=at[0], minute=at[1], second=0, microsecond=0)
+    if not FORCE and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
+        print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
+        return
     print(f"New York {now:%Y-%m-%d %H:%M}: scanning")
 
     stocks = universe()
+    spy = download(["SPY"], period="1mo", min_bars=5).get("SPY")
+    if spy is not None and not FORCE and spy.index[-1].date() != now.date():
+        print(f"SPY last bar {spy.index[-1].date()}: market closed today (holiday)")
+        return
     prices = download(stocks)
-    if phase(now)[3]:                                    # before the open: use only closed daily candles
-        prices = {k: v[v.index.date < now.date()] for k, v in prices.items()}
-        prices = {k: v for k, v in prices.items() if len(v) >= 220}
     if len(prices) < len(stocks) * 0.5:
         B.CHAT_ID, B.THREAD_ID, B.REPLY_TO = CHAT_ID, THREAD_ID, ""
         B.send_text(f"⚠️ Buffet AI kunlik skani: Yahoo Finance'dan ma'lumot yetarli yuklanmadi "
@@ -743,9 +402,7 @@ def main():
     liquid = {}
     for s, df in prices.items():
         c, v = df["Close"].to_numpy(dtype=float), df["Volume"].to_numpy(dtype=float)
-        liquid_ok = (np.mean(v[-21:-1]) >= MIN_AVG_VOLUME if ALGO == "classic"
-                     else np.mean(v[-21:-1] * c[-21:-1]) >= MIN_DOLLAR_VOLUME)
-        if c[-1] >= MIN_PRICE and liquid_ok:
+        if c[-1] >= MIN_PRICE and np.mean(v[-21:-1]) >= MIN_AVG_VOLUME:
             liquid[s] = df
     unknown = [s for s in liquid if stocks[s]["cap"] is None and "S&P 500" not in stocks[s]["tags"]
                and "NASDAQ-100" not in stocks[s]["tags"]]
@@ -757,101 +414,47 @@ def main():
                 liquid.pop(s, None)
     print(f"Liquid: {len(liquid)} of {len(prices)} with prices")
 
-    cal = B.load_calibration()
-    approved = cal.get("approved") if cal and cal.get("version", 1) >= 2 else None
-    if ALGO == "classic":
-        cal, approved = None, None
-    if approved is not None:                             # strict: 150+ trades in the check period too
-        approved = [r for r in approved if r["val"]["trades"] >= R.MIN_VAL_TRADES]
-    regime = None
     cands, longs = [], 0
-    if approved is not None:                             # v2: only rules that passed both test periods
-        spy = download(["SPY"], period="2y", min_bars=250).get("SPY")
-        spy_ctx = R.spy_context(spy) if spy is not None else {}
-        if spy is not None:
-            last = spy_ctx[spy.index[-1].date()][0]
-            regime = "SPY>MA200" if last else "SPY<MA200"
-        for s, df in liquid.items():
-            if time.time() - STARTED > TIME_BUDGET * 0.7:
-                break
-            try:
-                is_long, c = evaluate_v2(s, df, stocks[s], approved, spy_ctx, cal)
-            except Exception as exc:
-                print(f"{s}: {exc}")
-                continue
-            longs += is_long
-            if c:
-                cands.append(c)
-        print(f"Regime {regime}, approved rules {len(approved)}, LONG plans {longs}, matched rules {len(cands)}")
-        cands.sort(key=rank_key_v2, reverse=True)
-    else:                                                # classic (26.10): the algorithm that found NTNX, NTAP
-        for s, df in liquid.items():
-            if time.time() - STARTED > TIME_BUDGET * 0.6:
-                break
-            try:
-                is_long, c = evaluate_classic(s, df, stocks[s])
-            except Exception as exc:
-                print(f"{s}: {exc}")
-                continue
-            longs += is_long
-            if c:
-                cands.append(c)
-        print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
-        cands.sort(key=rank_key_classic, reverse=True)
-        for c in cands[:40]:                                 # the same rule on the last 250 bars
-            if time.time() - STARTED > TIME_BUDGET * 0.85:
-                break
-            c["history"] = classic_history(c["df"], B.HORIZON["1D"])
-        cands = [c for c in cands if not (c.get("history") and c["history"]["fired"] >= 5
-                                          and (c["history"]["avg_R"] or 0) < 0)]
-        cands.sort(key=rank_key_classic, reverse=True)
-
-    watch = load_watch()
-    alerts, watch = check_watch(watch, prices, now.date())
-    picks, waits = [], []
-    for c in cands:
-        if len(picks) >= TOP_N and len(waits) >= TOP_WATCH:
+    for s, df in liquid.items():
+        if time.time() - STARTED > TIME_BUDGET * 0.6:
             break
-        ready, why = entry_check(c["a"]) if ALGO == "classic" else (True, [])
-        if ready and len(picks) >= TOP_N or not ready and len(waits) >= TOP_WATCH:
+        try:
+            is_long, c = evaluate(s, df, stocks[s])
+        except Exception as exc:
+            print(f"{s}: {exc}")
             continue
-        if not ready and c["symbol"] in watch:
-            continue                                         # its zone was already given and is still open
-        if not ready:
-            z = entry_zone(c)
-            if not z:
-                print(f"{c['symbol']}: extended, no sensible entry zone, skipped")
-                continue
-            c["a"] = dict(c["a"], plan=z[0])
-            c["mc"], c["why"] = z[1], why
+        longs += is_long
+        if c:
+            cands.append(c)
+    print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
+
+    cands.sort(key=rank_key, reverse=True)
+    for c in cands[:25]:                                     # history test for the best ones only
+        if time.time() - STARTED > TIME_BUDGET * 0.85:
+            break
+        c["history"] = B.history_test(c["df"], "LONG", B.HORIZON["1D"], deadline=time.time() + 8)
+    cands = [c for c in cands if not (c.get("history") and c["history"]["fired"] >= 5
+                                      and (c["history"]["avg_R"] or 0) < 0)]
+    cands.sort(key=rank_key, reverse=True)
+
+    picks = []
+    for c in cands:
+        if len(picks) >= TOP_N:
+            break
         ev = B.events(c["symbol"], "1D", c["df"])
         if ev.get("earnings_in_window"):
             print(f"{c['symbol']}: earnings {ev['earnings']} inside the plan, skipped")
             continue
         c["events"] = ev
         c["risk"] = [r for r in B.risk_gate(c["a"]["plan"], c["a"], c["df"], ev, "stock") if r[0] == "warn"]
-        (picks if ready else waits).append(c)
-    for c in waits:
-        p = c["a"]["plan"]
-        watch[c["symbol"]] = {"added": str(c["df"].index[-1].date()), "until": add_days(now.date(), ZONE_DAYS).isoformat(),
-                              "entry": p["entry"], "zone": p["zone"], "stop": p["stop"],
-                              "tp1": p["targets"][0]["price"], "tp2": p["targets"][1]["price"],
-                              "rr": p["targets"][0]["rr"], "status": "wait"}
-    save_watch(watch)
-    print(f"Ready {len(picks)}, waiting list {len(waits)}, zone alerts {len(alerts)}")
+        picks.append(c)
 
-    stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "passed": len(cands),
-             "waits": waits, "alerts": alerts,
-             "v2": approved is not None, "rules": len(approved or []), "regime": regime,
-             "cal": datetime.fromisoformat(cal["updated"]).strftime("%d.%m.%Y") if cal else None}
+    stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "passed": len(cands)}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
                             "(qolganlari Yahoo'da topilmadi yoki cheklov).")
-    caption = (f"📡 <b>Buffet AI · Nomzodlar · {phase(now)[0]}</b> · {now:%d.%m.%Y}\n"
-               + ("🟢 " + " · ".join(f"${c['symbol']}" for c in picks) if picks else "🟢 Kirishga tayyor nomzod yo'q")
-               + ("\n⏳ Kutish: " + " · ".join(f"${c['symbol']}" for c in waits) if waits else "")
-               + ("\n✅ Zonaga keldi: " + " · ".join(f"${z['symbol']}" for z in alerts if not z.get("cancel"))
-                  if any(not z.get("cancel") for z in alerts) else ""))
+    caption = (f"📡 <b>Buffet AI · Kunlik nomzodlar</b> · {now:%d.%m.%Y}\n"
+               + (" · ".join(f"${c['symbol']}" for c in picks) if picks else "Bugun nomzod yo'q"))
     send(make_card(now, picks, stats), format_text(now, picks, stats), caption)
     print(f"Sent {len(picks)} candidates in {time.time() - STARTED:.0f}s")
 
