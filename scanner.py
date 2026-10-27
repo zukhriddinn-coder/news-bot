@@ -22,7 +22,7 @@ import re
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 
@@ -45,6 +45,10 @@ TIME_BUDGET = 22 * 60          # seconds for the whole scan
 MIN_EDGE = 0.05                # Time Machine: TP1 share must beat break-even by 5+ points
 MAX_RSI = 80                   # skip stocks that are already extremely overbought
 MAX_RISK_PCT = 12              # skip plans whose stop is more than 12% away
+TOP_WATCH = 5                  # waiting-list stocks per scan (extended now, entry zone given)
+MAX_EXT_ATR = 1.5              # entry check: price at most 1.5 ATR above EMA20, otherwise it is chasing
+ZONE_DAYS = 5                  # an entry zone is valid for 5 trading days
+WATCH_FILE = "watchlist.json"  # waiting list kept between scans (saved to the repo by scanner.yml)
 SP500_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
 NASDAQ_SCREENER = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&download=true&exchange=nasdaq"
 NASDAQ_LISTED = "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
@@ -380,6 +384,121 @@ def rank_key_classic(c):
     return c["mc"]["edge"] * 100 + hist * 10 + c["a"]["score"] * 2
 
 
+
+# ----------------------------- Entry check / entry zone ---------------------
+# The classic rule chooses the direction well but gives the entry at the current price, even when the
+# price has already run far away. Every candidate is checked: is it at an entry point now?
+#   "ready" -> a signal as before;  "watch" -> extended: a limit entry zone near EMA20 / support is given.
+
+def entry_check(a):
+    """(ready?, reasons why not) on the last daily bar."""
+    sr = a["_series"]
+    o, c, rs, e20 = sr["o"], sr["c"], sr["rsi"], sr["e20"]
+    atr = a["atr"] or 1e-9
+    why = []
+    ext = (c[-1] - e20[-1]) / atr
+    if ext > MAX_EXT_ATR:
+        why.append(f"narx EMA20 dan {ext:.1f} ATR yuqorida (narx ortidan quvish bo'ladi)")
+    recent = rs[-6:-1]
+    if len(recent) and np.nanmax(recent) >= 70 and rs[-1] < np.nanmax(recent) - 3:
+        why.append(f"RSI {np.nanmax(recent):.0f} dan {rs[-1]:.0f} ga qaytmoqda")
+    body = o[-1] - c[-1]
+    engulf = c[-1] < o[-1] and c[-2] > o[-2] and o[-1] >= c[-2] and c[-1] <= o[-2]
+    if body >= 0.6 * atr or engulf:
+        why.append("oxirgi sham kuchli qizil" + (" (yutuvchi sham)" if engulf else ""))
+    return not why, why
+
+
+def entry_zone(c):
+    """Limit entry for an extended candidate: the highest support between EMA20 and the price, else EMA20.
+    Stop 1.2 ATR under the zone; TP1 = the recent high or the plan's target if it pays 1.5-3R, else 2R.
+    Time Machine is re-run from the zone: TP1 must beat break-even by 5+ points and come first more often."""
+    a, df = c["a"], c["df"]
+    p, atr, price = a["plan"], a["atr"], a["price"]
+    e20 = a["ema20"]
+    sups = [s["price"] for s in a.get("supports", []) if e20 - 0.5 * atr <= s["price"] <= price - 0.5 * atr]
+    center = max(sups) if sups else e20
+    if center >= price - 0.3 * atr or price - center > 4 * atr:   # too close to matter / too far to come back soon
+        return None
+    limit = center + 0.2 * atr
+    stop = center - 1.2 * atr
+    risk = limit - stop
+    hi20 = float(df["High"].to_numpy(dtype=float)[-20:].max())
+    plan_tps = [t["price"] for t in p["targets"]]
+    # TP1: the recent high (where the pullback started) if it pays 1.5R+, else the plan's next target, else 2R
+    tp1 = next((x for x in [hi20] + plan_tps if limit + 1.5 * risk <= x <= limit + 3 * risk), limit + 2 * risk)
+    rr = (tp1 - limit) / risk
+    tp2 = next((x for x in plan_tps if x > tp1 + 0.5 * risk), limit + 2 * (tp1 - limit))
+    mc = B.simulate(B.bar_pool(df), "LONG", limit, stop, tp1, B.HORIZON["1D"])
+    hit = mc["p_target"] + mc["p_stop"]
+    edge = (mc["p_target"] / hit - 1 / (1 + mc["r_target"])) if hit else -1
+    if edge < MIN_EDGE or mc["p_target"] < mc["p_stop"]:
+        return None
+    mc["edge"] = round(edge, 3)
+    plan = {"side": "LONG", "entry": B.r2(limit), "stop": B.r2(stop), "risk_pct": round(risk / limit * 100, 2),
+            "targets": [{"price": B.r2(tp1), "rr": round(rr, 1)},
+                        {"price": B.r2(tp2), "rr": round((tp2 - limit) / risk, 1)}],
+            "zone": [B.r2(center - 0.2 * atr), B.r2(limit)]}
+    return plan, mc
+
+
+def add_days(d, n):
+    """d (date) + n trading days (weekends and NYSE holidays skipped)."""
+    k = 0
+    while k < n:
+        d += timedelta(days=1)
+        if d.weekday() < 5 and d.isoformat() not in NYSE_HOLIDAYS:
+            k += 1
+    return d
+
+
+def load_watch():
+    try:
+        with open(WATCH_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_watch(w):
+    with open(WATCH_FILE, "w", encoding="utf-8") as f:
+        json.dump(w, f, ensure_ascii=False, indent=1)
+
+
+def check_watch(watch, prices, today):
+    """Bars since a zone was given: did the price come into the zone? Returns (alerts, updated list)."""
+    alerts, keep = [], {}
+    for sym, z in watch.items():
+        df = prices.get(sym)
+        if df is None:
+            if z["until"] >= today.isoformat():
+                keep[sym] = z
+            continue
+        after = df[df.index.date > date.fromisoformat(z["added"])]
+        lo, cl = after["Low"].to_numpy(dtype=float), after["Close"].to_numpy(dtype=float)
+        status = z.get("status", "wait")
+        if status == "wait":
+            for j in range(len(after)):
+                if lo[j] <= z["entry"]:
+                    status = "hit"
+                    z["hit_date"] = str(after.index[j].date())
+                    break
+        if status == "hit" and not z.get("alerted"):
+            last = float(cl[-1]) if len(cl) else z["entry"]
+            if last <= z["stop"]:
+                status = "cancel"
+                alerts.append(dict(z, symbol=sym, last=last, cancel=True))
+            else:
+                alerts.append(dict(z, symbol=sym, last=last))
+                z["alerted"] = True
+        z["status"] = status
+        if status == "wait" and z["until"] >= today.isoformat():
+            keep[sym] = z
+        elif status == "hit" and z["until"] >= today.isoformat():
+            keep[sym] = z                       # kept so the same zone is not given again
+    return alerts, keep
+
+
 # ----------------------------- Output ---------------------------------------
 
 def esc(s):
@@ -405,6 +524,61 @@ def phase(now):
             "Bugungi sham ~85% shakllangan.", False)
 
 
+def item_lines(k, c, day, pre_open, wait=False):
+    a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
+    t = p["targets"]
+    setups = ", ".join(s["name"] for s in a["setups"]) or "—"
+    lines = [f"{k}️⃣ <b>${esc(c['symbol'])}</b> · {esc(info['name'][:40])} · "
+              f"<i>{esc(', '.join(info['tags']))}</i>",
+              f"   Narx {fp(a['price'])} · trend: {esc(a['trend'])} · RSI {a['rsi']}",
+              f"   🔎 Setap: {esc(setups)}",
+              (f"   ⏳ Kirish zonasi {fp(p['zone'][0])}–{fp(p['zone'][1])} (limit {fp(p['entry'])}) · 🛑 SL"
+               if wait else f"   Kirish {fp(p['entry'])} · 🛑 SL") + f" {fp(p['stop'])} ({p['risk_pct']}%) · "
+              f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
+              f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
+              f"(20 kun ichida)"]
+    ru = c.get("rule")
+    if ru:
+        d, v = ru["disc"], ru["val"]
+        lines += [f"   ✅ Qoida: {esc(R.human(ru['rule']))}",
+                  f"   🚪 Chiqish: {esc(R.VARIANTS.get(ru['variant'], ru['variant']))}",
+                  f"   📊 5 yillik sinov: 2021–24 → {d['trades']} savdo, TP {d['win_pct']:.0f}%, {d['avg_R']:+.2f}R · "
+                  f"2025–26 → {v['trades']} savdo, TP {v['win_pct']:.0f}%, {v['avg_R']:+.2f}R"]
+    b = c.get("base")
+    if b:
+        n_tr = f"{b['trades']:,}".replace(",", " ")
+        lines.append(f"   📊 Butun bozor, 5 yil ({esc(b['group'])}): {n_tr} savdo → TP1 {b['win_pct']:.0f}% · "
+                     f"stop {b['stop'] / b['trades'] * 100:.0f}% · {b['avg_R']:+.2f}R")
+    h = c.get("history")
+    if h and h["fired"] and h.get("classic"):
+        lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
+                     + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
+    elif h and h["fired"]:
+        lines.append(f"   📜 Shu aksiyada: {h['fired']} mustaqil savdo · {h['target']} TP1 / {h['stop']} stop"
+                     + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
+                     + ("" if h.get("enough") else f" <i>(ma'lumot kam, {B.MIN_TRADES} tadan kam)</i>"))
+    ev = c.get("events") or {}
+    if ev.get("earnings"):
+        d = datetime.fromisoformat(ev["earnings"])
+        if d.date() >= day.date():
+            lines.append(f"   📅 Keyingi hisobot: {d:%d.%m.%Y}")
+        else:
+            lines.append(f"   📅 Oxirgi hisobot: {d:%d.%m.%Y} (keyingisi sanasi hali e'lon qilinmagan)")
+    for lv, txt in c["risk"]:
+        lines.append(f"   ⚠️ {esc(txt)}")
+    if wait:
+        lines.insert(3, f"   ✋ Hozir emas: {esc('; '.join(c.get('why') or []))}")
+    elif pre_open:
+        lines.append(f"   ⏰ Ochilishda: {fp(p['entry'] + a['atr'])} dan yuqori bo'lsa — kutib turing (gap), "
+                     f"{fp(p['stop'])} dan past bo'lsa — reja bekor")
+    if wait:
+        lines.append(f"   🗓 Zona {datetime.fromisoformat(add_days(day.date(), ZONE_DAYS).isoformat()):%d.%m} gacha amal qiladi; "
+                     f"narx zonaga tushsa, shu yerda xabar beriladi (agar o'sha paytda narx {fp(p['stop'])} "
+                     f"dan past bo'lsa — reja bekor).")
+    lines.append("")
+    return lines
+
+
 def format_text(day, picks, stats):
     title, subtitle, candle_note, pre_open = phase(day)
     lines = [f"📡 <b>Buffet AI · Nomzodlar · {title}</b>",
@@ -412,58 +586,27 @@ def format_text(day, picks, stats):
     if stats.get("regime"):
         lines += [("🟢 Bozor rejimi: SPY 200 kunlik o'rtachadan yuqori (o'sish rejimi)" if stats["regime"] == "SPY>MA200"
                    else "🔴 Bozor rejimi: SPY 200 kunlik o'rtachadan past — LONG savdolar uchun xavfli davr"), ""]
+    waits, alerts = stats.get("waits") or [], stats.get("alerts") or []
+    if alerts:
+        lines += ["✅ <b>Kutish ro'yxatidan yangiliklar</b>", ""]
+        for z in alerts:
+            if z.get("cancel"):
+                lines += [f"• <b>${esc(z['symbol'])}</b>: ❌ reja bekor — narx zonadan o'tib stop ({fp(z['stop'])}) "
+                          f"ostiga tushdi, hozir {fp(z['last'])}", ""]
+                continue
+            lines += [f"• <b>${esc(z['symbol'])}</b>: narx {fp(z['entry'])} kirish zonasiga tushdi"
+                      f" ({datetime.fromisoformat(z['hit_date']):%d.%m}), hozir {fp(z['last'])}",
+                      f"   Reja: kirish {fp(z['entry'])} · 🛑 SL {fp(z['stop'])} · 🎯 TP1 {fp(z['tp1'])} (1:{z['rr']})"
+                      f" · TP2 {fp(z['tp2'])}", ""]
+    lines += ["🟢 <b>Kirishga tayyor</b> — narx kirish nuqtasida", ""]
     if not picks:
-        if stats.get("v2") and not stats.get("rules"):
-            lines += ["Hozircha birorta qoida 5 yillik sinovning ikkala davridan ham o'tmadi, shuning uchun nomzod "
-                      "berilmaydi. Ishlamaydigan signal yuborgandan ko'ra signal bermagan yaxshi.", ""]
-        else:
-            lines += ["Bugun tasdiqlangan qoidalarga mos nomzod topilmadi. Bu ham natija: majburan savdo qilmaslik "
-                      "kerak bo'lgan kunlar bo'ladi.", ""]
+        lines += ["Bugun kirish nuqtasida turgan nomzod yo'q. Bu ham natija: narx ortidan quvgandan ko'ra kutgan yaxshi.", ""]
     for k, c in enumerate(picks, 1):
-        a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
-        t = p["targets"]
-        setups = ", ".join(s["name"] for s in a["setups"]) or "—"
-        lines += [f"{k}️⃣ <b>${esc(c['symbol'])}</b> · {esc(info['name'][:40])} · "
-                  f"<i>{esc(', '.join(info['tags']))}</i>",
-                  f"   Narx {fp(a['price'])} · trend: {esc(a['trend'])} · RSI {a['rsi']}",
-                  f"   🔎 Setap: {esc(setups)}",
-                  f"   Kirish {fp(p['entry'])} · 🛑 SL {fp(p['stop'])} ({p['risk_pct']}%) · "
-                  f"🎯 TP1 {fp(t[0]['price'])} (1:{t[0]['rr']})" + (f" · TP2 {fp(t[1]['price'])}" if len(t) > 1 else ""),
-                  f"   🎲 TP1 birinchi {mc['p_target'] * 100:.0f}% · stop birinchi {mc['p_stop'] * 100:.0f}% "
-                  f"(20 kun ichida)"]
-        ru = c.get("rule")
-        if ru:
-            d, v = ru["disc"], ru["val"]
-            lines += [f"   ✅ Qoida: {esc(R.human(ru['rule']))}",
-                      f"   🚪 Chiqish: {esc(R.VARIANTS.get(ru['variant'], ru['variant']))}",
-                      f"   📊 5 yillik sinov: 2021–24 → {d['trades']} savdo, TP {d['win_pct']:.0f}%, {d['avg_R']:+.2f}R · "
-                      f"2025–26 → {v['trades']} savdo, TP {v['win_pct']:.0f}%, {v['avg_R']:+.2f}R"]
-        b = c.get("base")
-        if b:
-            n_tr = f"{b['trades']:,}".replace(",", " ")
-            lines.append(f"   📊 Butun bozor, 5 yil ({esc(b['group'])}): {n_tr} savdo → TP1 {b['win_pct']:.0f}% · "
-                         f"stop {b['stop'] / b['trades'] * 100:.0f}% · {b['avg_R']:+.2f}R")
-        h = c.get("history")
-        if h and h["fired"] and h.get("classic"):
-            lines.append(f"   📜 Shu qoida o'tmishda {h['fired']} marta: {h['target']} TP1 / {h['stop']} stop"
-                         + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
-        elif h and h["fired"]:
-            lines.append(f"   📜 Shu aksiyada: {h['fired']} mustaqil savdo · {h['target']} TP1 / {h['stop']} stop"
-                         + (f" · {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
-                         + ("" if h.get("enough") else f" <i>(ma'lumot kam, {B.MIN_TRADES} tadan kam)</i>"))
-        ev = c.get("events") or {}
-        if ev.get("earnings"):
-            d = datetime.fromisoformat(ev["earnings"])
-            if d.date() >= day.date():
-                lines.append(f"   📅 Keyingi hisobot: {d:%d.%m.%Y}")
-            else:
-                lines.append(f"   📅 Oxirgi hisobot: {d:%d.%m.%Y} (keyingisi sanasi hali e'lon qilinmagan)")
-        for lv, txt in c["risk"]:
-            lines.append(f"   ⚠️ {esc(txt)}")
-        if pre_open:
-            lines.append(f"   ⏰ Ochilishda: {fp(p['entry'] + a['atr'])} dan yuqori bo'lsa — kutib turing (gap), "
-                         f"{fp(p['stop'])} dan past bo'lsa — reja bekor")
-        lines.append("")
+        lines += item_lines(k, c, day, pre_open)
+    if waits:
+        lines += ["⏳ <b>Kutish ro'yxati</b> — yaxshi aksiya, lekin narx uzoqlashib ketgan. Limit zonada kiriladi.", ""]
+        for k, c in enumerate(waits, 1):
+            lines += item_lines(k, c, day, pre_open, wait=True)
     if stats.get("v2"):
         how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va savdo ($25M+) filtridan "
                f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → 5 yillik sinovdan o'tgan "
@@ -473,7 +616,9 @@ def format_text(day, picks, stats):
     else:
         how = (f"🔬 <b>Qanday tanlandi:</b> {stats['universe']} aksiya → narx ($5+) va hajm (1 mln+ aksiya) filtridan "
                f"{stats['liquid']} ta → Buffet AI LONG reja {stats['long']} ta → Time Machine va risk tekshiruvidan "
-               f"{stats['passed']} ta → eng yaxshi {len(picks)} ta. Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
+               f"{stats['passed']} ta → kirish nuqtasi tekshiruvi: tayyor {len(picks)} ta, kutish ro'yxati "
+               f"{len(stats.get('waits') or [])} ta (narx EMA20 dan 1.5 ATR dan uzoq, RSI 70 dan qaytayotgan yoki kuchli "
+               f"qizil sham). Hisoboti ~4 hafta ichida bo'lganlar chiqarib tashlangan.")
     lines += [how + (f" Kalibrlash: {stats['cal']}." if stats.get("cal") else ""),
               "", "💬 Batafsil tahlil uchun shu bo'limga yozing: <b>$TIKER</b> (masalan $" +
               (picks[0]["symbol"] if picks else "AAPL") + ")", ""]
@@ -493,7 +638,9 @@ def make_card(day, picks, stats):
 
     T = B.THEME
     plt.rcParams["font.family"] = B._font()
-    n = max(len(picks), 1)
+    waits = stats.get("waits") or []
+    rows = [(c, False) for c in picks] + [(c, True) for c in waits]
+    n = max(len(rows), 1)
     H = 2.0 + 1.25 * n + 0.6
     fig = plt.figure(figsize=(10, H), dpi=160, facecolor=T["bg"])
     ax = fig.add_axes([0, 0, 1, 1])
@@ -504,20 +651,23 @@ def make_card(day, picks, stats):
     ax.text(0.04, H - 0.55, f"Nomzodlar · {title}", fontsize=24, fontweight="bold", color=T["ink"], va="center")
     ax.text(0.04, H - 1.0, f"Buffet AI · {day:%d.%m.%Y} · S&P 500 + NASDAQ (> $2 mlrd) · {subtitle.split(' · ')[0]}",
             fontsize=10, color=T["muted"], va="center")
-    ax.text(0.96, H - 0.5, f"{stats['universe']} → {len(picks)}", fontsize=20, fontweight="bold", color=T["up"],
+    ax.text(0.96, H - 0.5, f"{len(picks)} + {len(waits)}", fontsize=20, fontweight="bold", color=T["up"],
             va="center", ha="right")
-    ax.text(0.96, H - 0.95, "aksiya tekshirildi → nomzod", fontsize=9, color=T["muted"], va="center", ha="right")
+    ax.text(0.96, H - 0.95, f"{stats['universe']} aksiyadan: tayyor + kutish", fontsize=9, color=T["muted"], va="center", ha="right")
     for x, t in ((0.04, "Aksiya"), (0.34, "Oxirgi 60 kun · kirish / SL / TP1"), (0.66, "Reja"),
                  (0.955, "TP1 ehtimoli")):
         ax.text(x, H - 1.5, t, fontsize=9, color=T["muted"], va="center", ha="right" if x > 0.9 else "left")
-    if not picks:
+    if not rows:
         ax.text(0.5, H - 2.4, "Bugun shartlardan o'tgan nomzod yo'q", fontsize=13, color=T["muted"], ha="center")
-    for k, c in enumerate(picks):
+    for k, (c, wait) in enumerate(rows):
         top = H - 1.75 - k * 1.25
         a, p, mc = c["a"], c["a"]["plan"], c["mc"]
         ax.add_patch(FancyBboxPatch((0.03, top - 1.12), 0.94, 1.08, boxstyle="round,pad=0,rounding_size=0.03",
                                     facecolor=T["panel"], edgecolor=T["line"], linewidth=1))
         ax.text(0.05, top - 0.36, f"${c['symbol']}", fontsize=16, fontweight="bold", color=T["ink"], va="center")
+        ax.text(0.22, top - 0.36, "KUTISH" if wait else "TAYYOR", fontsize=8, fontweight="bold", va="center",
+                color=T["bg"], bbox=dict(boxstyle="round,pad=0.3", facecolor=T["wait"] if wait else T["up"],
+                                         edgecolor="none"))
         ax.text(0.05, top - 0.68, c["info"]["name"][:26], fontsize=8.5, color=T["muted"], va="center")
         ax.text(0.05, top - 0.92, " · ".join(c["info"]["tags"]), fontsize=7.5, color=T["e20"], va="center")
         # sparkline with levels
@@ -532,7 +682,7 @@ def make_card(day, picks, stats):
         sx.set_ylim(lo - (hi - lo) * 0.05, hi + (hi - lo) * 0.05)
         sx.set_axis_off()
         t0 = p["targets"][0]
-        ax.text(0.66, top - 0.3, f"Kirish {fp(p['entry'])}", fontsize=9.5, color=T["ink"], va="center")
+        ax.text(0.66, top - 0.3, (f"Zona {fp(p['zone'][0])}–{fp(p['zone'][1])}" if wait else f"Kirish {fp(p['entry'])}"), fontsize=9.5, color=T["ink"], va="center")
         ax.text(0.66, top - 0.56, f"SL {fp(p['stop'])}  ({p['risk_pct']}%)", fontsize=9.5, color=T["sl"], va="center")
         ax.text(0.66, top - 0.82, f"TP1 {fp(t0['price'])}  (1:{t0['rr']})", fontsize=9.5, color=T["tp"], va="center")
         ax.text(0.955, top - 0.42, f"{mc['p_target'] * 100:.0f}%", fontsize=18, fontweight="bold", color=T["up"],
@@ -648,7 +798,7 @@ def main():
                 cands.append(c)
         print(f"LONG plans: {longs}, passed Time Machine + risk: {len(cands)}")
         cands.sort(key=rank_key_classic, reverse=True)
-        for c in cands[:25]:                                 # the same rule on the last 250 bars
+        for c in cands[:40]:                                 # the same rule on the last 250 bars
             if time.time() - STARTED > TIME_BUDGET * 0.85:
                 break
             c["history"] = classic_history(c["df"], B.HORIZON["1D"])
@@ -656,26 +806,52 @@ def main():
                                           and (c["history"]["avg_R"] or 0) < 0)]
         cands.sort(key=rank_key_classic, reverse=True)
 
-    picks = []
+    watch = load_watch()
+    alerts, watch = check_watch(watch, prices, now.date())
+    picks, waits = [], []
     for c in cands:
-        if len(picks) >= TOP_N:
+        if len(picks) >= TOP_N and len(waits) >= TOP_WATCH:
             break
+        ready, why = entry_check(c["a"]) if ALGO == "classic" else (True, [])
+        if ready and len(picks) >= TOP_N or not ready and len(waits) >= TOP_WATCH:
+            continue
+        if not ready and c["symbol"] in watch:
+            continue                                         # its zone was already given and is still open
+        if not ready:
+            z = entry_zone(c)
+            if not z:
+                print(f"{c['symbol']}: extended, no sensible entry zone, skipped")
+                continue
+            c["a"] = dict(c["a"], plan=z[0])
+            c["mc"], c["why"] = z[1], why
         ev = B.events(c["symbol"], "1D", c["df"])
         if ev.get("earnings_in_window"):
             print(f"{c['symbol']}: earnings {ev['earnings']} inside the plan, skipped")
             continue
         c["events"] = ev
         c["risk"] = [r for r in B.risk_gate(c["a"]["plan"], c["a"], c["df"], ev, "stock") if r[0] == "warn"]
-        picks.append(c)
+        (picks if ready else waits).append(c)
+    for c in waits:
+        p = c["a"]["plan"]
+        watch[c["symbol"]] = {"added": str(c["df"].index[-1].date()), "until": add_days(now.date(), ZONE_DAYS).isoformat(),
+                              "entry": p["entry"], "zone": p["zone"], "stop": p["stop"],
+                              "tp1": p["targets"][0]["price"], "tp2": p["targets"][1]["price"],
+                              "rr": p["targets"][0]["rr"], "status": "wait"}
+    save_watch(watch)
+    print(f"Ready {len(picks)}, waiting list {len(waits)}, zone alerts {len(alerts)}")
 
     stats = {"universe": len(stocks), "liquid": len(liquid), "long": longs, "passed": len(cands),
+             "waits": waits, "alerts": alerts,
              "v2": approved is not None, "rules": len(approved or []), "regime": regime,
              "cal": datetime.fromisoformat(cal["updated"]).strftime("%d.%m.%Y") if cal else None}
     if len(prices) < len(stocks) * 0.8:
         stats["partial"] = (f"{len(stocks)} aksiyadan {len(prices)} tasining narxi yuklandi "
                             "(qolganlari Yahoo'da topilmadi yoki cheklov).")
     caption = (f"📡 <b>Buffet AI · Nomzodlar · {phase(now)[0]}</b> · {now:%d.%m.%Y}\n"
-               + (" · ".join(f"${c['symbol']}" for c in picks) if picks else "Bugun nomzod yo'q"))
+               + ("🟢 " + " · ".join(f"${c['symbol']}" for c in picks) if picks else "🟢 Kirishga tayyor nomzod yo'q")
+               + ("\n⏳ Kutish: " + " · ".join(f"${c['symbol']}" for c in waits) if waits else "")
+               + ("\n✅ Zonaga keldi: " + " · ".join(f"${z['symbol']}" for z in alerts if not z.get("cancel"))
+                  if any(not z.get("cancel") for z in alerts) else ""))
     send(make_card(now, picks, stats), format_text(now, picks, stats), caption)
     print(f"Sent {len(picks)} candidates in {time.time() - STARTED:.0f}s")
 
