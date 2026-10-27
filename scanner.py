@@ -282,7 +282,7 @@ def plan_pre(p):
 def pick_lines(k, c, day):
     a, p, mc, info = c["a"], c["a"]["plan"], c["mc"], c["info"]
     out = [f"{MEDALS[k]} <b>${esc(c['symbol'])}</b>  <i>{esc(info['name'][:38])}</i>", plan_pre(p),
-           f"✅ TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"
+           f"🟢 TP1 birinchi <b>{mc['p_target'] * 100:.0f}%</b>, stop birinchi {mc['p_stop'] * 100:.0f}%"
            f"  <i>(1:{p['targets'][0]['rr']})</i>"]
     h = c.get("history")
     if h and h["fired"]:
