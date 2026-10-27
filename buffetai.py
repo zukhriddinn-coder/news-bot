@@ -874,8 +874,9 @@ def evidence(a, df, meta):
     """Daily charts only: does this signal match a rule that passed BOTH 5-year test periods?
     LONG + approved rule  -> the rule's own exit (stop / take profit).
     LONG + no rule        -> 'not proven': the best tested exit (C: 2 ATR stop, 2R) and a clear warning.
-    SHORT                 -> SHORT signals are not tested yet (said honestly)."""
-    if meta.get("tf") != "1D" or a["plan"]["side"] == "KUTISH":
+    SHORT                 -> SHORT signals are not tested yet (said honestly).
+    KUTISH                -> no LONG signal now: the 5-year facts of the current context are still shown."""
+    if meta.get("tf") != "1D":
         return None
     cal = load_calibration()
     if not cal or cal.get("version", 1) < 2:
@@ -883,6 +884,8 @@ def evidence(a, df, meta):
     import rules as R                                     # lazy: rules.py imports this file
     if a["plan"]["side"] == "SHORT":
         return {"status": "short"}
+    if a["plan"]["side"] == "KUTISH":
+        return {"status": "no_signal", "facts": context_facts(a, df, cal, R)}
     spy = load_prices("SPY", "1D")
     ctx = R.spy_context(spy) if spy is not None else {}
     f = R.features(a, df.iloc[-501:], ctx)
@@ -908,6 +911,34 @@ def evidence(a, df, meta):
             "facts": facts, "regime": f["bozor"], "updated": cal.get("updated", "")[:10]}
 
 
+def context_facts(a, df, cal, R):
+    """5-year results of the market regime, relative strength, RSI zone and trend of this chart now
+    (exit C), so the evidence is visible even when there is no LONG signal."""
+    spy = load_prices("SPY", "1D")
+    ctx = R.spy_context(spy) if spy is not None else {}
+    c = df["Close"].to_numpy(dtype=float)
+    above, spy63 = ctx.get(df.index[-1].date(), (None, None))
+    if above is None and ctx:
+        above, spy63 = ctx[max(ctx)]
+    rs = (c[-1] / c[-64] - 1 - spy63) if (len(c) > 64 and spy63 is not None) else None
+    rsi = a["rsi"]
+    keys = []
+    if above is not None:
+        keys.append(f"bozor: {'SPY>MA200' if above else 'SPY<MA200'}")
+    if rs is not None:
+        keys.append(f"kuch: {'RS<0' if rs < 0 else 'RS 0-10%' if rs < 0.10 else 'RS>10%'}")
+    keys.append("rsi: " + ("RSI<50" if rsi < 50 else "RSI 50-60" if rsi < 60 else "RSI 60-70" if rsi < 70
+                           else "RSI 70-80"))
+    keys.append(f"trend: {a['trend']}")
+    out = []
+    for key in keys:
+        g = (cal.get("groups", {}).get(key) or {}).get("C")
+        if g and g["all"]["trades"]:
+            out.append({"label": R.human(key), "trades": g["all"]["trades"], "avg_R": g["all"]["avg_R"],
+                        "disc": g["disc"]["avg_R"], "val": g["val"]["avg_R"]})
+    return out
+
+
 def evidence_lines(a):
     e = a.get("evidence")
     if not e:
@@ -915,19 +946,24 @@ def evidence_lines(a):
     if e["status"] == "short":
         return ["📚 <b>5 yillik dalil:</b> SHORT signallar hali 5 yillik sinovdan o'tkazilmagan — ehtiyot bo'ling.", ""]
     out = ["📚 <b>5 yillik dalil</b> (957 aksiya, komissiyadan keyin)"]
-    if e["status"] == "approved":
+    if e["status"] == "no_signal":
+        out.append("   ℹ️ Hozir LONG signal yo'q, shuning uchun tasdiqlangan qoidalar qo'llanmaydi. Yorib o'tish "
+                   "bo'lib, Buffet AI LONG desa, signal qoidalar bilan qayta tekshiriladi. Shunday holatdagi LONG signallarning 5 yillik natijasi:")
+    elif e["status"] == "approved":
         r = e["rule"]
         out += [f"   ✅ Tasdiqlangan qoida: {esc(e['rule_text'])}",
                 f"   2021–24: {r['disc']['trades']} savdo, {r['disc']['avg_R']:+.2f}R · "
                 f"2025–26: {r['val']['trades']} savdo, {r['val']['avg_R']:+.2f}R"]
-    else:
+    elif e["status"] == "not_proven":
         out += ["   ⚠️ <b>Tasdiqlanmagan signal:</b> bunday LONG signallar 5 yillik sinovda barqaror foyda "
                 "bermagan. Kichik pozitsiya yoki kutish tavsiya etiladi."]
     for x in e["facts"]:
         icon = "🟢" if x["disc"] > 0 and x["val"] > 0 else "🔴" if x["disc"] < 0 and x["val"] < 0 else "🟡"
         out.append(f"   {icon} {esc(x['label'])}: {x['trades']:,} savdo, 2021–24 {x['disc']:+.2f}R · "
                    f"2025–26 {x['val']:+.2f}R".replace(",", " ", 1))
-    out += [f"   🚪 Chiqish: {esc(e['exit'])} — 5 yilda eng yaxshi natija bergan variant", ""]
+    if e.get("exit"):
+        out.append(f"   🚪 Chiqish: {esc(e['exit'])} — 5 yilda eng yaxshi natija bergan variant")
+    out.append("")
     return out
 
 

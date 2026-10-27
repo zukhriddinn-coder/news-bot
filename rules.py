@@ -149,7 +149,9 @@ def human(rule_key):
             parts.append(LABELS[p])
         elif p.startswith("setap: "):
             parts.append("setap — " + p[7:])
-        elif p.startswith(("rsi: ", "ball: ", "trend: ")):
+        elif p.startswith("trend: "):
+            parts.append("trend: " + p[7:])
+        elif p.startswith(("rsi: ", "ball: ")):
             parts.append(p.split(": ", 1)[1].replace("RSI", "RSI "). replace("  ", " "))
         else:
             parts.append(p)
