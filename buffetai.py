@@ -641,7 +641,8 @@ def mc_verdict(p_target, p_stop, r_target):
                                            if d > 0 else f"Kuchli stop tomonga ({share * 100:.0f}% vs zarar-siz {even * 100:.0f}%)")
 
 
-def replay_signals(df, side, bars, start=260, end=None, gate=None, deadline=None, window=ANALYSE_WINDOW):
+def replay_signals(df, side, bars, start=260, end=None, gate=None, deadline=None, window=ANALYSE_WINDOW,
+                   exit_fn=None):
     """Re-run the Buffet AI rule bar by bar on the past and play each signal's own plan (entry, stop, TP1)
     forward on the real bars that followed. Trades never overlap: after a signal the next one is looked for
     only after this trade has ended (TP1, stop, or `bars` bars later). Each bar sees only the past
@@ -659,7 +660,7 @@ def replay_signals(df, side, bars, start=260, end=None, gate=None, deadline=None
         if p["side"] != side or not p.get("targets") or (gate and not gate(a, df.iloc[:t + 1])):
             t += 1
             continue
-        e, st, tg = p["entry"], p["stop"], p["targets"][0]["price"]
+        e, st, tg = exit_fn(a) if exit_fn else (p["entry"], p["stop"], p["targets"][0]["price"])
         risk = abs(e - st)
         out, result, last_j = None, "neither", min(t + bars, n - 1)
         for j in range(t + 1, last_j + 1):
@@ -697,11 +698,12 @@ def summarize(trades):
             "win_pct": round(tg / len(trades) * 100, 1)}
 
 
-def history_test(df, side, bars, max_tests=HISTORY_BARS, deadline=None):
+def history_test(df, side, bars, max_tests=HISTORY_BARS, deadline=None, exit_fn=None):
     """The same rule on this instrument's own past (independent trades only). A result counts only
-    with at least MIN_TRADES trades; fewer = 'ma'lumot kam'."""
+    with at least MIN_TRADES trades; fewer = 'ma'lumot kam'. exit_fn: the exit the current plan uses."""
     n = len(df)
-    trades = replay_signals(df, side, bars, start=max(260, n - max_tests - bars), deadline=deadline)
+    trades = replay_signals(df, side, bars, start=max(260, n - max_tests - bars), deadline=deadline,
+                            exit_fn=exit_fn)
     s = summarize(trades)
     s.update(fired=s["trades"], tested_bars=min(max_tests, n - 260), enough=s["trades"] >= MIN_TRADES,
              avg_R=round(s["avg_R"], 2) if s["avg_R"] is not None else None)
@@ -830,9 +832,14 @@ def extras(df, a, meta, ysym, deadline):
         mc = simulate(pool, p["side"], p["entry"], p["stop"], p["targets"][0]["price"], bars)
         mc["verdict_kind"], mc["verdict"] = mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
         out["mc"] = mc
+        evd = a.get("evidence") or {}
+        exit_fn = None
+        if evd.get("variant"):                     # the history must use the same exit as the plan shown
+            import rules as R
+            exit_fn = lambda x, v=evd["variant"]: R.variant_plan(v, x)
         if len(df) >= bars + 300:
-            out["history"] = history_test(df, p["side"], bars, deadline=deadline)
-        if tf == "1D" and p["side"] == "LONG":
+            out["history"] = history_test(df, p["side"], bars, deadline=deadline, exit_fn=exit_fn)
+        if tf == "1D" and p["side"] == "LONG" and not evd:
             out["calibration"] = calibration_group(load_calibration(), a)
     ev = events(ysym, tf, df)
     out["events"] = ev
@@ -947,7 +954,8 @@ def extras_lines(a):
         h = x.get("history")
         if h and h["fired"]:
             years = max(1, round(h["tested_bars"] / 252))
-            line = (f"   📜 Shu qoida o'tmishda (~{years} yil) {h['fired']} ta mustaqil savdo: "
+            same = ", xuddi shu stop/TP bilan" if (a.get("evidence") or {}).get("variant") else ""
+            line = (f"   📜 Shu aksiyada o'tmishda (~{years} yil{same}) {h['fired']} ta mustaqil savdo: "
                     f"{h['target']} TP1, {h['stop']} stop, {h['neither']} hech biri"
                     + (f" · o'rtacha {h['avg_R']:+.2f}R" if h["avg_R"] is not None else ""))
             if not h.get("enough", True):
