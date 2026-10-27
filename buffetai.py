@@ -222,6 +222,10 @@ Rules:
   Mention the odds honestly in plan_comment (a coin flip is a coin flip; never call it a sure thing), and
   say that replays are a simulation, not a prediction. If risk has a "block" item (earnings inside the
   plan), say clearly that the plan is risky because of it.
+- "evidence" (daily charts) = what 5 years of real backtests on 957 US stocks say about THIS kind of signal.
+  status "approved" = it matches a rule that worked in both test periods; "not_proven" = such signals did not
+  make money over 5 years: say so clearly in summary and plan_comment and suggest a small position or waiting.
+  The plan's stop/targets already use the exit that tested best. Mention the facts briefly and honestly.
 - Short sentences. No markdown, no asterisks, no emoji.
 - Each text field: 1-4 sentences.
 
@@ -857,6 +861,69 @@ def plan_lines(p):
     return lines
 
 
+# ----------------------------- 5-year evidence (calibration v2) -------------
+
+def evidence(a, df, meta):
+    """Daily charts only: does this signal match a rule that passed BOTH 5-year test periods?
+    LONG + approved rule  -> the rule's own exit (stop / take profit).
+    LONG + no rule        -> 'not proven': the best tested exit (C: 2 ATR stop, 2R) and a clear warning.
+    SHORT                 -> SHORT signals are not tested yet (said honestly)."""
+    if meta.get("tf") != "1D" or a["plan"]["side"] == "KUTISH":
+        return None
+    cal = load_calibration()
+    if not cal or cal.get("version", 1) < 2:
+        return None
+    import rules as R                                     # lazy: rules.py imports this file
+    if a["plan"]["side"] == "SHORT":
+        return {"status": "short"}
+    spy = load_prices("SPY", "1D")
+    ctx = R.spy_context(spy) if spy is not None else {}
+    f = R.features(a, df.iloc[-501:], ctx)
+    groups = cal.get("groups", {})
+    facts = []
+    for key in (f"bozor: {f['bozor']}", f"kuch: {f['kuch']}", f"rsi: {f['rsi']}", f"trend: {f['trend']}"):
+        g = (groups.get(key) or {}).get("C")
+        if g and g["all"]["trades"]:
+            facts.append({"label": R.human(key), "trades": g["all"]["trades"], "avg_R": g["all"]["avg_R"],
+                          "disc": g["disc"]["avg_R"], "val": g["val"]["avg_R"]})
+    approved = [r for r in cal.get("approved", []) if r["val"]["trades"] >= R.MIN_VAL_TRADES]
+    matches = [r for r in approved if R.rule_matches(r["rule"], f)] if R.basic_gate(a) else []
+    rule = max(matches, key=lambda r: (r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2) if matches else None
+    v = rule["variant"] if rule else "C"
+    e, st, tp = R.variant_plan(v, a)
+    risk = e - st
+    a["plan"] = {"side": "LONG", "entry": r2(e), "stop": r2(st), "risk_pct": round(risk / e * 100, 2),
+                 "targets": [{"price": r2(tp), "rr": round((tp - e) / risk, 1)},
+                             {"price": r2(e + 2 * (tp - e)), "rr": round(2 * (tp - e) / risk, 1)}],
+                 "zone": a["plan"].get("zone")}
+    return {"status": "approved" if rule else "not_proven", "rule": rule,
+            "rule_text": R.human(rule["rule"]) if rule else None, "exit": R.VARIANTS[v], "variant": v,
+            "facts": facts, "regime": f["bozor"], "updated": cal.get("updated", "")[:10]}
+
+
+def evidence_lines(a):
+    e = a.get("evidence")
+    if not e:
+        return []
+    if e["status"] == "short":
+        return ["📚 <b>5 yillik dalil:</b> SHORT signallar hali 5 yillik sinovdan o'tkazilmagan — ehtiyot bo'ling.", ""]
+    out = ["📚 <b>5 yillik dalil</b> (957 aksiya, komissiyadan keyin)"]
+    if e["status"] == "approved":
+        r = e["rule"]
+        out += [f"   ✅ Tasdiqlangan qoida: {esc(e['rule_text'])}",
+                f"   2021–24: {r['disc']['trades']} savdo, {r['disc']['avg_R']:+.2f}R · "
+                f"2025–26: {r['val']['trades']} savdo, {r['val']['avg_R']:+.2f}R"]
+    else:
+        out += ["   ⚠️ <b>Tasdiqlanmagan signal:</b> bunday LONG signallar 5 yillik sinovda barqaror foyda "
+                "bermagan. Kichik pozitsiya yoki kutish tavsiya etiladi."]
+    for x in e["facts"]:
+        icon = "🟢" if x["disc"] > 0 and x["val"] > 0 else "🔴" if x["disc"] < 0 and x["val"] < 0 else "🟡"
+        out.append(f"   {icon} {esc(x['label'])}: {x['trades']:,} savdo, 2021–24 {x['disc']:+.2f}R · "
+                   f"2025–26 {x['val']:+.2f}R".replace(",", " ", 1))
+    out += [f"   🚪 Chiqish: {esc(e['exit'])} — 5 yilda eng yaxshi natija bergan variant", ""]
+    return out
+
+
 def extras_lines(a):
     x = a.get("extras") or {}
     out = []
@@ -941,7 +1008,7 @@ def format_text(meta, a, ex, image_only):
                 word = "pullback" if p["side"] == "LONG" else "qaytish"
                 lines.append(f"   💡 Yaxshiroq kirish ({word}): {fp(p['zone'])} atrofi")
         lines.append("")
-        lines += extras_lines(a)
+        lines += evidence_lines(a) + extras_lines(a)
         lv = " · ".join(fp(x["price"]) for x in a["supports"]) or "—"
         lr = " · ".join(fp(x["price"]) for x in a["resistances"]) or "— (narx eng yuqori nuqtalar yaqinida)"
         lines += [f"🧱 Qo'llab-quvvatlash: {lv}", f"🧱 Qarshilik: {lr}", ""]
@@ -1000,7 +1067,9 @@ def make_chart(meta, a):
         head.text(0.955, 0.12, f"Time Machine: TP1 {mc['p_target'] * 100:.0f}% · stop {mc['p_stop'] * 100:.0f}%",
                   fontsize=9, color=T["muted"], va="center", ha="right")
     color = {"LONG": T["up"], "SHORT": T["down"], "KUTISH": T["wait"]}[p["side"]]
-    head.text(0.955, 0.55, p["side"], fontsize=15, fontweight="bold", color=color, va="center", ha="right",
+    ev = a.get("evidence") or {}
+    pill = p["side"] + (" ✓" if ev.get("status") == "approved" else " ?" if ev.get("status") == "not_proven" else "")
+    head.text(0.955, 0.55, pill, fontsize=15, fontweight="bold", color=color, va="center", ha="right",
               bbox=dict(boxstyle="round,pad=0.45,rounding_size=0.6", facecolor=T["panel"], edgecolor=color,
                         linewidth=1.4))
 
@@ -1137,6 +1206,11 @@ def main():
             a = None
     if a:
         try:
+            a["evidence"] = evidence(a, df, meta)
+        except Exception as exc:
+            print(f"evidence: {exc}")
+            a["evidence"] = None
+        try:
             a["extras"] = extras(df, a, meta, ysym, deadline=time.time() + 45)
         except Exception as exc:
             print(f"extras: {exc}")
@@ -1172,7 +1246,9 @@ def main():
     if a:
         side = a["plan"]["side"]
         cap_line = f"🧠 <b>Buffet AI · {esc(meta['title'])}</b> · {esc(TF_NAMES.get(meta['tf'], meta['tf']))}\n" \
-                   f"Reja: <b>{side}</b> · RSI {a['rsi']} · trend: {a['trend']}"
+                   f"Reja: <b>{side}</b> · RSI {a['rsi']} · trend: {a['trend']}" + \
+                   {"approved": "\n✅ 5 yillik sinovdan o'tgan qoidaga mos", "not_proven":
+                    "\n⚠️ 5 yillik sinovda tasdiqlanmagan signal"}.get((a.get("evidence") or {}).get("status"), "")
         send_photo(make_chart(meta, a), cap_line)
         send_text(text, reply=False, html_mode=True)
     else:

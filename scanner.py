@@ -537,6 +537,8 @@ def main():
 
     cal = B.load_calibration()
     approved = cal.get("approved") if cal and cal.get("version", 1) >= 2 else None
+    if approved is not None:                             # strict: 150+ trades in the check period too
+        approved = [r for r in approved if r["val"]["trades"] >= R.MIN_VAL_TRADES]
     regime = None
     cands, longs = [], 0
     if approved is not None:                             # v2: only rules that passed both test periods

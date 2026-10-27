@@ -13,6 +13,7 @@ import buffetai as B
 
 HORIZON = B.HORIZON["1D"]          # 20 trading days
 COST_PCT = 0.001                    # 0.05% per side: commission + slippage, charged on every trade
+MIN_VAL_TRADES = 150                # an approved rule needs 150+ trades in the 2025-26 check period
 
 # Exit variants. "A" = Buffet AI's own plan (stop under the swing, TP1 at the nearest level).
 VARIANTS = {

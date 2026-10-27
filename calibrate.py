@@ -26,7 +26,7 @@ import scanner as S
 OUT_FILE = "calibration.json"
 YEARS = "6y"
 SPLIT = "2025-01-01"          # before: find rules ("disc"); from this date: check them ("val")
-MIN_DISC, MIN_VAL = 200, 60   # trades a rule needs in each period
+MIN_DISC, MIN_VAL = 200, 150  # trades a rule needs in each period (fewer = could be luck)
 MIN_DISC_R, MIN_VAL_R = 0.05, 0.03   # average R after costs a rule needs in each period
 _SPY = {}
 
