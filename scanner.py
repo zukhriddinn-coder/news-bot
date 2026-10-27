@@ -379,20 +379,27 @@ def main():
     if not CHAT_ID or not B.BOT_TOKEN:
         raise SystemExit("BUFFET_BOT_TOKEN va BUFFET_CHAT_ID secret'larini qo'shing")
     now = ny_now()
+    as_of = os.environ.get("AS_OF", "").strip()      # backtest: "2026-10-24" = run as if on that day (bars up to it)
+    if as_of:
+        now = now.replace(year=int(as_of[:4]), month=int(as_of[5:7]), day=int(as_of[8:10]), hour=16, minute=0)
     mode = (os.environ.get("MODE", "") or "morning").strip().lower()      # Apps Script: 09:57 and 14:57 New York
     at = (9, 50) if mode == "morning" else (11, 50) if now.strftime("%Y-%m-%d") in ("2026-11-27", "2026-12-24", "2027-11-26") else (14, 50)
     target = now.replace(hour=at[0], minute=at[1], second=0, microsecond=0)
-    if not FORCE and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
+    if not FORCE and not as_of and not (0 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN and now.weekday() < 5):
         print(f"New York {now:%Y-%m-%d %H:%M}: not the scan time, nothing to do")
         return
     print(f"New York {now:%Y-%m-%d %H:%M}: scanning")
 
     stocks = universe()
     spy = download(["SPY"], period="1mo", min_bars=5).get("SPY")
-    if spy is not None and not FORCE and spy.index[-1].date() != now.date():
+    if spy is not None and not FORCE and not as_of and spy.index[-1].date() != now.date():
         print(f"SPY last bar {spy.index[-1].date()}: market closed today (holiday)")
         return
     prices = download(stocks)
+    if as_of:
+        prices = {k: v[v.index.date <= now.date()] for k, v in prices.items()}
+        prices = {k: v for k, v in prices.items() if len(v) >= 220}
+        print(f"Backtest: bars up to {as_of} only")
     if len(prices) < len(stocks) * 0.5:
         B.CHAT_ID, B.THREAD_ID, B.REPLY_TO = CHAT_ID, THREAD_ID, ""
         B.send_text(f"⚠️ Buffet AI kunlik skani: Yahoo Finance'dan ma'lumot yetarli yuklanmadi "
