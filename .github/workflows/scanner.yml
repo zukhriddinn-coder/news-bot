@@ -8,6 +8,10 @@ on:
         description: "morning (10:00 New York) or close (15:00 New York)"
         required: false
         default: "close"
+      as_of:
+        description: "Backtest: sana (masalan 2026-10-24). Bo'sh = bugun"
+        required: false
+        default: ""
       force:
         description: "Run now even outside the scan time (test)"
         required: false
@@ -44,4 +48,5 @@ jobs:
           BUFFET_THREAD_ID: ${{ secrets.BUFFET_THREAD_ID }}
           FORCE: ${{ inputs.force }}
           MODE: ${{ inputs.mode }}
+          AS_OF: ${{ inputs.as_of }}
 
