@@ -222,10 +222,10 @@ Rules:
   Mention the odds honestly in plan_comment (a coin flip is a coin flip; never call it a sure thing), and
   say that replays are a simulation, not a prediction. If risk has a "block" item (earnings inside the
   plan), say clearly that the plan is risky because of it.
-- "screen" (daily charts) = the checks of the group's daily scanner for this ticker (Buffet AI LONG plan,
-  TP1 at least 1:1, RSI below 80, stop within 12%%, Time Machine edge, last-year history, no earnings
-  inside the plan). If "passed" is false, say briefly in
-  summary which important check failed; if it is true, say it passes the scanner's checks. Never call it a sure thing.
+- "evidence" (daily charts) = what 5 years of real backtests on 957 US stocks say about THIS kind of signal.
+  status "approved" = it matches a rule that worked in both test periods; "not_proven" = such signals did not
+  make money over 5 years: say so clearly in summary and plan_comment and suggest a small position or waiting.
+  The plan's stop/targets already use the exit that tested best. Mention the facts briefly and honestly.
 - Short sentences. No markdown, no asterisks, no emoji.
 - Each text field: 1-4 sentences.
 
@@ -832,8 +832,15 @@ def extras(df, a, meta, ysym, deadline):
         mc = simulate(pool, p["side"], p["entry"], p["stop"], p["targets"][0]["price"], bars)
         mc["verdict_kind"], mc["verdict"] = mc_verdict(mc["p_target"], mc["p_stop"], mc["r_target"])
         out["mc"] = mc
-        if tf != "1D" and len(df) >= bars + 300:           # daily charts: the screen below has the history
-            out["history"] = history_test(df, p["side"], bars, deadline=deadline)
+        evd = a.get("evidence") or {}
+        exit_fn = None
+        if evd.get("variant"):                     # the history must use the same exit as the plan shown
+            import rules as R
+            exit_fn = lambda x, v=evd["variant"]: R.variant_plan(v, x)
+        if len(df) >= bars + 300:
+            out["history"] = history_test(df, p["side"], bars, deadline=deadline, exit_fn=exit_fn)
+        if tf == "1D" and p["side"] == "LONG" and not evd:
+            out["calibration"] = calibration_group(load_calibration(), a)
     ev = events(ysym, tf, df)
     out["events"] = ev
     out["risk"] = risk_gate(p, a, df, ev, meta.get("asset", ""))
@@ -853,41 +860,76 @@ def fp(x):
     return f"${x:,.2f}" if abs(x) >= 1 else f"${x:.4g}"
 
 
-# ----------------------------- Scanner criteria for one ticker --------------
+# ----------------------------- 5-year evidence (calibration v2) -------------
 
-def screen(a, df, meta, ex, deadline):
-    """Daily charts: the same checks the daily scanner uses (criteria.py), so the user sees whether this
-    ticker would be a scanner candidate and which rule it fails."""
-    if meta.get("tf") != "1D" or meta.get("asset") in ("forex", "index", "futures", "crypto"):
+def evidence(a, df, meta):
+    """Daily charts only: does this signal match a rule that passed BOTH 5-year test periods?
+    LONG + approved rule  -> the rule's own exit (stop / take profit).
+    LONG + no rule        -> 'not proven': the best tested exit (C: 2 ATR stop, 2R) and a clear warning.
+    SHORT                 -> SHORT signals are not tested yet (said honestly).
+    KUTISH                -> no LONG signal now: the 5-year facts of the current context are still shown."""
+    if meta.get("tf") != "1D":
         return None
-    import criteria as K                                  # lazy: criteria.py imports this file
-    p = a["plan"]
-    gates = K.plan_gates(a)
-    out = {"long": p["side"] == "LONG"}
-    checks = list(gates) if out["long"] else [gates[0]]
-    out["checks"] = checks
-    if out["long"] and p.get("targets"):
-        mc = (ex or {}).get("mc") or K.time_machine(df, a)
-        hit = mc["p_target"] + mc["p_stop"]
-        share = mc["p_target"] / hit if hit else 0
-        even = 1 / (1 + mc["r_target"])
-        checks.append((bool(share - even >= K.MIN_EDGE),
-                       f"Time Machine: urilganlarning {share * 100:.0f}% ida TP1 birinchi, chegara {even * 100:.0f}% "
-                       f"({(share - even) * 100:+.0f} punkt, kerak +{K.MIN_EDGE * 100:.0f})"))
-        blocks = [t for lv, t in (ex or {}).get("risk", []) if lv == "block" and not t.startswith("Hisobot")]
-        checks.append((not blocks, "Risk tekshiruvi: to'siq yo'q" if not blocks else f"Risk: {blocks[0]}"))
-        h = K.history_250(df.iloc[-504:], "LONG", HORIZON["1D"], deadline=min(deadline, time.time() + 12))
-        out["hist"] = h
-        checks.append((K.history_ok(h), f"Oxirgi yil: {h['fired']} signal, {h['target']} TP1 / {h['stop']} stop"
-                       + (f", {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")))
-    evs = (ex or {}).get("events") or {}
-    checks.append((not evs.get("earnings_in_window"),
-                   f"Hisobot 4 hafta ichida emas" + (f" (keyingisi {uz_date(evs['earnings'])})"
-                                                     if evs.get("earnings") and evs.get("earnings_days", 0) >= 0 else "")
-                   if not evs.get("earnings_in_window") else f"Hisobot {uz_date(evs['earnings'])} da, reja muddati ichida"))
-    out["passed"] = all(ok for ok, _ in checks)
-    out["failed"] = sum(1 for ok, _ in checks if not ok)
+    cal = load_calibration()
+    if not cal or cal.get("version", 1) < 2:
+        return None
+    import rules as R                                     # lazy: rules.py imports this file
+    if a["plan"]["side"] == "SHORT":
+        return {"status": "short"}
+    if a["plan"]["side"] == "KUTISH":
+        return {"status": "no_signal", "facts": context_facts(a, df, cal, R)}
+    spy = load_prices("SPY", "1D")
+    ctx = R.spy_context(spy) if spy is not None else {}
+    f = R.features(a, df.iloc[-501:], ctx)
+    groups = cal.get("groups", {})
+    facts = []
+    for key in (f"bozor: {f['bozor']}", f"kuch: {f['kuch']}", f"rsi: {f['rsi']}", f"trend: {f['trend']}"):
+        g = (groups.get(key) or {}).get("C")
+        if g and g["all"]["trades"]:
+            facts.append({"label": R.human(key), "trades": g["all"]["trades"], "avg_R": g["all"]["avg_R"],
+                          "disc": g["disc"]["avg_R"], "val": g["val"]["avg_R"]})
+    approved = [r for r in cal.get("approved", []) if r["val"]["trades"] >= R.MIN_VAL_TRADES]
+    matches = [r for r in approved if R.rule_matches(r["rule"], f)] if R.basic_gate(a) else []
+    rule = max(matches, key=lambda r: (r["disc"]["avg_R"] + r["val"]["avg_R"]) / 2) if matches else None
+    v = rule["variant"] if rule else "C"
+    e, st, tp = R.variant_plan(v, a)
+    risk = e - st
+    a["plan"] = {"side": "LONG", "entry": r2(e), "stop": r2(st), "risk_pct": round(risk / e * 100, 2),
+                 "targets": [{"price": r2(tp), "rr": round((tp - e) / risk, 1)},
+                             {"price": r2(e + 2 * (tp - e)), "rr": round(2 * (tp - e) / risk, 1)}],
+                 "zone": a["plan"].get("zone")}
+    return {"status": "approved" if rule else "not_proven", "rule": rule,
+            "rule_text": R.human(rule["rule"]) if rule else None, "exit": R.VARIANTS[v], "variant": v,
+            "facts": facts, "regime": f["bozor"], "updated": cal.get("updated", "")[:10]}
+
+
+def context_facts(a, df, cal, R):
+    """5-year results of the market regime, relative strength, RSI zone and trend of this chart now
+    (exit C), so the evidence is visible even when there is no LONG signal."""
+    spy = load_prices("SPY", "1D")
+    ctx = R.spy_context(spy) if spy is not None else {}
+    c = df["Close"].to_numpy(dtype=float)
+    above, spy63 = ctx.get(df.index[-1].date(), (None, None))
+    if above is None and ctx:
+        above, spy63 = ctx[max(ctx)]
+    rs = (c[-1] / c[-64] - 1 - spy63) if (len(c) > 64 and spy63 is not None) else None
+    rsi = a["rsi"]
+    keys = []
+    if above is not None:
+        keys.append(f"bozor: {'SPY>MA200' if above else 'SPY<MA200'}")
+    if rs is not None:
+        keys.append(f"kuch: {'RS<0' if rs < 0 else 'RS 0-10%' if rs < 0.10 else 'RS>10%'}")
+    keys.append("rsi: " + ("RSI<50" if rsi < 50 else "RSI 50-60" if rsi < 60 else "RSI 60-70" if rsi < 70
+                           else "RSI 70-80"))
+    keys.append(f"trend: {a['trend']}")
+    out = []
+    for key in keys:
+        g = (cal.get("groups", {}).get(key) or {}).get("C")
+        if g and g["all"]["trades"]:
+            out.append({"label": R.human(key), "trades": g["all"]["trades"], "avg_R": g["all"]["avg_R"],
+                        "disc": g["disc"]["avg_R"], "val": g["val"]["avg_R"]})
     return out
+
 
 
 # ----------------------------- Telegram text --------------------------------
@@ -946,12 +988,10 @@ def format_text(meta, a, ex, image_only):
 
     if a:
         p = a["plan"]
-        sc = a.get("screen")
+        evd = a.get("evidence") or {}
         icon = {"LONG": "🟢", "SHORT": "🔴", "KUTISH": "🟡"}[p["side"]]
-        verdict = ""
-        if sc and sc["long"]:
-            verdict = ("  ✅ skaner shartlarining hammasidan o'tdi" if sc["passed"]
-                       else f"  ⚠️ {sc['failed']} ta skaner sharti bajarilmadi")
+        verdict = {"approved": "  🟢 5 yillik sinovdan o'tgan qoida",
+                   "not_proven": "  🟡 5 yillik sinovda tasdiqlanmagan"}.get(evd.get("status"), "")
         lines.append(f"{icon} <b>{p['side']}</b>{verdict}")
         if ex.get("summary"):
             lines += quote([esc(one_line(ex["summary"]))])
@@ -971,12 +1011,29 @@ def format_text(meta, a, ex, image_only):
             lines.append(f"<i>{esc(one_line(ex['plan_comment']))}</i>")
         lines.append("")
 
-        if sc:
-            ok_n = sum(1 for ok, _ in sc["checks"] if ok)
-            lines.append(f"📋 <b>Skaner shartlari</b>  {ok_n}/{len(sc['checks'])}")
-            q = [f"{'✅' if ok else '❌'} {esc(t)}" for ok, t in sc["checks"]]
-            if not sc["long"]:
-                q.append("<i>Skaner faqat LONG signallarni tanlaydi. Buffet AI LONG desa, shartlar qayta tekshiriladi.</i>")
+        if evd:
+            cal_ = load_calibration() or {}
+            lines.append(f"📚 <b>5 yillik dalil</b>  <i>{cal_.get('stocks', '')} aksiya, komissiyadan keyin</i>")
+            q = []
+            if evd["status"] == "short":
+                q.append("🔴 SHORT signallar hali 5 yillik sinovdan o'tkazilmagan, ehtiyot bo'ling.")
+            elif evd["status"] == "no_signal":
+                q.append("🟡 Hozir LONG signal yo'q. Yorib o'tish bo'lib, Buffet AI LONG desa, signal qoidalar bilan "
+                         "qayta tekshiriladi. Shunday holatdagi LONG signallarning 5 yillik natijasi:")
+            elif evd["status"] == "approved":
+                r = evd["rule"]
+                q += [f"🟢 Tasdiqlangan qoida: {esc(evd['rule_text'])}",
+                      f"2021–24: {r['disc']['trades']} savdo, <b>{r['disc']['avg_R']:+.2f}R</b>. "
+                      f"2025–26: {r['val']['trades']} savdo, <b>{r['val']['avg_R']:+.2f}R</b>"]
+            elif evd["status"] == "not_proven":
+                q.append("🟡 <b>Tasdiqlanmagan signal:</b> bunday LONG signallar 5 yillik sinovda barqaror foyda "
+                         "bermagan. Kichik pozitsiya yoki kutish tavsiya etiladi.")
+            for f_ in evd.get("facts") or []:
+                ic = "🟢" if f_["disc"] > 0 and f_["val"] > 0 else "🔴" if f_["disc"] < 0 and f_["val"] < 0 else "🟡"
+                q.append(f"{ic} {esc(f_['label'])}: {f_['trades']:,} savdo, 2021–24 {f_['disc']:+.2f}R, "
+                         f"2025–26 {f_['val']:+.2f}R".replace(",", " ", 1))
+            if evd.get("exit"):
+                q.append(f"🚪 Chiqish: {esc(evd['exit'])}, 5 yilda eng yaxshi natija bergan variant")
             lines += quote(q) + [""]
 
         x = a.get("extras") or {}
@@ -995,6 +1052,10 @@ def format_text(meta, a, ex, image_only):
                 q.append(f"📜 Shu qoida ~{years} yilda: {h['fired']} savdo, {h['target']} TP1 / {h['stop']} stop"
                          + (f", {h['avg_R']:+.2f}R" if h["avg_R"] is not None else "")
                          + ("" if h.get("enough", True) else " <i>(ma'lumot kam)</i>"))
+            cg = x.get("calibration")
+            if cg:
+                q.append(f"📊 Butun bozor, 5 yil ({esc(cg['group'])}): {cg['trades']:,} savdo, TP1 {cg['win_pct']:.0f}%, "
+                         f"stop {cg['stop'] / cg['trades'] * 100:.0f}%, {cg['avg_R']:+.2f}R".replace(",", " ", 1))
             lines += [f"🎲 <b>Time Machine</b>  <i>{reps} replay, bashorat emas</i>"] + q + [""]
 
         q = []
@@ -1085,8 +1146,8 @@ def make_chart(meta, a):
         head.text(0.955, 0.12, f"Time Machine: TP1 {mc['p_target'] * 100:.0f}% · stop {mc['p_stop'] * 100:.0f}%",
                   fontsize=9, color=T["muted"], va="center", ha="right")
     color = {"LONG": T["up"], "SHORT": T["down"], "KUTISH": T["wait"]}[p["side"]]
-    sc = a.get("screen") or {}
-    pill = p["side"] + (" ✓" if sc.get("long") and sc.get("passed") else "")
+    ev = a.get("evidence") or {}
+    pill = p["side"] + (" ✓" if ev.get("status") == "approved" else " ?" if ev.get("status") == "not_proven" else "")
     head.text(0.955, 0.55, pill, fontsize=15, fontweight="bold", color=color, va="center", ha="right",
               bbox=dict(boxstyle="round,pad=0.45,rounding_size=0.6", facecolor=T["panel"], edgecolor=color,
                         linewidth=1.4))
@@ -1224,15 +1285,15 @@ def main():
             a = None
     if a:
         try:
+            a["evidence"] = evidence(a, df, meta)
+        except Exception as exc:
+            print(f"evidence: {exc}")
+            a["evidence"] = None
+        try:
             a["extras"] = extras(df, a, meta, ysym, deadline=time.time() + 45)
         except Exception as exc:
             print(f"extras: {exc}")
             a["extras"] = {}
-        try:
-            a["screen"] = screen(a, df, meta, a["extras"], deadline=time.time() + 40)
-        except Exception as exc:
-            print(f"screen: {exc}")
-            a["screen"] = None
     print(f"{ysym} {meta['tf']}: {'data' if a else 'picture only'}")
     if not a and not image:
         send_text(f"❌ {meta['title']} uchun narx ma'lumoti topilmadi. Tikerni tekshiring yoki grafik rasmini "
@@ -1264,11 +1325,10 @@ def main():
     text = format_text(meta, a, ex, image_only=not a)
     if a:
         side = a["plan"]["side"]
-        sc = a.get("screen") or {}
         cap_line = (f"🧠 <b>{esc(meta['title'])}</b>  {'kunlik' if meta['tf'] == '1D' else esc(TF_NAMES.get(meta['tf'], meta['tf']))} grafik\n"
                     f"{ {'LONG': '🟢', 'SHORT': '🔴', 'KUTISH': '🟡'}[side]} <b>{side}</b>, RSI {a['rsi']:.0f}, {esc(a['trend'])}"
-                    + (("\n✅ Skaner shartlarining hammasidan o'tdi" if sc.get("passed")
-                        else f"\n⚠️ {sc.get('failed')} ta skaner sharti bajarilmadi") if sc.get("long") else ""))
+                    + {"approved": "\n🟢 5 yillik sinovdan o'tgan qoidaga mos",
+                       "not_proven": "\n🟡 5 yillik sinovda tasdiqlanmagan signal"}.get((a.get("evidence") or {}).get("status"), ""))
         send_photo(make_chart(meta, a), cap_line)
         send_text(text, reply=False, html_mode=True)
     else:
