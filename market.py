@@ -366,7 +366,14 @@ def format_text(day, st):
     if secs:
         lead = sorted(secs, key=lambda r: -(r["w1"] or -99))
         lines.append(f"<i>5 kunlik yetakchi: {lead[0]['name']}. Eng zaif: {lead[-1]['name']}.</i>")
-    lines += ["", f"💡 <b>Bugun uchun:</b> {ADVICE[icon]}", ""]
+    lines += ["", f"💡 <b>Bugun uchun:</b> {ADVICE[icon]}"]
+    vals = [x for x in fu.values() if x is not None]
+    if vals and min(vals) <= -0.7:
+        lines.append(f"⚠️ Fyuchers bugun pasayish bilan ochilishni ko'rsatmoqda ({', '.join(f'{esc(n_)} {sp(fu.get(n_))}' for _, n_ in FUTURES if fu.get(n_) is not None)}). "
+                     "Birinchi 30 daqiqada shoshilmang.")
+    elif vals and max(vals) >= 0.7 and icon != GREEN:
+        lines.append("ℹ️ Fyuchers bugun o'sish bilan ochilishni ko'rsatmoqda, lekin umumiy fon hali zaif.")
+    lines.append("")
     if st.get("partial"):
         lines += [f"<i>ℹ️ {esc(st['partial'])}</i>", ""]
     lines.append("<i>Ball: indekslar trendi (±4), VIX (±2), bozor kengligi (±2). Bu bozor rejimi ko'rsatkichi, "
@@ -402,7 +409,7 @@ def main():
             c = closed(data[s])["Close"].to_numpy(dtype=float)
             sectors.append({"sym": s, "name": name, "d1": chg(c), "w1": chg(c, 5)})
     vx = S.download(["^VIX"], period="6mo", min_bars=30).get("^VIX")
-    vix = vix_state(vx) if vx is not None else None             # VIX: the latest value (it trades pre-market)
+    vix = vix_state(closed(vx)) if vx is not None else None     # VIX: yesterday's close, like the other numbers
     fut = {}
     fdata = S.download([s for s, _ in FUTURES], period="1mo", min_bars=3)
     for s, name in FUTURES:
