@@ -1,0 +1,41 @@
+name: Bozor holati
+
+on:
+  workflow_dispatch:            # started every trading day at 09:00 New York by Google Apps Script (market.gs),
+                                # or by hand: Actions -> Bozor holati -> Run workflow
+    inputs:
+      force:
+        description: "Run now even outside 09:00 New York (test)"
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-state
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/market.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib lxml
+
+      - name: Post the market state
+        run: python market.py
+        env:
+          MARKET_BOT_TOKEN: ${{ secrets.MARKET_BOT_TOKEN }}
+          MARKET_CHAT_ID: ${{ secrets.MARKET_CHAT_ID }}
+          MARKET_THREAD_ID: ${{ secrets.MARKET_THREAD_ID }}
+          FORCE: ${{ inputs.force }}
