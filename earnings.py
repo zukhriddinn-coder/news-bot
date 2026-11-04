@@ -120,12 +120,18 @@ def split_text(text, limit=3900):
 
 
 def send(png, caption, text):
+    res = []
     if png:
-        tg("sendPhoto", {**where(), "caption": caption[:1024], "parse_mode": "HTML"},
-           files={"photo": ("hisobotlar.png", png, "image/png")})
+        res.append(tg("sendPhoto", {**where(), "caption": caption[:1024], "parse_mode": "HTML"},
+                      files={"photo": ("hisobotlar.png", png, "image/png")}))
     for part in split_text(text):
-        tg("sendMessage", {**where(), "text": part, "parse_mode": "HTML",
-                           "link_preview_options": {"is_disabled": True}})
+        res.append(tg("sendMessage", {**where(), "text": part, "parse_mode": "HTML",
+                                      "link_preview_options": {"is_disabled": True}}))
+    for r in res:                                 # where Telegram really put it (to check the topic)
+        m = (r or {}).get("result") or {}
+        ch = m.get("chat") or {}
+        print(f"Telegram: chat '{ch.get('title') or ch.get('first_name') or ''}' ({ch.get('id')}), "
+              f"topic {m.get('message_thread_id') or 'General (umumiy)'}, message {m.get('message_id')}")
 
 
 # ----------------------------- Small helpers --------------------------------
@@ -272,6 +278,14 @@ def fetch_yahoo(start, end, min_cap, pages=3):
             continue
         seen.add((r["sym"], r["date"]))
         out.append(r)
+    # Yahoo does not always apply the market-cap filter itself: apply it here
+    known = [r for r in out if r["cap"] > 0]
+    if known:
+        big = [r for r in out if r["cap"] >= min_cap]
+        print(f"Yahoo: {len(out)} reports, {len(big)} of them >= ${min_cap / 1e9:.0f}B")
+        out = big
+    else:
+        print("Yahoo: no market caps in the calendar, cap filter skipped")
     return out
 
 
