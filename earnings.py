@@ -1,9 +1,13 @@
 """
 Trading Laboratory -> "Hisobotlar va makro kalendar" bot
-Every US trading day at 07:00 New York time Google Apps Script starts this script on GitHub Actions. It posts
-one card + text to the "Hisobotlar" topic:
-  - which companies report TODAY: before the open (BMO) and after the close (AMC)
-  - for each: expected EPS, expected revenue (analyst consensus), approximate net income (EPS x shares),
+Every US trading day Google Apps Script starts this script twice on GitHub Actions; each run posts one card + text
+to the "Hisobotlar" topic:
+  - 03:00 New York (MODE=pre), 1 hour before the pre-market: companies reporting before the open, the macro
+    events of the day, yesterday's results (Monday: also the week ahead)
+  - 15:00 New York (MODE=post), 1 hour before the after-market: companies reporting after the close and the
+    results that came out this morning
+Details:
+  - for each company: expected EPS, expected revenue (analyst consensus), approximate net income (EPS x shares),
     and the colour of the year-on-year expectation: 🟢 higher than a year ago, 🔴 lower, 🟡 about the same
   - if a company has already reported: actual EPS vs expected (beat / miss)
   - the macro events of the day (Fed, CPI, jobs, GDP ...) with New York and Tashkent time
@@ -36,7 +40,9 @@ import buffetai as B                    # card theme and font
 # SETTINGS
 # ---------------------------------------------------------------------------
 
-RUN_AT_NY = (7, 0)                      # 07:00 New York: most "before the open" reports are still ahead
+RUN_PRE_NY = (3, 0)                     # 03:00 New York: 1 hour before the pre-market (04:00)
+RUN_POST_NY = (15, 0)                   # 15:00 New York: 1 hour before the after-market (16:00; 12:00 on short days)
+NYSE_EARLY_CLOSE = {"2026-11-27", "2026-12-24", "2027-11-26"}      # the market closes at 13:00
 RUN_WINDOW_MIN = 25                     # Apps Script may be a little late
 MIN_CAP = 2_000_000_000                 # only companies above $2 billion market cap
 WEEK_MIN_CAP = 10_000_000_000           # Monday overview: only $10 billion and above
@@ -54,6 +60,7 @@ CHAT_ID = os.environ.get("EARN_CHAT_ID", "").strip() or "-1003382397608"
 THREAD_ID = os.environ.get("EARN_THREAD_ID", "").strip()
 FINNHUB_KEY = os.environ.get("FINNHUB_KEY", "").strip()
 FORCE = os.environ.get("FORCE", "").strip().lower() in ("1", "true", "yes")
+MODE = os.environ.get("MODE", "").strip().lower()          # pre | post (empty: by the clock)
 DAY_OVERRIDE = os.environ.get("DAY", "").strip()          # YYYY-MM-DD: preview another day (test)
 OYLAR = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr",
          "dekabr"]
@@ -597,7 +604,13 @@ def macro_value(v):
 
 # ----------------------------- Card -----------------------------------------
 
-def make_card(day, groups, macro, counts):
+SESSION_TITLE = {"pre": ("Ertalabki hisobotlar", "Bozor ochilishidan oldin", "pre-market"),
+                 "post": ("Kechki hisobotlar", "Bozor yopilgach", "after-market")}
+
+
+def make_card(day, mode, items, total, bottom_title, bottom):
+    """One session on the card: up to 12 companies in two columns, then macro events (morning)
+    or this morning's results (evening)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -606,11 +619,13 @@ def make_card(day, groups, macro, counts):
     T = dict(B.THEME)
     plt.rcParams["font.family"] = B._font()
     plt.rcParams["text.parse_math"] = False        # "$" is a price here, not a formula
-    rows = max(len(groups["BMO"][:MAX_PER_SIDE_CARD]), len(groups["AMC"][:MAX_PER_SIDE_CARD]), 1)
+    title, ptitle, psub = SESSION_TITLE[mode]
+    items = items[:MAX_PER_SIDE_CARD * 2]
+    rows = max((len(items) + 1) // 2, 1)
     RH = 1.12
-    mac = macro[:5]
+    bot = bottom[:5]
     W = 10
-    H = 1.75 + 0.55 + rows * RH + (0.75 + len(mac) * 0.46 if mac else 0) + 0.7
+    H = 1.75 + 0.6 + rows * RH + (0.75 + len(bot) * 0.46 if bot else 0) + 0.7
     fig = plt.figure(figsize=(W, H), dpi=160, facecolor=T["bg"])
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_axis_off()
@@ -622,15 +637,13 @@ def make_card(day, groups, macro, counts):
                                     facecolor=T["panel"], edgecolor=T["line"], linewidth=1))
 
     dcol = {GREEN: T["up"], RED: T["down"], YELLOW: T["wait"]}
-    ax.text(0.04, H - 0.55, "Bugungi hisobotlar", fontsize=24, fontweight="bold", color=T["ink"], va="center")
+    ax.text(0.04, H - 0.55, title, fontsize=24, fontweight="bold", color=T["ink"], va="center")
     ax.text(0.04, H - 0.98, f"{uz_full(day)} · AQSh bozori vaqti bilan", fontsize=10, color=T["muted"], va="center")
-    tot = counts["BMO"] + counts["AMC"] + counts["TBD"]
-    ax.text(0.955, H - 0.55, f"{tot} ta kompaniya", fontsize=15, fontweight="bold", color=T["ink"], va="center",
+    ax.text(0.955, H - 0.55, f"{total} ta kompaniya", fontsize=15, fontweight="bold", color=T["ink"], va="center",
             ha="right", bbox=dict(boxstyle="round,pad=0.45,rounding_size=0.6", facecolor=T["panel"],
                                   edgecolor=T["line"], linewidth=1.4))
     ax.text(0.955, H - 1.05, f"kapitalizatsiya ${MIN_CAP / 1e9:.0f} mlrd dan yuqori", fontsize=9.5, color=T["muted"],
             va="center", ha="right")
-    # legend
     lx = 0.04
     for dot_, txt in ((T["up"], "kutilma o'tgan yildan yuqori"), (T["down"], "past"), (T["wait"], "deyarli o'zgarmagan")):
         ax.text(lx, H - 1.4, "●", fontsize=11, color=dot_, va="center")
@@ -638,59 +651,66 @@ def make_card(day, groups, macro, counts):
         lx += 0.05 + 0.0062 * len(txt)
 
     top = H - 1.75
-    for k, (key, title, sub) in enumerate((("BMO", "☀  Bozor ochilishidan oldin", "pre-market"),
-                                           ("AMC", "☾  Bozor yopilgach", "after-market"))):
-        x0 = 0.03 + k * 0.4875
-        w = 0.4625
-        items = groups[key][:MAX_PER_SIDE_CARD]
-        panel(x0, top - 0.55 - rows * RH - 0.05, w, 0.55 + rows * RH)
-        ax.text(x0 + 0.018, top - 0.28, title.replace("☀  ", "").replace("☾  ", ""), fontsize=12.5,
-                fontweight="bold", color=T["ink"], va="center")
-        ax.text(x0 + w - 0.018, top - 0.28, f"{counts[key]} ta · {sub}", fontsize=8.5, color=T["muted"], va="center",
-                ha="right")
-        if not items:
-            ax.text(x0 + 0.018, top - 0.85, "Yirik kompaniyalar yo'q", fontsize=10, color=T["muted"], va="center")
-        for j, r in enumerate(items):
-            y = top - 0.55 - j * RH
-            if j:
-                ax.plot([x0 + 0.015, x0 + w - 0.015], [y + 0.04, y + 0.04], color=T["line"], linewidth=0.8)
-            d = dot_for(r["eps_est"], r.get("eps_ya"))
-            ax.text(x0 + 0.018, y - 0.22, "●", fontsize=11, color=dcol[d], va="center")
-            ax.text(x0 + 0.045, y - 0.22, r["sym"], fontsize=12.5, fontweight="bold", color=T["ink"], va="center")
-            ax.text(x0 + w - 0.018, y - 0.22, short_name(r["name"], 22), fontsize=8.5, color=T["muted"], va="center",
-                    ha="right")
-            if isnum(r.get("eps_act")) and isnum(r.get("eps_est")):
-                beat = r["eps_act"] - r["eps_est"]
-                c_ = T["up"] if beat > 0.005 else T["down"] if beat < -0.005 else T["wait"]
-                ax.text(x0 + 0.018, y - 0.5, f"E'lon qilindi: EPS {eps_fmt(r['eps_act'])}", fontsize=9.5,
-                        fontweight="bold", color=c_, va="center")
-                ax.text(x0 + w - 0.018, y - 0.5, f"kutilgan {eps_fmt(r['eps_est'])}", fontsize=8.8, color=T["muted"],
-                        va="center", ha="right")
-            else:
-                ax.text(x0 + 0.018, y - 0.5, f"EPS {eps_fmt(r['eps_est'])}", fontsize=10, color=T["ink"], va="center")
-                ax.text(x0 + w * 0.42, y - 0.5, f"Daromad {money(r.get('rev_est'))}", fontsize=10, color=T["ink"],
-                        va="center")
-            sub1 = f"Sof foyda ≈ {money(r.get('net_est'))}" if isnum(r.get("net_est")) else ""
-            g = None
-            if isnum(r.get("rev_est")) and isnum(r.get("rev_ya")) and r["rev_ya"]:
-                g = (r["rev_est"] / r["rev_ya"] - 1) * 100
-            if g is not None:
-                sub1 += ("  ·  " if sub1 else "") + f"daromad yillik {pct(g)}"
-            if isnum(r["cap"]) and r["cap"]:
-                sub1 += ("  ·  " if sub1 else "") + f"kap. {money(r['cap'])}"
-            ax.text(x0 + 0.018, y - 0.8, sub1, fontsize=8, color=T["muted"], va="center")
+    panel(0.03, top - 0.6 - rows * RH - 0.05, 0.95, 0.6 + rows * RH)
+    ax.text(0.048, top - 0.3, ptitle, fontsize=13, fontweight="bold", color=T["ink"], va="center")
+    ax.text(0.962, top - 0.3, f"{total} ta · {psub}", fontsize=9, color=T["muted"], va="center", ha="right")
+    ax.plot([0.505, 0.505], [top - 0.6 - rows * RH + 0.05, top - 0.55], color=T["line"], linewidth=0.8)
+    if not items:
+        ax.text(0.048, top - 0.9, "Yirik kompaniyalar yo'q", fontsize=10, color=T["muted"], va="center")
+    for k, r in enumerate(items):
+        j, col = k // 2, k % 2                       # row by row: the largest two on top
+        x0, w = (0.03, 0.4625) if col == 0 else (0.5175, 0.4625)
+        y = top - 0.6 - j * RH
+        if j:
+            ax.plot([x0 + 0.015, x0 + w - 0.015], [y + 0.04, y + 0.04], color=T["line"], linewidth=0.8)
+        d = dot_for(r["eps_est"], r.get("eps_ya"))
+        ax.text(x0 + 0.018, y - 0.22, "●", fontsize=11, color=dcol[d], va="center")
+        ax.text(x0 + 0.045, y - 0.22, r["sym"], fontsize=12.5, fontweight="bold", color=T["ink"], va="center")
+        nm = short_name(r["name"], 22)
+        if nm != r["sym"]:
+            ax.text(x0 + w - 0.018, y - 0.22, nm, fontsize=8.5, color=T["muted"], va="center", ha="right")
+        if isnum(r.get("eps_act")) and isnum(r.get("eps_est")):
+            beat = r["eps_act"] - r["eps_est"]
+            c_ = T["up"] if beat > 0.005 else T["down"] if beat < -0.005 else T["wait"]
+            ax.text(x0 + 0.018, y - 0.5, f"E'lon qilindi: EPS {eps_fmt(r['eps_act'])}", fontsize=9.5,
+                    fontweight="bold", color=c_, va="center")
+            ax.text(x0 + w - 0.018, y - 0.5, f"kutilgan {eps_fmt(r['eps_est'])}", fontsize=8.8, color=T["muted"],
+                    va="center", ha="right")
+        else:
+            ax.text(x0 + 0.018, y - 0.5, f"EPS {eps_fmt(r['eps_est'])}", fontsize=10, color=T["ink"], va="center")
+            ax.text(x0 + w * 0.42, y - 0.5, f"Daromad {money(r.get('rev_est'))}", fontsize=10, color=T["ink"],
+                    va="center")
+        sub1 = f"Sof foyda ≈ {money(r.get('net_est'))}" if isnum(r.get("net_est")) else ""
+        if isnum(r.get("rev_est")) and isnum(r.get("rev_ya")) and r["rev_ya"]:
+            sub1 += ("  ·  " if sub1 else "") + f"daromad yillik {pct((r['rev_est'] / r['rev_ya'] - 1) * 100)}"
+        if isnum(r["cap"]) and r["cap"]:
+            sub1 += ("  ·  " if sub1 else "") + f"kap. {money(r['cap'])}"
+        ax.text(x0 + 0.018, y - 0.8, sub1, fontsize=8, color=T["muted"], va="center")
 
-    y = top - 0.55 - rows * RH - 0.05
-    if mac:
-        ax.text(0.04, y - 0.3, "Bugungi makro voqealar", fontsize=11, color=T["muted"], va="center")
-        panel(0.03, y - 0.75 - len(mac) * 0.46 + 0.1, 0.95, len(mac) * 0.46 + 0.12)
-        for j, m in enumerate(mac):
+    y = top - 0.6 - rows * RH - 0.05
+    if bot:
+        ax.text(0.04, y - 0.3, bottom_title, fontsize=11, color=T["muted"], va="center")
+        panel(0.03, y - 0.75 - len(bot) * 0.46 + 0.1, 0.95, len(bot) * 0.46 + 0.12)
+        for j, m in enumerate(bot):
             yy = y - 0.75 - j * 0.46 + 0.02
-            ax.text(0.05, yy, f"{m['ny']:%H:%M}", fontsize=10, fontweight="bold", color=T["ink"], va="center")
-            ax.text(0.115, yy, "NY", fontsize=8, color=T["muted"], va="center")
-            ax.text(0.15, yy, ("★ " if m["imp"] == 2 else "") + m["name"], fontsize=10.2,
-                    fontweight="bold" if m["imp"] == 2 else "normal", color=T["ink"], va="center")
-            ax.text(0.95, yy, f"{m['uz']:%H:%M} Toshkent" + (" (ertasi kuni)" if m["uz"].date() != m["ny"].date() else ""), fontsize=8.8, color=T["muted"], va="center", ha="right")
+            if "ny" in m:                            # a macro event
+                ax.text(0.05, yy, f"{m['ny']:%H:%M}", fontsize=10, fontweight="bold", color=T["ink"], va="center")
+                ax.text(0.115, yy, "NY", fontsize=8, color=T["muted"], va="center")
+                ax.text(0.15, yy, ("★ " if m["imp"] == 2 else "") + m["name"], fontsize=10.2,
+                        fontweight="bold" if m["imp"] == 2 else "normal", color=T["ink"], va="center")
+                ax.text(0.95, yy, f"{m['uz']:%H:%M} Toshkent" + (" (ertasi kuni)" if m["uz"].date() != m["ny"].date()
+                                                                 else ""), fontsize=8.8, color=T["muted"], va="center",
+                        ha="right")
+            else:                                    # a company that has already reported
+                beat = m["eps_act"] - m["eps_est"] if isnum(m.get("eps_est")) else 0
+                c_ = T["up"] if beat > 0.005 else T["down"] if beat < -0.005 else T["wait"]
+                ax.text(0.05, yy, "●", fontsize=11, color=c_, va="center")
+                ax.text(0.075, yy, m["sym"], fontsize=10.5, fontweight="bold", color=T["ink"], va="center")
+                ax.text(0.2, yy, f"EPS {eps_fmt(m['eps_act'])}  ·  kutilgan {eps_fmt(m.get('eps_est'))}",
+                        fontsize=10, color=T["ink"], va="center")
+                sp_ = m.get("surprise") if isnum(m.get("surprise")) else _surprise(m["eps_act"], m.get("eps_est"))
+                ax.text(0.95, yy, pct(sp_, 1) if sp_ is not None else "", fontsize=10, fontweight="bold", color=c_,
+                        va="center", ha="right")
     ax.text(0.04, 0.3, "Kutilmalar — tahlilchilar o'rtachasi, kalendar — savdo signali emas", fontsize=8,
             color=T["muted"], va="center")
     ax.text(0.96, 0.3, f"Trading Laboratory · {DISCLAIMER}", fontsize=8, color=T["muted"], va="center", ha="right")
@@ -751,48 +771,66 @@ def macro_lines(macro, title="Makro voqealar"):
     return out
 
 
-def format_text(day, groups, counts, macro, yesterday, ydate):
-    tot = counts["BMO"] + counts["AMC"] + counts["TBD"]
-    lines = ["📅 <b>Bugungi hisobotlar</b>", "", f"<i>{uz_full(day)} · AQSh bozori vaqti bilan</i>", ""]
-    if not tot:
-        lines.append("Bugun kapitalizatsiyasi $2 mlrd dan yuqori kompaniyalar hisobot bermaydi.")
-    else:
-        lines += [f"Jami <b>{tot}</b> ta kompaniya:", "",
-                  f"☀️ {counts['BMO']} ta bozor ochilishidan oldin",
-                  f"🌙 {counts['AMC']} ta bozor yopilgach"]
-        if counts["TBD"]:
-            lines.append(f"❎ {counts['TBD']} ta vaqti noma'lum")
-        lines += ["", "🟢 kutilgan EPS o'tgan yildagidan yuqori", "🔴 past", "🟡 deyarli o'zgarmagan"]
+def result_lines(rows):
+    out = []
+    for r in rows:
+        beat = r["eps_act"] - r["eps_est"] if isnum(r.get("eps_act")) and isnum(r.get("eps_est")) else None
+        c_ = YELLOW if beat is None or abs(beat) <= 0.005 else GREEN if beat > 0 else RED
+        sp_ = r.get("surprise") if isnum(r.get("surprise")) else _surprise(r.get("eps_act"), r.get("eps_est"))
+        sp_ = f", {pct(sp_, 1)}" if sp_ is not None else ""
+        line = (f"{c_} <b>{esc(r['sym'])}</b> EPS {eps_fmt(r.get('eps_act'))} "
+                f"<i>(kutilgan {eps_fmt(r.get('eps_est'))}{sp_})</i>")
+        if isnum(r.get("rev_act")):
+            line += f" · daromad {money(r['rev_act'])}" + (f" <i>(kutilgan {money(r['rev_est'])})</i>"
+                                                           if isnum(r.get("rev_est")) else "")
+        out.append(line)
+    return out
+
+
+def section(lines, items, head, hint):
+    if not items:
+        return
+    lines += [head + (f"  <i>{hint}</i>" if hint else ""), ""]
+    for r in items[:MAX_PER_SIDE_TEXT]:
+        lines += company_lines(r)
+        lines.append("")
+    if len(items) > MAX_PER_SIDE_TEXT:
+        rest = items[MAX_PER_SIDE_TEXT:]
+        lines.append(f"<i>Yana {len(rest)} ta kichikroq kompaniya: "
+                     + ", ".join(esc(r["sym"]) for r in rest[:12]) + ("…" if len(rest) > 12 else "") + "</i>")
     lines.append("")
 
-    for key, head, hint in (("BMO", "☀️ <b>Bozor ochilishidan oldin</b>", "NY 04:00–09:30"),
-                            ("AMC", "🌙 <b>Bozor yopilgach</b>", "NY 16:00 dan keyin"),
-                            ("TBD", "❓ <b>Vaqti aniqlanmagan yoki seans paytida</b>", "")):
-        items = groups[key]
-        if not items:
-            continue
-        lines += [head + (f"  <i>{hint}</i>" if hint else ""), ""]
-        for r in items[:MAX_PER_SIDE_TEXT]:
-            lines += company_lines(r)
-            lines.append("")
-        if len(items) > MAX_PER_SIDE_TEXT:
-            rest = items[MAX_PER_SIDE_TEXT:]
-            lines.append(f"<i>Yana {len(rest)} ta kichikroq kompaniya: "
-                         + ", ".join(esc(r["sym"]) for r in rest[:12]) + ("…" if len(rest) > 12 else "") + "</i>")
-        lines.append("")
 
-    ml = macro_lines(macro)
-    if ml:
-        lines += ml + [""]
-    if yesterday:
-        lines += [f"📈 <b>Kecha natijalari</b>  <i>{uz_date(ydate)}, eng yirik kompaniyalar:</i>", ""]
-        for r in yesterday:
-            beat = r["eps_act"] - r["eps_est"] if isnum(r.get("eps_act")) and isnum(r.get("eps_est")) else None
-            c_ = YELLOW if beat is None or abs(beat) <= 0.005 else GREEN if beat > 0 else RED
-            sp_ = f", {pct(r['surprise'], 1)}" if isnum(r.get("surprise")) else ""
-            lines.append(f"{c_} <b>{esc(r['sym'])}</b> EPS {eps_fmt(r.get('eps_act'))} "
-                         f"<i>(kutilgan {eps_fmt(r.get('eps_est'))}{sp_})</i>")
-        lines.append("")
+def format_text(day, mode, groups, counts, macro, results, results_title):
+    title = SESSION_TITLE[mode][0]
+    lines = [f"📅 <b>{title}</b>", "", f"<i>{uz_full(day)} · AQSh bozori vaqti bilan</i>", ""]
+    if mode == "pre":
+        n = counts["BMO"] + counts["TBD"]
+        if n:
+            lines += [f"☀️ <b>{counts['BMO']}</b> ta kompaniya bozor ochilishidan oldin hisobot beradi"]
+            if counts["TBD"]:
+                lines.append(f"❎ {counts['TBD']} ta kompaniyaning vaqti noma'lum")
+        else:
+            lines.append("Bugun ertalab kapitalizatsiyasi $2 mlrd dan yuqori kompaniyalar hisobot bermaydi.")
+        if counts["AMC"]:
+            lines += ["", f"🌙 Yana {counts['AMC']} ta kompaniya bozor yopilgach: ro'yxati NY 15:00 da alohida xabarda"]
+    else:
+        if counts["AMC"]:
+            lines.append(f"🌙 <b>{counts['AMC']}</b> ta kompaniya bozor yopilgach hisobot beradi")
+        else:
+            lines.append("Bugun kechqurun kapitalizatsiyasi $2 mlrd dan yuqori kompaniyalar hisobot bermaydi.")
+    lines += ["", "🟢 kutilgan EPS o'tgan yildagidan yuqori", "🔴 past", "🟡 deyarli o'zgarmagan", ""]
+
+    if mode == "pre":
+        section(lines, groups["BMO"], "☀️ <b>Bozor ochilishidan oldin</b>", "NY 04:00–09:30")
+        section(lines, groups["TBD"], "❓ <b>Vaqti aniqlanmagan yoki seans paytida</b>", "")
+        ml = macro_lines(macro)
+        if ml:
+            lines += ml + [""]
+    else:
+        section(lines, groups["AMC"], "🌙 <b>Bozor yopilgach</b>", "NY 16:00 dan keyin")
+    if results:
+        lines += [results_title, ""] + result_lines(results) + [""]
     lines.append("⚠️ <i>Hisobot kunida narx keskin sakrashi mumkin. Warren AI risk tekshiruvi yaqin hisobotni "
                  "ogohlantiradi: bunday aksiyada yangi pozitsiya ochishdan oldin shuni hisobga oling.</i>")
     lines.append("")
@@ -826,7 +864,7 @@ def format_week(monday, rows, macro):
         for m in hi[:10]:
             lines.append(f"{KUNLAR[m['ny'].weekday()][:3].capitalize()} {m['ny']:%H:%M}  {esc(m['name'])}")
         lines.append("")
-    lines.append("<i>Har kuni ertalab shu kunning to'liq ro'yxati alohida xabarda keladi. " + DISCLAIMER + "</i>")
+    lines.append("<i>Har kuni ikki xabar keladi: NY 03:00 da ertalabki, NY 15:00 da kechki hisobotlar. " + DISCLAIMER + "</i>")
     return "\n".join(lines)
 
 
@@ -839,6 +877,13 @@ def group_by_session(rows):
     return g
 
 
+def run_time(mode, day):
+    """NY time of each post: 1 hour before the pre-market (04:00) / the after-market (16:00, 13:00 on short days)."""
+    if mode == "pre":
+        return RUN_PRE_NY
+    return (12, 0) if day.strftime("%Y-%m-%d") in NYSE_EARLY_CLOSE else RUN_POST_NY
+
+
 def main():
     if not BOT_TOKEN:
         raise SystemExit("XATO: EARN_BOT_TOKEN secret topilmadi — Settings → Secrets and variables → Actions")
@@ -846,48 +891,61 @@ def main():
     today = now.date()
     if DAY_OVERRIDE:
         today = datetime.strptime(DAY_OVERRIDE, "%Y-%m-%d").date()
+    mode = MODE if MODE in ("pre", "post") else ("pre" if DAY_OVERRIDE or now.hour < 10 else "post")
     key = today.strftime("%Y-%m-%d")
     if not (FORCE or DAY_OVERRIDE):
-        target = now.replace(hour=RUN_AT_NY[0], minute=RUN_AT_NY[1], second=0, microsecond=0)
+        h, m = run_time(mode, today)
+        target = now.replace(hour=h, minute=m, second=0, microsecond=0)
         if now.weekday() >= 5 or key in NYSE_HOLIDAYS or not (
                 -5 <= (now - target).total_seconds() / 60 <= RUN_WINDOW_MIN):
-            print(f"New York {now:%Y-%m-%d %H:%M}: not the time, nothing to do")
+            print(f"New York {now:%Y-%m-%d %H:%M} ({mode}): not the time, nothing to do")
             return
     if today.weekday() >= 5 or key in NYSE_HOLIDAYS:
         print(f"{key}: market closed, nothing to post")
         return
     deadline = time.time() + 600
+    day = datetime.combine(today, datetime.min.time())
 
     rows = fetch_earnings(today, today, MIN_CAP)
-    print(f"{key}: {len(rows)} reports with market cap >= ${MIN_CAP / 1e9:.0f}B")
-    rows = enrich_all(rows, deadline)
+    print(f"{key} ({mode}): {len(rows)} reports with market cap >= ${MIN_CAP / 1e9:.0f}B")
     groups = group_by_session(rows)
     counts = {k: len(v) for k, v in groups.items()}
+    focus = groups["BMO"] + groups["TBD"] if mode == "pre" else groups["AMC"]
+    enrich_all(focus, deadline)                    # estimates only for the companies of this post
 
-    try:
-        macro = fetch_macro(today, today)
-    except Exception as e:
-        print(f"Macro calendar: {e}")
-        macro = []
+    macro = []
+    if mode == "pre":
+        try:
+            macro = fetch_macro(today, today)
+        except Exception as e:
+            print(f"Macro calendar: {e}")
+        ydate = prev_trading_day(today)
+        try:
+            results = [r for r in fetch_earnings(ydate, ydate, 10_000_000_000) if isnum(r.get("eps_act"))][:8]
+        except Exception as e:
+            print(f"Yesterday: {e}")
+            results = []
+        results_title = f"📈 <b>Kecha natijalari</b>  <i>{uz_date(ydate)}, eng yirik kompaniyalar:</i>"
+        card_bottom, card_bottom_title = macro, "Bugungi makro voqealar"
+        n = counts["BMO"] + counts["TBD"]
+        caption = (f"📅 <b>Ertalabki hisobotlar</b> · {uz_date(today)}\n\n"
+                   f"☀️ <b>{counts['BMO']}</b> ta kompaniya bozor ochilishidan oldin"
+                   + (f"\n❎ {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "")
+                   + (f"\n\n🏛 Makro voqealar: {len(macro)} ta" if macro else "")
+                   + (f"\n🌙 Bozor yopilgach: {counts['AMC']} ta, NY 15:00 da" if counts["AMC"] else ""))
+    else:
+        results = [r for r in groups["BMO"] + groups["TBD"] if isnum(r.get("eps_act"))][:8]
+        results_title = "☀️ <b>Bugun ertalab e'lon qilinganlar</b>  <i>eng yirik kompaniyalar:</i>"
+        card_bottom, card_bottom_title = results, "Bugun ertalab e'lon qilinganlar"
+        n = counts["AMC"]
+        caption = (f"📅 <b>Kechki hisobotlar</b> · {uz_date(today)}\n\n"
+                   f"🌙 <b>{counts['AMC']}</b> ta kompaniya bozor yopilgach"
+                   + (f"\n\n☀️ Ertalab e'lon qilinganlar: {len(results)} ta" if results else ""))
 
-    ydate = prev_trading_day(today)
-    try:
-        yrows = [r for r in fetch_earnings(ydate, ydate, 10_000_000_000) if isnum(r.get("eps_act"))][:6]
-    except Exception as e:
-        print(f"Yesterday: {e}")
-        yrows = []
+    png = make_card(day, mode, focus, n, card_bottom_title, card_bottom) if (n or card_bottom) else None
+    send(png, caption, format_text(day, mode, groups, counts, macro, results, results_title))
 
-    tot = len(rows)
-    caption = (f"📅 <b>Bugungi hisobotlar</b> · {uz_date(today)}\n\n"
-               f"<b>{tot}</b> ta kompaniya:\n\n"
-               f"☀️ {counts['BMO']} ta ochilishdan oldin\n"
-               f"🌙 {counts['AMC']} ta yopilgach"
-               + (f"\n❎ {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "")
-               + (f"\n\n🏛 Makro voqealar: {len(macro)} ta" if macro else ""))
-    png = make_card(datetime.combine(today, datetime.min.time()), groups, macro, counts) if (tot or macro) else None
-    send(png, caption, format_text(datetime.combine(today, datetime.min.time()), groups, counts, macro, yrows, ydate))
-
-    if today.weekday() == 0:                               # Monday: the week ahead
+    if mode == "pre" and today.weekday() == 0:      # Monday morning: the week ahead
         week_end = today + timedelta(days=4)
         try:
             wrows = fetch_earnings(today, week_end, WEEK_MIN_CAP)
@@ -895,7 +953,7 @@ def main():
             send(None, "", format_week(today, wrows, wmacro))
         except Exception as e:
             print(f"Week overview: {e}")
-    print(f"Sent: {tot} reports, {len(macro)} macro events")
+    print(f"Sent ({mode}): {n} reports, {len(macro)} macro events, {len(results)} results")
 
 
 if __name__ == "__main__":
