@@ -809,7 +809,7 @@ def format_text(day, mode, groups, counts, macro, results, results_title):
         if n:
             lines += [f"☀️ <b>{counts['BMO']}</b> ta kompaniya bozor ochilishidan oldin hisobot beradi"]
             if counts["TBD"]:
-                lines.append(f"❎ {counts['TBD']} ta kompaniyaning vaqti noma'lum")
+                lines += ["", f"❎ {counts['TBD']} ta kompaniyaning vaqti noma'lum"]
         else:
             lines.append("Bugun ertalab kapitalizatsiyasi $2 mlrd dan yuqori kompaniyalar hisobot bermaydi.")
         if counts["AMC"]:
@@ -930,9 +930,9 @@ def main():
         n = counts["BMO"] + counts["TBD"]
         caption = (f"📅 <b>Ertalabki hisobotlar</b> · {uz_date(today)}\n\n"
                    f"☀️ <b>{counts['BMO']}</b> ta kompaniya bozor ochilishidan oldin"
-                   + (f"\n❎ {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "")
+                   + (f"\n\n❎ {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "")
                    + (f"\n\n🏛 Makro voqealar: {len(macro)} ta" if macro else "")
-                   + (f"\n🌙 Bozor yopilgach: {counts['AMC']} ta, NY 15:00 da" if counts["AMC"] else ""))
+                   + (f"\n\n🌙 Bozor yopilgach: {counts['AMC']} ta, NY 15:00 da" if counts["AMC"] else ""))
     else:
         results = [r for r in groups["BMO"] + groups["TBD"] if isnum(r.get("eps_act"))][:8]
         results_title = "☀️ <b>Bugun ertalab e'lon qilinganlar</b>  <i>eng yirik kompaniyalar:</i>"
