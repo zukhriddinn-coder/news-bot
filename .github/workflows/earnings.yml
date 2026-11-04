@@ -1,0 +1,47 @@
+name: Hisobotlar kalendari
+
+on:
+  workflow_dispatch:            # started every trading day at 07:00 New York by Google Apps Script (earnings.gs),
+                                # or by hand: Actions -> Hisobotlar kalendari -> Run workflow
+    inputs:
+      force:
+        description: "Run now even outside 07:00 New York (test)"
+        required: false
+        default: "true"
+      day:
+        description: "Preview another day, YYYY-MM-DD (empty = today)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: earnings-calendar
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/earnings.yml
+
+      - name: Install
+        run: pip install yfinance matplotlib lxml
+
+      - name: Post the earnings calendar
+        run: python earnings.py
+        env:
+          EARN_BOT_TOKEN: ${{ secrets.EARN_BOT_TOKEN }}
+          EARN_CHAT_ID: ${{ secrets.EARN_CHAT_ID }}
+          EARN_THREAD_ID: ${{ secrets.EARN_THREAD_ID }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
+          FORCE: ${{ inputs.force }}
+          DAY: ${{ inputs.day }}
