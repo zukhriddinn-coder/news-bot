@@ -247,6 +247,9 @@ def session_of(timing, hour, minute):
     return "TBD"
 
 
+OTC_RE = re.compile(r"^[A-Z]{4}[FY]$")          # OTC foreign shares (MSBHF, MTSUY, NONOF): not on NYSE / Nasdaq
+
+
 def fetch_yahoo(start, end, min_cap, pages=3):
     """Yahoo earnings calendar for start..end (dates), largest companies first."""
     import yfinance as yf
@@ -263,6 +266,8 @@ def fetch_yahoo(start, end, min_cap, pages=3):
                 continue
             d, h, m = when
             if not (start <= d <= end):
+                continue
+            if OTC_RE.match(str(sym)):
                 continue
             cap = r.get("Marketcap")
             rows.append({"sym": str(sym), "name": r.get("Company") or str(sym), "cap": float(cap) if isnum(cap) else 0.0,
@@ -321,7 +326,7 @@ def fetch_finnhub(start, end):
         except ValueError:
             continue
         sym = str(x.get("symbol") or "").strip().replace(".", "-")
-        if not sym:
+        if not sym or OTC_RE.match(sym):
             continue
         hour = str(x.get("hour") or "").lower()
         out[(sym, d)] = {"session": "BMO" if hour == "bmo" else "AMC" if hour == "amc" else "TBD",
@@ -703,7 +708,7 @@ def company_lines(r):
     head = f"{d} <b>{esc(r['sym'])}</b>" + (f" {esc(nm)}" if nm and nm != r["sym"] else "")
     if r["cap"]:
         head += f" · {money(r['cap'])}"
-    lines = [head]
+    lines = [head, ""]
     if isnum(r.get("eps_act")) and isnum(r.get("eps_est")):
         beat = r["eps_act"] - r["eps_est"]
         c_ = GREEN if beat > 0.005 else RED if beat < -0.005 else YELLOW
@@ -730,7 +735,7 @@ def company_lines(r):
 def macro_lines(macro, title="Makro voqealar"):
     if not macro:
         return []
-    out = [f"🏛 <b>{title}</b>  <i>NY vaqti / Toshkent</i>"]
+    out = [f"🏛 <b>{title}</b>  <i>NY vaqti / Toshkent</i>", ""]
     for m in macro[:MAX_MACRO]:
         star = "⭐ " if m["imp"] == 2 else ""
         nums = []
@@ -742,29 +747,31 @@ def macro_lines(macro, title="Makro voqealar"):
             nums.append(f"<b>haqiqiy {macro_value(m['actual'])}</b>")
         nxt = " (ertasi kuni)" if m["uz"].date() != m["ny"].date() else ""
         out.append(f"{m['ny']:%H:%M} / {m['uz']:%H:%M}{nxt}  {star}{esc(m['name'])}"
-                   + (f"  <i>{' · '.join(nums)}</i>" if nums else ""))
+                   + (f": <i>{' · '.join(nums)}</i>" if nums else ""))
     return out
 
 
 def format_text(day, groups, counts, macro, yesterday, ydate):
     tot = counts["BMO"] + counts["AMC"] + counts["TBD"]
-    lines = ["📅 <b>Bugungi hisobotlar</b>", f"<i>{uz_full(day)} · AQSh bozori vaqti bilan</i>", ""]
+    lines = ["📅 <b>Bugungi hisobotlar</b>", "", f"<i>{uz_full(day)} · AQSh bozori vaqti bilan</i>", ""]
     if not tot:
         lines.append("Bugun kapitalizatsiyasi $2 mlrd dan yuqori kompaniyalar hisobot bermaydi.")
     else:
-        lines.append(f"Jami <b>{tot}</b> ta kompaniya: ☀️ {counts['BMO']} ta bozor ochilishidan oldin, "
-                     f"🌙 {counts['AMC']} ta bozor yopilgach"
-                     + (f", {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "") + ".")
-        lines.append("🟢 kutilgan EPS o'tgan yildagidan yuqori · 🔴 past · 🟡 deyarli o'zgarmagan")
+        lines += [f"Jami <b>{tot}</b> ta kompaniya:", "",
+                  f"☀️ {counts['BMO']} ta bozor ochilishidan oldin",
+                  f"🌙 {counts['AMC']} ta bozor yopilgach"]
+        if counts["TBD"]:
+            lines.append(f"❎ {counts['TBD']} ta vaqti noma'lum")
+        lines += ["", "🟢 kutilgan EPS o'tgan yildagidan yuqori", "🔴 past", "🟡 deyarli o'zgarmagan"]
     lines.append("")
 
     for key, head, hint in (("BMO", "☀️ <b>Bozor ochilishidan oldin</b>", "NY 04:00–09:30"),
                             ("AMC", "🌙 <b>Bozor yopilgach</b>", "NY 16:00 dan keyin"),
-                            ("TBD", "❔ <b>Vaqti aniqlanmagan yoki seans paytida</b>", "")):
+                            ("TBD", "❓ <b>Vaqti aniqlanmagan yoki seans paytida</b>", "")):
         items = groups[key]
         if not items:
             continue
-        lines.append(head + (f"  <i>{hint}</i>" if hint else ""))
+        lines += [head + (f"  <i>{hint}</i>" if hint else ""), ""]
         for r in items[:MAX_PER_SIDE_TEXT]:
             lines += company_lines(r)
             lines.append("")
@@ -778,7 +785,7 @@ def format_text(day, groups, counts, macro, yesterday, ydate):
     if ml:
         lines += ml + [""]
     if yesterday:
-        lines.append(f"📈 <b>Kecha natijalari</b>  <i>{uz_date(ydate)}, eng yirik kompaniyalar</i>")
+        lines += [f"📈 <b>Kecha natijalari</b>  <i>{uz_date(ydate)}, eng yirik kompaniyalar:</i>", ""]
         for r in yesterday:
             beat = r["eps_act"] - r["eps_est"] if isnum(r.get("eps_act")) and isnum(r.get("eps_est")) else None
             c_ = YELLOW if beat is None or abs(beat) <= 0.005 else GREEN if beat > 0 else RED
@@ -791,7 +798,7 @@ def format_text(day, groups, counts, macro, yesterday, ydate):
     lines.append("")
     lines.append("<i>EPS va daromad — tahlilchilar kutilmasining o'rtachasi (" + ("Finnhub" if SOURCE["finnhub"] else "Yahoo Finance") + "). Sof foyda taxminiy: "
                  "kutilgan EPS × aksiyalar soni. Hisobot vaqtlari o'zgarishi mumkin. " + DISCLAIMER + "</i>")
-    return "\n".join(lines)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))          # never two blank lines in a row
 
 
 def format_week(monday, rows, macro):
@@ -808,7 +815,7 @@ def format_week(monday, rows, macro):
             lines += [head + "  <i>yirik hisobotlar yo'q</i>", ""]
             continue
         lines.append(head + f"  <i>{len(day_rows)} ta</i>")
-        for key, icon in (("BMO", "☀️"), ("AMC", "🌙"), ("TBD", "❔")):
+        for key, icon in (("BMO", "☀️"), ("AMC", "🌙"), ("TBD", "❎")):
             names = [r for r in day_rows if r["session"] == key][:6]
             if names:
                 lines.append(f"{icon} " + ", ".join(f"<b>{esc(r['sym'])}</b>" for r in names))
@@ -871,9 +878,12 @@ def main():
         yrows = []
 
     tot = len(rows)
-    caption = (f"📅 <b>Bugungi hisobotlar</b> · {uz_date(today)}\n"
-               f"{tot} ta kompaniya: ☀️ {counts['BMO']} ta ochilishdan oldin, 🌙 {counts['AMC']} ta yopilgach"
-               + (f"\n🏛 Makro voqealar: {len(macro)} ta" if macro else ""))
+    caption = (f"📅 <b>Bugungi hisobotlar</b> · {uz_date(today)}\n\n"
+               f"<b>{tot}</b> ta kompaniya:\n\n"
+               f"☀️ {counts['BMO']} ta ochilishdan oldin\n"
+               f"🌙 {counts['AMC']} ta yopilgach"
+               + (f"\n❎ {counts['TBD']} ta vaqti noma'lum" if counts["TBD"] else "")
+               + (f"\n\n🏛 Makro voqealar: {len(macro)} ta" if macro else ""))
     png = make_card(datetime.combine(today, datetime.min.time()), groups, macro, counts) if (tot or macro) else None
     send(png, caption, format_text(datetime.combine(today, datetime.min.time()), groups, counts, macro, yrows, ydate))
 
