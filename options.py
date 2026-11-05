@@ -496,10 +496,21 @@ def ow_collect(symbol):
 
 BIAS = {"bullish": ("🟢", "Bullish", "o'sish tomonga", "up"), "bearish": ("🔴", "Bearish", "pasayish tomonga", "down"),
         "neutral": ("🟡", "Neytral", "aniq yo'nalishsiz", "neutral")}
-INTENT_PRIMARY = {"gamma": "gamma pozitsiyalash", "longvol": "volatillik xaridi (katta harakat kutilmoqda)",
+INTENT_PRIMARY = {"mixed": "aralash, himoyalangan pozitsiyalar (hedge)", "mixedhedged": "aralash, himoyalangan pozitsiyalar (hedge)",
+                  "gamma": "gamma pozitsiyalash", "longvol": "volatillik xaridi (katta harakat kutilmoqda)",
                   "shortvol": "volatillik sotuvi (tinch bozor kutilmoqda)", "directional": "yo'nalishga tikish",
                   "hedge": "himoya (hedge)", "income": "premium yig'ish (daromad strategiyasi)"}
-INTENT_MODS = {"pin-like": "narx yirik strike atrofida ushlanib qolishi mumkin (pin)",
+INTENT_LABELS = {"mixed / hedged": "aralash, himoyalangan pozitsiyalar (hedge)",
+                 "gamma regime \u2014 neutral pin": "gamma pozitsiyalash, narx strike atrofida ushlanib turishi mumkin",
+                 "gamma regime \u2014 bullish convex": "gamma pozitsiyalash, o'sishdan ko'proq foyda oladigan pozitsiyalar",
+                 "gamma regime \u2014 bearish convex": "gamma pozitsiyalash, pasayishdan ko'proq foyda oladigan pozitsiyalar",
+                 "long vol / event": "volatillik xaridi: katta harakat yoki voqea kutilmoqda",
+                 "short vol / income": "volatillik sotuvi: tinch bozor kutilmoqda, premium yig'ilmoqda"}
+INTENT_MODS = {"low-signal": "signal kuchsiz", "short-term": "qisqa muddatli buyurtmalar ustun",
+               "long-term": "uzoq muddatli buyurtmalar ustun", "long-dated": "uzoq muddatli buyurtmalar ustun",
+               "hedged": "himoyalangan pozitsiyalar", "closing": "pozitsiyalar yopilmoqda",
+               "speculative": "spekulyativ (tavakkalchi) buyurtmalar",
+               "pin-like": "narx yirik strike atrofida ushlanib qolishi mumkin (pin)",
                "position-build": "yangi pozitsiyalar qurilmoqda",
                "position-unwind": "eski pozitsiyalar yopilmoqda",
                "bullish-convex": "o'sishdan ko'proq foyda oladigan pozitsiyalar",
@@ -654,21 +665,22 @@ def ow_text(name, a):
     if f:
         icon, word, hint, _ = BIAS.get(f["bias"], BIAS["neutral"])
         conf = f" · ishonch {f['confidence'] * 100:.0f}%" if f["confidence"] is not None else ""
-        lines.append(f"{icon} <b>{word}</b>: {hint}{conf}")
-        what = INTENT_PRIMARY.get(f["primary"].lower().replace(" ", ""), "")
+        lines += [f"{icon} <b>{word}</b>: {hint}{conf}", ""]
+        what = (INTENT_LABELS.get(f["label"].strip().lower())
+                or INTENT_PRIMARY.get(f["primary"].lower().replace(" ", "").replace("/", "")))
         if what:
-            lines.append(f"Asosiy strategiya: {what}")
+            lines.append(f"— Asosiy strategiya: {what}")
         elif f["label"]:
-            lines.append(f"Asosiy strategiya: <i>{esc(f['label'])}</i>")
+            lines.append(f"— Asosiy strategiya: <i>{esc(f['label'])}</i>")
         print(f"intent: primary={f['primary']!r} label={f['label']!r} mods={f['mods']}")   # to extend the lists
         mods = [INTENT_MODS.get(m, m) for m in f["mods"]]
         if mods:
-            lines.append("Belgilar: " + "; ".join(mods))
+            lines.append("— Belgilar: " + "; ".join(mods))
         horizon = ("asosan uzoq muddatli kontraktlar" if f["long_dated"] else
                    "asosan qisqa muddatli kontraktlar" if f["short_dom"] >= 0.5 else "turli muddatlar")
-        lines.append(f"Muddat: {horizon}")
+        lines.append(f"— Muddat: {horizon}")
         if f["strikes"]:
-            lines.append("Asosiy strike'lar: " + ", ".join(price_s(num(x)) for x in f["strikes"]))
+            lines.append("— Asosiy strike'lar: " + ", ".join(price_s(num(x)) for x in f["strikes"]))
         if f["session"] != a.get("session"):
             lines.append(f"<i>{uz_session(f['session'])} sessiyasi bo'yicha</i>")
     else:
@@ -713,26 +725,26 @@ def ow_text(name, a):
         lines.append(f"🧲 <b>GEX darajalari</b>  <i>dilerlar gammasi, {uz_session(gx['session'])}</i>")
         lines.append("")
         if gx["regime"] == "short":
-            lines.append("🔴 Gamma rejimi: <b>short</b>, dilerlar harakatni kuchaytiradi, keskin tebranish ehtimoli yuqori")
+            lines += ["🔴 Gamma rejimi: <b>short</b>, dilerlar harakatni kuchaytiradi, keskin tebranish ehtimoli yuqori", ""]
         elif gx["regime"] == "long":
-            lines.append("🟢 Gamma rejimi: <b>long</b>, dilerlar harakatni so'ndiradi, narx barqarorroq")
+            lines += ["🟢 Gamma rejimi: <b>long</b>, dilerlar harakatni so'ndiradi, narx barqarorroq", ""]
         lvl = []
         if gx["call_wall"]:
             lvl.append(f"Call wall <b>{price_s(gx['call_wall'])}</b> (qarshilik)")
         if gx["put_wall"]:
             lvl.append(f"Put wall <b>{price_s(gx['put_wall'])}</b> (qo'llab-quvvatlash)")
         if lvl:
-            lines.append(" · ".join(lvl))
+            lines.append("— " + " · ".join(lvl))
         if gx["flip"]:
             side = ""
             if spot:
                 side = " · narx undan yuqorida" if spot > gx["flip"] else " · narx undan pastda"
-            lines.append(f"Gamma flip <b>{price_s(gx['flip'])}</b>{side}")
+            lines.append(f"— Gamma flip <b>{price_s(gx['flip'])}</b>{side}")
         if gx["max_pain"]:
             exp = f" ({short_date(gx['max_pain_expiry'])})" if gx.get("max_pain_expiry") else ""
-            lines.append(f"Max pain <b>{price_s(gx['max_pain'])}</b>{exp}")
+            lines.append(f"— Max pain <b>{price_s(gx['max_pain'])}</b>{exp}")
         if gx["pc_oi"]:
-            lines.append(f"Put/Call OI nisbati {gx['pc_oi']:.2f}")
+            lines.append(f"— Put/Call OI nisbati {gx['pc_oi']:.2f}")
         lines.append("")
 
     iv = a.get("iv")
