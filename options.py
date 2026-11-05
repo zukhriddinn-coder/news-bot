@@ -690,19 +690,19 @@ def ow_text(name, a):
     t = a.get("tape")
     if t:
         sp = t["split"]
-        lines.append(f"💰 <b>Yirik buyurtmalar premiumi</b>  <i>{uz_session(t['session'])}, 100+ kontrakt</i>")
-        lines.append("")
-        lines.append(f"🟢 Call sotib olindi <b>{money(sp['call_buy'])}</b> · 🔴 Call sotildi <b>{money(sp['call_sell'])}</b>")
-        lines.append(f"🔴 Put sotib olindi <b>{money(sp['put_buy'])}</b> · 🟢 Put sotildi <b>{money(sp['put_sell'])}</b>")
-        if sp["unknown"]:
-            lines.append(f"🟡 Tomoni aniq emas: {money(sp['unknown'])}")
+        lines += [f"💰 <b>Yirik buyurtmalar premiumi</b>  <i>{uz_session(t['session'])}, 100+ kontrakt</i>", ""]
         if sp["bull_share"] is not None:
             sh = sp["bull_share"] * 100
             icon = "🟢" if sh >= 60 else "🔴" if sh <= 40 else "🟡"
-            lines.append(f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>")
+            lines += [f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>", ""]
+        lines += [f"— 🟢 Call sotib olindi <b>{money(sp['call_buy'])}</b>",
+                  f"— 🔴 Call sotildi <b>{money(sp['call_sell'])}</b>",
+                  f"— 🔴 Put sotib olindi <b>{money(sp['put_buy'])}</b>",
+                  f"— 🟢 Put sotildi <b>{money(sp['put_sell'])}</b>"]
+        if sp["unknown"]:
+            lines.append(f"— 🟡 Tomoni aniq emas: <b>{money(sp['unknown'])}</b>")
         lines.append("")
-        lines.append(f"🐳 <b>Eng yirik buyurtmalar</b>  <i>{t['matched']} tadan top {len(t['top'])}, Toshkent vaqti</i>")
-        lines.append("")
+        lines += [f"🐳 <b>Eng yirik buyurtmalar</b>  <i>{t['matched']} tadan top {len(t['top'])}, Toshkent vaqti</i>", ""]
         for i, o in enumerate(t["top"], 1):
             sd = side_of(o)
             c = is_call(o)
@@ -715,9 +715,10 @@ def ow_text(name, a):
             lines.append(f"{i}. {icon} <b>{'CALL' if c else 'PUT'} {price_s(num(o.get('strike')))}</b> · "
                          f"{short_date(exp) if exp else '—'} ({dte} kun) · {esc(kind)} · {word}")
             iv_ = num(o.get("implied_volatility"))
-            lines.append(f"    {int(num(o.get('contracts'))):,} kontrakt · premium <b>{money(num(o.get('premium')))}</b>"
+            lines.append(f"— {int(num(o.get('contracts'))):,} kontrakt · premium <b>{money(num(o.get('premium')))}</b>"
                          + (f" · IV {iv_ * 100:.0f}%" if iv_ else "")
                          + (f" · {local_hm(o.get('timestamp'))}" if local_hm(o.get("timestamp")) else ""))
+            lines.append("")
         lines.append("")
 
     gx = a.get("gex")
@@ -750,10 +751,12 @@ def ow_text(name, a):
     iv = a.get("iv")
     if iv:
         r = iv["rank"] * 100
-        icon, word = (("🔴", "yuqori: optsionlar qimmat") if r >= 70 else ("🟢", "past: optsionlar arzon") if r <= 30
+        icon, word = (("🔴", "yuqori, optsionlar qimmat") if r >= 70 else ("🟢", "past, optsionlar arzon") if r <= 30
                       else ("🟡", "o'rtacha"))
         lines += ["📈 <b>Implied volatility</b>", "",
-                  f"{icon} IV {iv['current'] * 100:.0f}% · IV rank <b>{r:.0f}%</b> · percentile {iv['pct'] * 100:.0f}%, {word}", ""]
+                  f"{icon} IV rank <b>{r:.0f}%</b>: {word}", "",
+                  f"— Joriy IV {iv['current'] * 100:.0f}%",
+                  f"— Percentile {iv['pct'] * 100:.0f}% (kuzatilgan kunlarning shuncha qismida IV bundan past bo'lgan)", ""]
 
     oi = a.get("oi")
     if oi:
@@ -762,10 +765,10 @@ def ow_text(name, a):
         def oi_s(k):
             v = num(ch.get(k))
             p = pc.get(k)
-            return (f"{'+' if v >= 0 else '−'}{big(abs(v))}" + (f" ({sgn_pct(p)})" if p is not None else ""))
+            return (f"<b>{'+' if v >= 0 else '−'}{big(abs(v))}</b>" + (f" ({sgn_pct(p)})" if p is not None else ""))
         lines += ["📊 <b>Ochiq pozitsiyalar o'zgarishi</b>  <i>bir kunda</i>", "",
-                  f"{'🟢' if num(ch.get('call_oi')) >= 0 else '🔴'} Call OI {oi_s('call_oi')} · "
-                  f"{'🔴' if num(ch.get('put_oi')) >= 0 else '🟢'} Put OI {oi_s('put_oi')}", ""]
+                  f"— {'🟢' if num(ch.get('call_oi')) >= 0 else '🔴'} Call OI {oi_s('call_oi')}",
+                  f"— {'🔴' if num(ch.get('put_oi')) >= 0 else '🟢'} Put OI {oi_s('put_oi')}", ""]
 
     dk = a.get("dark")
     if dk:
@@ -775,14 +778,16 @@ def ow_text(name, a):
             icon, word = (("🟢", "ask'da: xaridor faol") if "ask" in lab else ("🔴", "bid'da: sotuvchi faol") if "bid" in lab
                           else ("🟡", "o'rtada"))
             hm = local_hm(p.get("executed_at")) or (str(p.get("executed_at_et") or "")[:5] + " ET")
-            lines.append(f"{icon} {hm} · {int(num(p.get('size'))):,} dona · "
+            lines.append(f"— {icon} {hm} · {int(num(p.get('size'))):,} dona · "
                          f"{price_s(num(p.get('price')))} · <b>{money(num(p.get('premium')))}</b> · {word}")
         lines.append("")
 
     sh = a.get("short")
     if sh:
-        lines += [f"🩳 <b>Short interest</b>: {big(num(sh.get('short_interest')))} aksiya · days to cover "
-                  f"{num(sh.get('days_to_cover')):.1f} <i>({short_date(sh['settlement_date']) if sh.get('settlement_date') else '—'} holatiga)</i>", ""]
+        lines += ["🩳 <b>Short interest</b>", "",
+                  f"— <b>{big(num(sh.get('short_interest')))}</b> aksiya qarzga olib sotilgan",
+                  f"— Days to cover {num(sh.get('days_to_cover')):.1f} "
+                  f"<i>({short_date(sh['settlement_date']) if sh.get('settlement_date') else '—'} holatiga)</i>", ""]
 
     lines.append(f"<i>{esc(OW_DISCLAIMER)}</i>")
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
