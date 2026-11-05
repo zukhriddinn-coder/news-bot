@@ -650,7 +650,7 @@ def flow_mood(a):
     share = t["split"]["bull_share"] if t else None
     if share is None:
         return BIAS["neutral"]
-    return BIAS["bullish"] if share >= 0.6 else BIAS["bearish"] if share <= 0.4 else BIAS["neutral"]
+    return BIAS["bullish"] if round(share * 100) >= 60 else BIAS["bearish"] if round(share * 100) <= 40 else BIAS["neutral"]
 
 
 def ow_text(name, a):
@@ -692,7 +692,7 @@ def ow_text(name, a):
         sp = t["split"]
         lines += [f"💰 <b>Yirik buyurtmalar premiumi</b>  <i>{uz_session(t['session'])}, 100+ kontrakt</i>", ""]
         if sp["bull_share"] is not None:
-            sh = sp["bull_share"] * 100
+            sh = round(sp["bull_share"] * 100)          # the colour follows the number shown
             icon = "🟢" if sh >= 60 else "🔴" if sh <= 40 else "🟡"
             lines += [f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>", ""]
         lines += [f"— 🟢 Call sotib olindi <b>{money(sp['call_buy'])}</b>",
