@@ -589,6 +589,41 @@ def sgn_pct(v):
     return f"{'+' if v >= 0 else '−'}{abs(v):.2f}%"
 
 
+def group_orders(orders):
+    """Orders in the same contract (call/put, strike, expiry) become one line, biggest premium first."""
+    groups = {}
+    for o in orders:
+        key = (is_call(o), num(o.get("strike")), str(o.get("expiration") or "")[:10])
+        g = groups.setdefault(key, {"call": key[0], "strike": key[1], "exp": key[2], "dte": int(num(o.get("dte"))),
+                                    "n": 0, "contracts": 0, "premium": 0.0, "iv_w": 0.0, "times": [], "types": [],
+                                    "buy": 0, "sell": 0, "unknown": 0, "bull": 0.0, "bear": 0.0})
+        prem = num(o.get("premium"))
+        g["n"] += 1
+        g["contracts"] += int(num(o.get("contracts")))
+        g["premium"] += prem
+        g["iv_w"] += num(o.get("implied_volatility")) * prem
+        if o.get("timestamp"):
+            g["times"].append(str(o["timestamp"]))
+        kind = str(o.get("order_type") or "").upper()
+        if kind and kind not in g["types"]:
+            g["types"].append(kind)
+        sd = side_of(o)
+        if sd is None:
+            g["unknown"] += 1
+        else:
+            g[sd] += 1
+            bull = (key[0] and sd == "buy") or (not key[0] and sd == "sell")
+            g["bull" if bull else "bear"] += prem
+    out = sorted(groups.values(), key=lambda g: -g["premium"])
+    for g in out:
+        g["iv"] = g["iv_w"] / g["premium"] if g["premium"] else 0
+        g["times"].sort()
+        sure = g["bull"] + g["bear"]
+        # the colour needs a clear side for at least half of the money in this contract
+        g["icon"] = "🟡" if sure < 0.5 * g["premium"] or g["bull"] == g["bear"] else "🟢" if g["bull"] > g["bear"] else "🔴"
+    return out
+
+
 def ow_analyse(symbol, ow):
     a = {"symbol": symbol, "session": ow.get("session")}
     g = ow.get("gex") or {}
@@ -619,7 +654,7 @@ def ow_analyse(symbol, ow):
     if orders:
         a["tape"] = {"session": tp["session"], "count": len(orders), "matched": int(num(tp.get("matched"), len(orders))),
                      "split": premium_split(orders),
-                     "top": sorted(orders, key=lambda o: -num(o.get("premium")))[:OW_TOP_ORDERS],
+                     "top": group_orders(orders)[:OW_TOP_ORDERS],
                      "delay": num((tp.get("data") or {}).get("delay_seconds"), 900)}
     iv = ow.get("iv") or {}
     if iv.get("iv_rank") is not None:
@@ -710,22 +745,27 @@ def ow_text(name, a):
         if sp["unknown"]:
             lines.append(f"— 🟡 Tomoni aniq emas: <b>{money(sp['unknown'])}</b>")
         lines.append("")
-        lines += [f"🐳 <b>Eng yirik buyurtmalar</b>  <i>{t['matched']} tadan top {len(t['top'])}, Toshkent vaqti</i>", ""]
-        for i, o in enumerate(t["top"], 1):
-            sd = side_of(o)
-            c = is_call(o)
-            bull = (c and sd == "buy") or (not c and sd == "sell")
-            icon = "🟡" if sd is None else "🟢" if bull else "🔴"
-            word = "sotib olindi" if sd == "buy" else "sotildi" if sd == "sell" else "tomoni aniq emas"
-            kind = str(o.get("order_type") or "").upper()
-            exp = str(o.get("expiration") or "")[:10]
-            dte = int(num(o.get("dte")))
-            lines.append(f"{i}. {icon} <b>{'CALL' if c else 'PUT'} {price_s(num(o.get('strike')))}</b> · "
-                         f"{short_date(exp) if exp else '—'} ({dte} kun) · {esc(kind)} · {word}")
-            iv_ = num(o.get("implied_volatility"))
-            lines.append(f"— {int(num(o.get('contracts'))):,} kontrakt · premium <b>{money(num(o.get('premium')))}</b>"
-                         + (f" · IV {iv_ * 100:.0f}%" if iv_ else "")
-                         + (f" · {local_hm(o.get('timestamp'))}" if local_hm(o.get("timestamp")) else ""))
+        lines += [f"🐳 <b>Eng yirik buyurtmalar</b>  <i>{t['matched']} ta buyurtmadan eng yirik {len(t['top'])} kontrakt, "
+                  f"Toshkent vaqti</i>", ""]
+        for i, g in enumerate(t["top"], 1):
+            head = (f"{i}. {g['icon']} <b>{'CALL' if g['call'] else 'PUT'} {price_s(g['strike'])}</b> · "
+                    f"{short_date(g['exp']) if g['exp'] else '—'} ({g['dte']} kun)")
+            if g["n"] == 1:
+                word = "sotib olindi" if g["buy"] else "sotildi" if g["sell"] else "tomoni aniq emas"
+                head += f" · {esc(', '.join(g['types']))} · {word}" if g["types"] else f" · {word}"
+            else:
+                head += f" · <b>{g['n']} ta buyurtma</b>" + (f" · {esc(', '.join(g['types']))}" if g["types"] else "")
+            t0 = local_hm(g["times"][0]) if g["times"] else ""
+            t1 = local_hm(g["times"][-1]) if g["times"] else ""
+            when = (t0 if t0 == t1 else f"{t0}–{t1}") if t0 else ""
+            lines.append(head)
+            lines.append(f"— {'jami ' if g['n'] > 1 else ''}{g['contracts']:,} kontrakt · premium <b>{money(g['premium'])}</b>"
+                         + (f" · IV {g['iv'] * 100:.0f}%" if g["iv"] else "") + (f" · {when}" if when else ""))
+            if g["n"] > 1:
+                parts = [f"{g['buy']} tasi sotib olindi" if g["buy"] else "",
+                         f"{g['sell']} tasi sotildi" if g["sell"] else "",
+                         f"{g['unknown']} tasining tomoni aniq emas" if g["unknown"] else ""]
+                lines.append("— " + ", ".join(x for x in parts if x))
             lines.append("")
         lines.append("")
 
