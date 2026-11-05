@@ -694,7 +694,7 @@ def ow_text(name, a):
         if sp["bull_share"] is not None:
             sh = round(sp["bull_share"] * 100)          # the colour follows the number shown
             icon = "🟢" if sh >= 60 else "🔴" if sh <= 40 else "🟡"
-            lines.append(f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>")
+            lines += [f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>", ""]
             total = sp["bull"] + sp["bear"] + sp["unknown"]
             cover = round((sp["bull"] + sp["bear"]) / total * 100) if total else 0
             if cover < 50:
