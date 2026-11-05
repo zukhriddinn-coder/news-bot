@@ -658,7 +658,10 @@ def ow_text(name, a):
         what = INTENT_PRIMARY.get(f["primary"].lower().replace(" ", ""), "")
         if what:
             lines.append(f"Asosiy strategiya: {what}")
-        mods = [INTENT_MODS[m] for m in f["mods"] if m in INTENT_MODS]
+        elif f["label"]:
+            lines.append(f"Asosiy strategiya: <i>{esc(f['label'])}</i>")
+        print(f"intent: primary={f['primary']!r} label={f['label']!r} mods={f['mods']}")   # to extend the lists
+        mods = [INTENT_MODS.get(m, m) for m in f["mods"]]
         if mods:
             lines.append("Belgilar: " + "; ".join(mods))
         horizon = ("asosan uzoq muddatli kontraktlar" if f["long_dated"] else
@@ -793,9 +796,14 @@ def gex_chart(name, a):
     spot = a.get("spot")
     if not gx or not spot:
         return None
-    rows = [r for r in gx["by_strike"] if num(r.get("strike")) > 0 and abs(num(r.get("strike")) / spot - 1) <= 0.25
-            and (num(r.get("net_gex")) or num(r.get("call_oi")) or num(r.get("put_oi")))]
-    rows = sorted(sorted(rows, key=lambda r: abs(num(r["strike"]) - spot))[:OW_CHART_STRIKES], key=lambda r: num(r["strike"]))
+    near = [r for r in gx["by_strike"] if num(r.get("strike")) > 0 and abs(num(r.get("strike")) / spot - 1) <= 0.15]
+    must = {x for x in (gx["call_wall"], gx["put_wall"]) if x}
+    keep = [r for r in near if num(r["strike"]) in must]
+    rest = sorted((r for r in near if num(r["strike"]) not in must and abs(num(r.get("net_gex"))) > 0),
+                  key=lambda r: -abs(num(r.get("net_gex"))))       # strongest gamma levels first
+    top_abs = abs(num(rest[0].get("net_gex"))) if rest else 0
+    rest = [r for r in rest if abs(num(r.get("net_gex"))) >= 0.03 * top_abs]     # drop almost empty strikes
+    rows = sorted(keep + rest[:max(0, OW_CHART_STRIKES - len(keep))], key=lambda r: num(r["strike"]))
     if len(rows) < 4:
         return None
     import matplotlib
@@ -871,13 +879,17 @@ def gex_chart(name, a):
         lo, hi = strikes[i], strikes[i + 1]
         return i + (level - lo) / (hi - lo) if hi > lo else i
 
+    placed = []
     for level, col, text, style in ((spot, T["accent"], f" narx {price_s(spot)} ", (0, (4, 3))),
                                     (gx["flip"], T["muted"], f" gamma flip {price_s(gx['flip'])} ", (0, (1, 2)))):
         y = y_of(level) if level else None
         if y is None:
             continue
         ax.axhline(y, color=col, linestyle=style, linewidth=1.3, zorder=3)
-        ax.text(span * 1.13, y, text, color=col, fontsize=8.5, ha="right", va="center", fontweight="bold", zorder=5,
+        left = any(abs(y - y0) < 1.0 for y0 in placed)              # too close to the price label: other side
+        placed.append(y)
+        ax.text(-span * 1.13 if left else span * 1.13, y, text, color=col, fontsize=8.5,
+                ha="left" if left else "right", va="center", fontweight="bold", zorder=5,
                 bbox=dict(boxstyle="round,pad=0.25,rounding_size=0.5", facecolor=T["bg"], edgecolor=col, linewidth=1))
     ax.text(-span * 1.13, n - 0.4, "◀ manfiy gamma", color=T["down"], fontsize=9.5, fontweight="bold", va="bottom")
     ax.text(span * 1.13, n - 0.4, "musbat gamma ▶", color=T["up"], fontsize=9.5, fontweight="bold", va="bottom",
