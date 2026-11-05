@@ -694,7 +694,15 @@ def ow_text(name, a):
         if sp["bull_share"] is not None:
             sh = round(sp["bull_share"] * 100)          # the colour follows the number shown
             icon = "🟢" if sh >= 60 else "🔴" if sh <= 40 else "🟡"
-            lines += [f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>", ""]
+            lines.append(f"{icon} O'sishga tikilgan pul <b>{sh:.0f}%</b>, pasayishga <b>{100 - sh:.0f}%</b>")
+            total = sp["bull"] + sp["bear"] + sp["unknown"]
+            cover = round((sp["bull"] + sp["bear"]) / total * 100) if total else 0
+            if cover < 50:
+                lines.append(f"<i>⚠️ Xulosa jami premiumning faqat {cover}% iga asoslangan: qolgan buyurtmalarning "
+                             f"tomoni aniq emas. Bu xulosaga ehtiyot bo'ling.</i>")
+            else:
+                lines.append(f"<i>Xulosa jami premiumning {cover}% iga asoslangan.</i>")
+            lines.append("")
         lines += [f"— 🟢 Call sotib olindi <b>{money(sp['call_buy'])}</b>",
                   f"— 🔴 Call sotildi <b>{money(sp['call_sell'])}</b>",
                   f"— 🔴 Put sotib olindi <b>{money(sp['put_buy'])}</b>",
@@ -947,7 +955,10 @@ def ow_report(symbol):
         cap += ["", f"🧲 Call wall {price_s(gx['call_wall'])} · Put wall {price_s(gx['put_wall'])}"]
     t = a.get("tape")
     if t and t["split"]["bull_share"] is not None:
-        cap += ["", f"💰 O'sishga tikilgan pul {t['split']['bull_share'] * 100:.0f}%"]
+        sp_ = t["split"]
+        total = sp_["bull"] + sp_["bear"] + sp_["unknown"]
+        thin = total and (sp_["bull"] + sp_["bear"]) / total < 0.5
+        cap += ["", f"💰 O'sishga tikilgan pul {round(sp_['bull_share'] * 100)}%" + (" (ma'lumot kam)" if thin else "")]
     text = ow_text(name, a)
     png = gex_chart(name, a)
     global OW_SENT
