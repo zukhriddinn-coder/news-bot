@@ -41,6 +41,7 @@ jobs:
         run: python options.py
         env:
           OPTIONS_BOT_TOKEN: ${{ secrets.OPTIONS_BOT_TOKEN }}
+          OW_API_KEY: ${{ secrets.OW_API_KEY }}
           TICKER: ${{ inputs.ticker }}
           CHAT_ID: ${{ inputs.chat_id }}
           THREAD_ID: ${{ inputs.thread_id }}
