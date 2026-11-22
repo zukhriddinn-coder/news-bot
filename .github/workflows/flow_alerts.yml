@@ -1,0 +1,73 @@
+name: Call oqimi signallari
+
+on:
+  schedule:
+    - cron: "20 13 * * 1-5"       # du-ju, 13:20 UTC: bozor ochilishidan oldin (yozda ham, qishda ham)
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Sinov: chatga bitta namuna xabar yuborish"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-alerts
+  cancel-in-progress: false       # ikkinchi nusxa ishga tushmaydi (takror xabarlar bo'lmasin)
+
+env:
+  OW_API_KEY: ${{ secrets.OW_API_KEY }}
+  FLOW_BOT_TOKEN: ${{ secrets.FLOW_BOT_TOKEN }}
+  FLOW_CHAT_ID: ${{ secrets.FLOW_CHAT_ID }}
+  FLOW_THREAD_ID: ${{ secrets.FLOW_THREAD_ID }}
+
+jobs:
+  morning:                        # ochilishdan 12:45 ET gacha
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter fonts-dejavu-core
+          pip install requests pillow
+      - name: Watch the flow
+        run: python flow_alerts.py
+        env:
+          SEGMENT: "1"
+          TEST: ${{ inputs.test }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.test }}
+        with:
+          name: flow-state
+          path: flow_state.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  afternoon:                      # 12:45 ET dan yopilishgacha
+    needs: morning
+    if: ${{ always() && !inputs.test }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter fonts-dejavu-core
+          pip install requests pillow
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: flow-state
+      - name: Watch the flow
+        run: python flow_alerts.py
+        env:
+          SEGMENT: "2"
