@@ -35,6 +35,13 @@ POLL_SECONDS = 60              # tekshirish oralig'i (Pro: daqiqasiga 60 so'rov)
 MAX_PER_CYCLE = 12             # bitta tekshiruvda ko'pi bilan nechta xabar (qolgani keyingisida)
 STARTUP_LOOKBACK_MIN = 10      # kun o'rtasida yoqilsa: faqat so'nggi N daqiqadagi bitimlar yuboriladi
 
+# Order turi ranglari (kartada doim shunday chiqadi)
+ORDER_STYLE = {
+    "sweep": ("Sweep", (255, 214, 10)),     # sariq
+    "burst": ("Burst", (255, 146, 43)),     # to'q sariq (orange)
+    "single": ("Single", (255, 255, 255)),  # oq
+}
+
 # Aksiya bo'lmagan mahsulotlar (ETF, indeks, leveraged) va chiqarilgan tickerlar yuborilmaydi
 EXCLUDE = set("""
 SPY QQQ IWM DIA SPX SPXW NDX RUT VIX XSP SMH SOXX SOXL SOXS TQQQ SQQQ UVXY VXX TLT HYG LQD GLD SLV USO UNG
@@ -55,9 +62,12 @@ CHAT_ID = os.environ.get("FLOW_CHAT_ID", "").strip()
 THREAD_ID = os.environ.get("FLOW_THREAD_ID", "").strip()
 SEGMENT = (os.environ.get("SEGMENT", "") or "all").strip()      # "1" = 12:45 ET gacha, "2" = yopilishgacha
 TEST = (os.environ.get("TEST", "") or "").strip().lower() in ("1", "true", "yes")
+REPLAY_DAY = (os.environ.get("REPLAY_DAY", "") or "").strip()          # masalan 2026-11-20: o'tgan kunni qayta chiqarish
+REPLAY_TICKER = (os.environ.get("REPLAY_TICKER", "") or "").strip().upper().lstrip("$")
+REPLAY_MAX = 40                # qayta chiqarishda ko'pi bilan nechta xabar
 STATE_FILE = os.environ.get("STATE_FILE", "flow_state.json")
 
-OW_URL = "https://api.optionwhales.io/v1/abnormal-trades/current"
+OW_URL = "https://api.optionwhales.io/v1/abnormal-trades/"
 NY = ZoneInfo("America/New_York")
 TAS = ZoneInfo("Asia/Tashkent")
 MONTHS = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"]
@@ -69,11 +79,11 @@ def log(*a):
 
 # ----------------------------- OptionWhales --------------------------------
 
-def fetch_trades():
+def fetch_trades(day="current"):
     """Bugungi g'ayrioddiy bitimlar lentasi: (session, [trade, ...]) yoki (None, None) xato bo'lsa."""
     for attempt in range(3):
         try:
-            r = requests.get(OW_URL, params={"limit": 5000}, timeout=40,
+            r = requests.get(OW_URL + day, params={"limit": 5000}, timeout=40,
                              headers={"X-API-Key": OW_KEY, "Accept": "application/json",
                                       "User-Agent": "TradingLab-flow/1.0"})
             if r.status_code == 429:
@@ -251,12 +261,13 @@ def card(x):
     R([M, 70, M + 40, 110], 11, outline=LIME, width=2)
     R([M + 12, 82, M + 28, 98], 4, fill=LIME)
     T((M + 56, 90), "TRADING LABORATORY", 22, track=3.2)
+    ocol = ORDER_STYLE.get(x["order"], ("", WHITE))[1]
     tag = "ML · spread" if x["ml"] else {"sweep": "Sweep", "burst": "Burst", "single": "Blok"}.get(x["order"], x["order"])
     tw = d.textlength(tag, font=font(21 * S, "regular")) / S
     R([W - M - tw - 150, 64, W - M, 116], 26, fill=(255, 255, 255, 14), outline=(255, 255, 255, 40), width=1)
     R([W - M - tw - 142, 72, W - M - tw - 38, 108], 18, fill=LIME)
     T((W - M - tw - 90, 90), "CALL", 18, fill=DARK, anchor="mm", track=1.5)
-    T((W - M - 22, 90), tag, 21, "regular", fill=(255, 205, 120) if x["ml"] else WHITE, anchor="rm")
+    T((W - M - 22, 90), tag, 21, "regular", fill=(255, 205, 120) if x["ml"] else ocol, anchor="rm")
 
     T((M, 176), f"KIT BITIMI · {f['et']} ET · {f['tas']} TOSHKENT", 20, fill=(150, 214, 110), track=4)
 
@@ -308,7 +319,7 @@ def card(x):
     for i, (val, lab) in enumerate(stats):
         x0 = M + i * (sw + 20)
         glass([x0, 990, x0 + sw, 1096], 24)
-        T((x0 + 26, 1028), val, 36)
+        T((x0 + 26, 1028), val, 36, fill=ocol if i == 2 else WHITE)
         T((x0 + 26, 1068), lab, 14, fill=MUTED, track=2.2)
 
     # --- ogohlantirish
@@ -390,6 +401,37 @@ def sample():
             "order": "single", "ml": False, "ts": now}
 
 
+def replay():
+    """Sinov: o'tgan savdo kunining mos bitimlarini (ixtiyoriy: bitta ticker) chatga chiqaradi."""
+    try:
+        day = datetime.strptime(REPLAY_DAY, "%Y-%m-%d").date()
+    except ValueError:
+        sys.exit("XATO: kun YYYY-MM-DD ko'rinishida bo'lsin, masalan 2026-11-20")
+    _, trades = fetch_trades(REPLAY_DAY)
+    if trades is None:
+        sys.exit("XATO: OptionWhales javob bermadi (kun yoki API kalitni tekshiring)")
+    picked, ids = [], set()
+    for raw in trades:
+        x = parse(raw)
+        if not x or x["id"] in ids or not wanted(x, day):
+            continue
+        if REPLAY_TICKER and x["ticker"] != REPLAY_TICKER:
+            continue
+        ids.add(x["id"])
+        picked.append(x)
+    picked.sort(key=lambda x: x["ts"])
+    log(f"{REPLAY_DAY} {REPLAY_TICKER or 'barcha tickerlar'}: lentada {len(trades)} ta bitim, mos {len(picked)} ta")
+    if len(picked) > REPLAY_MAX:
+        log(f"Faqat eng yirik {REPLAY_MAX} tasi yuboriladi")
+        picked = sorted(sorted(picked, key=lambda x: -x["premium"])[:REPLAY_MAX], key=lambda x: x["ts"])
+    sent = 0
+    for x in picked:
+        if send(x):
+            sent += 1
+            time.sleep(3.2)
+    log(f"Tugadi: {sent} ta xabar yuborildi")
+
+
 def main():
     missing = [n for n, v in (("OW_API_KEY", OW_KEY), ("FLOW_BOT_TOKEN", BOT_TOKEN), ("FLOW_CHAT_ID", CHAT_ID)) if not v]
     if missing and not (TEST and "OW_API_KEY" in missing and len(missing) == 1):
@@ -397,6 +439,10 @@ def main():
     if TEST:
         ok = send(sample())
         sys.exit(0 if ok else "XATO: sinov xabari yuborilmadi (token, chat ID yoki bot huquqlarini tekshiring)")
+
+    if REPLAY_DAY:
+        replay()
+        return
 
     now = datetime.now(NY)
     if now.weekday() >= 5:
