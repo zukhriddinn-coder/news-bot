@@ -9,6 +9,14 @@ on:
         description: "Sinov: chatga bitta namuna xabar yuborish"
         type: boolean
         default: false
+      replay_day:
+        description: "O'tgan kunni qayta chiqarish: YYYY-MM-DD (masalan 2026-11-20)"
+        required: false
+        default: ""
+      replay_ticker:
+        description: "Qayta chiqarishda faqat shu ticker (bo'sh = hammasi)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -35,14 +43,16 @@ jobs:
       - name: Install
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter fonts-dejavu-core fonts-dejavu-extra fonts-liberation
-          pip install requests pillow
+          pip install requests pillow yfinance
       - name: Watch the flow
         run: python flow_alerts.py
         env:
           SEGMENT: "1"
           TEST: ${{ inputs.test }}
+          REPLAY_DAY: ${{ inputs.replay_day }}
+          REPLAY_TICKER: ${{ inputs.replay_ticker }}
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.test }}
+        if: ${{ !inputs.test && !inputs.replay_day }}
         with:
           name: flow-state
           path: flow_state.json
@@ -51,7 +61,7 @@ jobs:
 
   afternoon:                      # 12:45 ET dan yopilishgacha
     needs: morning
-    if: ${{ always() && !inputs.test }}
+    if: ${{ always() && !inputs.test && !inputs.replay_day }}
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -62,7 +72,7 @@ jobs:
       - name: Install
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter fonts-dejavu-core fonts-dejavu-extra fonts-liberation
-          pip install requests pillow
+          pip install requests pillow yfinance
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
