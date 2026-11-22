@@ -125,7 +125,61 @@ def parse(t):
         "ticker": ticker, "type": m.group(5), "strike": strike, "exp": exp, "spot": spot, "premium": prem,
         "contracts": int(contracts), "conf": conf, "direction": str(t.get("direction") or "").lower(),
         "order": str(t.get("order_type") or "").lower() or "-", "ml": bool(t.get("multileg")), "ts": ts,
+        "contract": m.group(0), "oi": _num(t.get("oi_today")), "avg": _num(t.get("avg_price")),
     }
+
+
+def _num(v):
+    try:
+        v = float(v)
+        return v if v == v else None
+    except (TypeError, ValueError):
+        return None
+
+
+# ----------------------------- Qo'shimcha ma'lumotlar ----------------------
+
+_earn_cache = {}
+
+
+def next_earnings(ticker, today):
+    """Keyingi hisobot sanasi (Yahoo, tickerga kuniga bir marta). Topilmasa None."""
+    if ticker in _earn_cache:
+        return _earn_cache[ticker]
+    out = None
+    try:
+        from concurrent.futures import ThreadPoolExecutor
+        import yfinance as yf
+
+        def get():
+            cal = yf.Ticker(ticker.replace(".", "-")).calendar or {}
+            dates = cal.get("Earnings Date") or []
+            ds = [d.date() if isinstance(d, datetime) else d for d in dates if hasattr(d, "year")]
+            return sorted(d for d in ds if d >= today)
+
+        with ThreadPoolExecutor(1) as ex:
+            ds = ex.submit(get).result(timeout=12)
+        out = ds[0] if ds else None
+    except Exception as e:
+        log(f"Hisobot sanasi topilmadi ({ticker}): {type(e).__name__}")
+    _earn_cache[ticker] = out
+    return out
+
+
+def enrich(x, day_trades):
+    """Takrorlanish (shu kontraktga bugungi xaridlar), hajm/OI, zararsizlik narxi, hisobot sanasi."""
+    same = [y for y in day_trades if y["contract"] == x["contract"] and y["direction"] == "buy" and y["ts"] <= x["ts"]]
+    ids = {y["id"] for y in same}
+    if x["id"] not in ids:
+        same.append(x)
+    x["rep_n"] = len(same)
+    x["rep_sum"] = sum(y["premium"] for y in same)
+    x["vol_oi"] = (x["contracts"] / x["oi"]) if x["oi"] else None
+    per_share = x["avg"] if x["avg"] else (x["premium"] / (x["contracts"] * 100) if x["contracts"] else 0)
+    x["breakeven"] = x["strike"] + per_share
+    today = x["ts"].astimezone(NY).date()
+    x["earn"] = next_earnings(x["ticker"], today) if "earn" not in x else x["earn"]
+    return x
 
 
 def wanted(x, today):
@@ -166,6 +220,12 @@ def fields(x):
         "prem": money(x["premium"]), "contracts": f"{x['contracts']:,}",
         "conf": f"{x['conf']}%" if x["conf"] is not None else "-",
         "et": x["ts"].astimezone(NY).strftime("%H:%M"), "tas": x["ts"].astimezone(TAS).strftime("%H:%M"),
+        "be": f"${x.get('breakeven', x['strike']):,.2f}",
+        "be_pct": f"+{(x.get('breakeven', x['strike']) / x['spot'] - 1) * 100:.1f}%",
+        "rep_n": x.get("rep_n", 1), "rep_sum": money(x.get("rep_sum", x["premium"])),
+        "vol_oi": x.get("vol_oi"), "oi": x.get("oi"),
+        "earn": x.get("earn"), "earn_in": bool(x.get("earn") and x["earn"] <= x["exp"]),
+        "earn_lbl": f"{x['earn'].day}-{MONTHS[x['earn'].month - 1]}" if x.get("earn") else "",
     }
 
 
@@ -177,6 +237,9 @@ def caption(x):
             f"Narx: {f['spot']} · OTM: <b>{f['otm']}</b>\n"
             f"Hajm: <b>{f['prem']}</b> · Kontrakt: {f['contracts']}\n"
             f"Ishonch: {f['conf']} · Order: {x['order']}{' · ML' if x['ml'] else ''}\n"
+            f"Zararsizlik: {f['be']} ({f['be_pct']}) · Bugun {f['rep_n']}-xarid, jami {f['rep_sum']}\n"
+            + (f"Hajm/OI: {f['vol_oi']:.1f}×\n" if f['vol_oi'] else "")
+            + (f"⚠️ Hisobot {f['earn_lbl']}, muddat ichida\n" if f['earn_in'] else "") +
             f"Vaqt: {f['et']} ET ({f['tas']} Toshkent)\n\n"
             f"<i>Bu ma'lumot, savdo signali emas. Investitsion maslahat emas.</i>")
 
@@ -276,7 +339,13 @@ def card(x):
     size = 200 if len(tk) <= 4 else 164 if len(tk) == 5 else 140
     wt = T((M - 8, 292), tk, size)
     T((M + wt + 14, 332), "call", 62, "serif", fill=LIME)
-    T((M, 412), f"Muddat {f['exp']}  ·  {f['dte']} kun qoldi", 28, "regular", fill=SOFT)
+    wsub = T((M, 412), f"Muddat {f['exp']}  ·  {f['dte']} kun qoldi", 28, "regular", fill=SOFT)
+    if f["earn_in"]:                                       # hisobot opsion muddati ichida
+        lbl = f"Hisobot {f['earn_lbl']}"
+        lw_ = d.textlength(lbl, font=font(20 * S)) / S
+        R([M + wsub + 20, 390, M + wsub + 70 + lw_, 434], 22, fill=(255, 122, 104, 40), outline=RED, width=1)
+        d.ellipse([(M + wsub + 38) * S, 405 * S, (M + wsub + 50) * S, 419 * S], fill=RED)
+        T((M + wsub + 58, 412), lbl, 20, fill=(255, 170, 155))
 
     # --- chap ustun
     LX1 = 648
@@ -284,9 +353,18 @@ def card(x):
     T((M + 30, 505), "OPSION HAJMI", 17, fill=DARK, track=3)
     T((M + 30, 540), f"{f['contracts']} kontrakt", 21, "regular", fill=(34, 78, 54))
     T((LX1 - 30, 521), f["prem"], 66, fill=DARK, anchor="rm")
-    rows = [("STRIKE", "Opsion narxi darajasi", f["strike"], WHITE),
-            ("AKSIYA NARXI", "Bitim paytida", f["spot"], WHITE),
-            ("ISHONCH", "Xaridor tashabbusi", f["conf"], WHITE)]
+    voi = f["vol_oi"]
+    if voi is None:
+        oi_val, oi_sub, oi_lab, oi_col = "—", "OI ma'lumoti yo'q", "HAJM / OI", WHITE
+    elif voi >= 1:
+        oi_val, oi_sub, oi_lab, oi_col = f"{voi:.1f}×", f"OI {int(f['oi']):,} dan ko'p", "YANGI POZITSIYA", LIME
+    else:
+        oi_val, oi_sub, oi_lab, oi_col = f"{voi:.1f}×", f"OI {int(f['oi']):,} ichida", "HAJM / OI", WHITE
+    rep = f["rep_n"]
+    rows = [("ZARARSIZLIK NARXI", f"Aksiya {f['be_pct']} o'sishi kerak", f["be"], WHITE),
+            (oi_lab, oi_sub, oi_val, oi_col),
+            ("TAKRORLANISH", f"Bugun jami {f['rep_sum']}" if rep > 1 else "Bugun shu kontraktga birinchi",
+             f"{rep}-xarid", LIME if rep > 1 else WHITE)]
     for i, (lab, sub, val, col) in enumerate(rows):
         y0 = 600 + i * 128
         glass([M, y0, LX1, y0 + 110])
@@ -314,7 +392,7 @@ def card(x):
     T(((lx + 34 + PX1 - 26) / 2, ym), "↑ " + f["otm"], 32, fill=LIME, anchor="mm")
 
     # --- 3 ta ko'rsatkich
-    stats = [(f["otm"], "NARXDAN YUQORI (OTM)"), (f"{f['dte']} kun", "MUDDATGACHA"), (x["order"], "ORDER TURI")]
+    stats = [(f["conf"], "ISHONCH (BUYER)"), (f"{f['dte']} kun", "MUDDATGACHA"), (x["order"], "ORDER TURI")]
     sw = (W - 2 * M - 2 * 20) / 3
     for i, (val, lab) in enumerate(stats):
         x0 = M + i * (sw + 20)
@@ -327,7 +405,9 @@ def card(x):
     R([M + 28, 1152, M + 96, 1220], 18, fill=DARK)
     T((M + 62, 1186), "!", 40, fill=LIME, anchor="mm")
     T((M + 122, 1164), "Bu ma'lumot, savdo signali emas", 30, fill=DARK)
-    T((M + 122, 1208), "Yirik bitim o'sishni kafolatlamaydi. Qaror oldidan tahlil qiling.", 20, "regular", fill=(30, 70, 48))
+    note = (f"Hisobot {f['earn_lbl']} opsion muddatidan oldin: bitim hisobotga tikilgan bo'lishi mumkin."
+            if f["earn_in"] else "Yirik bitim o'sishni kafolatlamaydi. Qaror oldidan tahlil qiling.")
+    T((M + 122, 1208), note, 20, "regular", fill=(30, 70, 48))
 
     T((M, 1302), "Trading Laboratory · yopiq kanal", 20, "regular", fill=MUTED)
     T((W - M, 1302), "Investitsion maslahat emas", 20, "regular", fill=MUTED, anchor="rm")
@@ -398,7 +478,9 @@ def sample():
     now = datetime.now(timezone.utc)
     return {"id": "test", "ticker": "TEST", "type": "C", "strike": 175.0, "exp": (now + timedelta(days=56)).date(),
             "spot": 136.09, "premium": 1_400_000, "contracts": 8357, "conf": 77, "direction": "buy",
-            "order": "single", "ml": False, "ts": now}
+            "order": "single", "ml": False, "ts": now, "contract": "TEST", "oi": 2450, "avg": 1.65,
+            "rep_n": 3, "rep_sum": 5_000_000, "vol_oi": 8357 / 2450, "breakeven": 176.65,
+            "earn": (now + timedelta(days=30)).date()}
 
 
 def replay():
@@ -411,6 +493,7 @@ def replay():
     if trades is None:
         sys.exit("XATO: OptionWhales javob bermadi (kun yoki API kalitni tekshiring)")
     picked, ids = [], set()
+    day_trades = [y for y in (parse(r) for r in trades) if y]
     for raw in trades:
         x = parse(raw)
         if not x or x["id"] in ids or not wanted(x, day):
@@ -426,6 +509,7 @@ def replay():
         picked = sorted(sorted(picked, key=lambda x: -x["premium"])[:REPLAY_MAX], key=lambda x: x["ts"])
     sent = 0
     for x in picked:
+        enrich(x, day_trades)
         if send(x):
             sent += 1
             time.sleep(3.2)
@@ -470,6 +554,7 @@ def main():
         api_session, trades = fetch_trades()
         if trades is not None and (api_session in (None, session)):
             fresh = []
+            day_trades = [y for y in (parse(r) for r in trades) if y and y["ts"].astimezone(NY).date() == today]
             for raw in trades:
                 x = parse(raw)
                 if not x or x["id"] in seen or x["ts"].astimezone(NY).date() != today:
@@ -486,6 +571,7 @@ def main():
                 first = False
             fresh.sort(key=lambda x: x["ts"])
             for x in fresh[:MAX_PER_CYCLE]:
+                enrich(x, day_trades)
                 if send(x):
                     seen.add(x["id"])
                     sent += 1
