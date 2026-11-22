@@ -2,7 +2,7 @@
 Trading Laboratory -> "Call oqimi" signal boti
 OptionWhales (Flow Intelligence -> Abnormal Trades) lentasini har daqiqada tekshiradi va bozor narxidan
 YUQORI strike'li (OTM), hajmi $300K+ bo'lgan har bir yangi CALL XARIDI uchun Telegram chatiga xabar yuboradi:
-Signal kartasi uslubidagi rasm + matn (yoki faqat matn).
+Signal kartasi uslubidagi rasm (sozlamada: rasm + matn yoki faqat matn).
 
 Ma'lumot: OptionWhales rasmiy API (https://api.optionwhales.io/v1/abnormal-trades/current), OW_API_KEY secret.
 Ishlash joyi: GitHub Actions (flow_alerts.yml). Savdo kuni 09:30-16:15 ET oralig'ida ishlaydi.
@@ -30,7 +30,7 @@ MIN_CONFIDENCE = 0             # eng past "ishonch" (%). 70 qilsangiz, faqat BUY
 SKIP_MULTILEG = False          # True: ML (spread oyog'i) bitimlar yuborilmaydi
 MIN_DTE = 0                    # muddatgacha eng kam kun (masalan 5: 0-4 kunlik lotereyalar chiqmaydi)
 MAX_DTE = 100_000              # muddatgacha eng ko'p kun (masalan 45)
-SEND_MODE = "photo"            # "photo" = rasm + matn, "text" = faqat matn
+SEND_MODE = "photo"            # "photo" = faqat rasm, "photo_text" = rasm + matn, "text" = faqat matn
 POLL_SECONDS = 60              # tekshirish oralig'i (Pro: daqiqasiga 60 so'rov)
 MAX_PER_CYCLE = 12             # bitta tekshiruvda ko'pi bilan nechta xabar (qolgani keyingisida)
 STARTUP_LOOKBACK_MIN = 10      # kun o'rtasida yoqilsa: faqat so'nggi N daqiqadagi bitimlar yuboriladi
@@ -173,87 +173,156 @@ def caption(x):
 
 # ----------------------------- Rasm (Signal kartasi uslubi) ----------------
 
-def font(size, bold=True):
+_FONTS = {"bold": ["Inter-Bold", "Inter-SemiBold", "DejaVuSans-Bold", "LiberationSans-Bold"],
+          "regular": ["Inter-Regular", "Inter-Medium", "DejaVuSans.", "LiberationSans-Regular"],
+          "serif": ["LiberationSerif-Italic", "DejaVuSerif-Italic", "FreeSerifItalic", "Inter-Italic"]}
+_font_paths = {}
+
+
+def font(size, kind="bold"):
     from PIL import ImageFont
-    names = (["Inter-Bold", "Inter-SemiBold", "DejaVuSans-Bold", "LiberationSans-Bold"] if bold
-             else ["Inter-Regular", "Inter-Medium", "DejaVuSans.", "LiberationSans-Regular"])
-    for n in names:
-        for p in glob.glob("/usr/share/fonts/**/*", recursive=True):
-            if n in os.path.basename(p) and p.lower().endswith((".ttf", ".otf")):
-                try:
-                    return ImageFont.truetype(p, size)
-                except OSError:
-                    pass
-    return ImageFont.load_default()
+    if kind is True:
+        kind = "bold"
+    elif kind is False:
+        kind = "regular"
+    if kind not in _font_paths:
+        files = glob.glob("/usr/share/fonts/**/*", recursive=True)
+        _font_paths[kind] = next((p for n in _FONTS[kind] for p in files
+                                  if n in os.path.basename(p) and p.lower().endswith((".ttf", ".otf"))), None)
+    try:
+        return ImageFont.truetype(_font_paths[kind], size)
+    except (OSError, TypeError, AttributeError):
+        return ImageFont.load_default()
 
 
 def card(x):
-    """1080x1080 PNG: to'q yashil fon, laym urg'u (Signal va Portfel kartasi uslubi)."""
-    from PIL import Image, ImageDraw
+    """1080x1350 PNG, Signal va Portfel kartasi uslubida (2x chizilib, kichraytiriladi: silliq qirralar)."""
+    from PIL import Image, ImageDraw, ImageFilter
     f = fields(x)
-    W = H = 1080
-    LIME, WHITE, MUTED = (184, 241, 90), (255, 255, 255), (150, 180, 162)
-    img = Image.new("RGB", (W, H))
-    px = img.load()
-    for y in range(H):                                    # vertikal gradient
-        k = y / H
-        row = (int(22 - 14 * k), int(82 - 52 * k), int(52 - 34 * k))
-        for xx in range(W):
-            px[xx, y] = row
+    S, W, H, M = 2, 1080, 1350, 70
+    LIME, WHITE, DARK = (184, 241, 90), (255, 255, 255), (10, 40, 28)
+    MUTED, SOFT, RED = (140, 172, 152), (200, 222, 208), (255, 122, 104)
+
+    img = Image.new("RGB", (W * S, H * S))
+    d0 = ImageDraw.Draw(img)
+    for y in range(H * S):                                 # fon: yuqoridan pastga to'q yashil
+        k = y / (H * S)
+        d0.line([(0, y), (W * S, y)], fill=(int(20 - 13 * k), int(74 - 50 * k), int(46 - 32 * k)))
+    glow = Image.new("RGBA", img.size, (0, 0, 0, 0))       # yuqoridagi yumshoq yorug'lik
+    ImageDraw.Draw(glow).ellipse([200 * S, -420 * S, 1250 * S, 430 * S], fill=(60, 170, 95, 105))
+    img.paste(glow.filter(ImageFilter.GaussianBlur(150 * S)), (0, 0), glow.filter(ImageFilter.GaussianBlur(150 * S)))
     d = ImageDraw.Draw(img, "RGBA")
-    for g in range(0, W, 60):                             # nozik to'r
-        d.line([(g, 0), (g, H)], fill=(255, 255, 255, 7))
-        d.line([(0, g), (W, g)], fill=(255, 255, 255, 7))
+    for g in range(0, H, 54):                              # nozik to'r
+        d.line([(g * S, 0), (g * S, H * S)], fill=(255, 255, 255, 7), width=S)
+        d.line([(0, g * S), (W * S, g * S)], fill=(255, 255, 255, 7), width=S)
 
-    M = 64
-    # sarlavha
-    d.rounded_rectangle([M, 60, M + 40, 100], 10, outline=LIME, width=3)
-    d.rounded_rectangle([M + 12, 72, M + 28, 88], 4, fill=LIME)
-    d.text((M + 58, 80), "TRADING LABORATORY", font=font(26), fill=WHITE, anchor="lm")
-    badge = "CALL OQIMI"
-    bw = d.textlength(badge, font=font(22)) + 44
-    d.rounded_rectangle([W - M - bw, 58, W - M, 102], 22, fill=LIME)
-    d.text((W - M - bw / 2, 80), badge, font=font(22), fill=(11, 46, 34), anchor="mm")
+    def R(box, r, **kw):
+        if "width" in kw:
+            kw["width"] *= S
+        d.rounded_rectangle([v * S for v in box], r * S, **kw)
 
-    d.text((M, 150), f"KIT BITIMI · {f['et']} ET · {f['tas']} TOSHKENT", font=font(22), fill=LIME, anchor="lm")
+    def T(xy, text, size, kind="bold", fill=WHITE, anchor="lm", track=0):
+        fnt = font(size * S, kind)
+        if not track:
+            d.text((xy[0] * S, xy[1] * S), text, font=fnt, fill=fill, anchor=anchor)
+            return d.textlength(text, font=fnt) / S
+        total = sum(d.textlength(c, font=fnt) for c in text) / S + track * (len(text) - 1)
+        cx = xy[0] - (total if anchor[0] == "r" else total / 2 if anchor[0] == "m" else 0)
+        for c in text:
+            d.text((cx * S, xy[1] * S), c, font=fnt, fill=fill, anchor="l" + anchor[1])
+            cx += d.textlength(c, font=fnt) / S + track
+        return total
 
-    # ticker
+    def glass(box, r=28, tint=None):
+        R(box, r, fill=tint or (255, 255, 255, 15), outline=(255, 255, 255, 34), width=1)
+
+    def lime_tile(box, r, c1=(226, 248, 150), c2=(112, 204, 122)):
+        x0, y0, x1, y1 = [v * S for v in box]
+        grad = Image.new("RGB", (x1 - x0, y1 - y0))
+        gd = ImageDraw.Draw(grad)
+        for i in range(x1 - x0):
+            k = i / (x1 - x0)
+            gd.line([(i, 0), (i, y1 - y0)], fill=tuple(int(c1[j] + (c2[j] - c1[j]) * k) for j in range(3)))
+        mask = Image.new("L", grad.size, 0)
+        ImageDraw.Draw(mask).rounded_rectangle([0, 0, x1 - x0 - 1, y1 - y0 - 1], r * S, fill=255)
+        img.paste(grad, (x0, y0), mask)
+
+    # --- sarlavha
+    R([M, 70, M + 40, 110], 11, outline=LIME, width=2)
+    R([M + 12, 82, M + 28, 98], 4, fill=LIME)
+    T((M + 56, 90), "TRADING LABORATORY", 22, track=3.2)
+    tag = "ML · spread" if x["ml"] else {"sweep": "Sweep", "burst": "Burst", "single": "Blok"}.get(x["order"], x["order"])
+    tw = d.textlength(tag, font=font(21 * S, "regular")) / S
+    R([W - M - tw - 150, 64, W - M, 116], 26, fill=(255, 255, 255, 14), outline=(255, 255, 255, 40), width=1)
+    R([W - M - tw - 142, 72, W - M - tw - 38, 108], 18, fill=LIME)
+    T((W - M - tw - 90, 90), "CALL", 18, fill=DARK, anchor="mm", track=1.5)
+    T((W - M - 22, 90), tag, 21, "regular", fill=(255, 205, 120) if x["ml"] else WHITE, anchor="rm")
+
+    T((M, 176), f"KIT BITIMI · {f['et']} ET · {f['tas']} TOSHKENT", 20, fill=(150, 214, 110), track=4)
+
+    # --- ticker
     tk = x["ticker"]
-    size = 190 if len(tk) <= 4 else 150
-    d.text((M - 6, 285), tk, font=font(size), fill=WHITE, anchor="lm")
-    tw = d.textlength(tk, font=font(size))
-    d.text((M + tw + 22, 330), "call", font=font(54, bold=False), fill=LIME, anchor="lm")
-    d.text((M, 410), f"{f['strike']}  ·  {f['exp']}  ·  {f['dte']} kun", font=font(34, bold=False),
-           fill=(205, 225, 212), anchor="lm")
+    size = 200 if len(tk) <= 4 else 164 if len(tk) == 5 else 140
+    wt = T((M - 8, 292), tk, size)
+    T((M + wt + 14, 332), "call", 62, "serif", fill=LIME)
+    T((M, 412), f"Muddat {f['exp']}  ·  {f['dte']} kun qoldi", 28, "regular", fill=SOFT)
 
-    # asosiy plitka: hajm
-    d.rounded_rectangle([M, 470, W - M, 610], 30, fill=LIME)
-    d.text((M + 40, 520), "OPSION HAJMI", font=font(24), fill=(11, 46, 34), anchor="lm")
-    d.text((M + 40, 565), f"{f['contracts']} kontrakt · {x['order']}", font=font(26, bold=False),
-           fill=(30, 70, 50), anchor="lm")
-    d.text((W - M - 40, 540), f['prem'], font=font(84), fill=(11, 46, 34), anchor="rm")
+    # --- chap ustun
+    LX1 = 648
+    lime_tile([M, 462, LX1, 580], 30)
+    T((M + 30, 505), "OPSION HAJMI", 17, fill=DARK, track=3)
+    T((M + 30, 540), f"{f['contracts']} kontrakt", 21, "regular", fill=(34, 78, 54))
+    T((LX1 - 30, 521), f["prem"], 66, fill=DARK, anchor="rm")
+    rows = [("STRIKE", "Opsion narxi darajasi", f["strike"], WHITE),
+            ("AKSIYA NARXI", "Bitim paytida", f["spot"], WHITE),
+            ("ISHONCH", "Xaridor tashabbusi", f["conf"], WHITE)]
+    for i, (lab, sub, val, col) in enumerate(rows):
+        y0 = 600 + i * 128
+        glass([M, y0, LX1, y0 + 110])
+        T((M + 30, y0 + 40), lab, 17, fill=MUTED, track=3)
+        T((M + 30, y0 + 74), sub, 20, "regular", fill=MUTED)
+        T((LX1 - 30, y0 + 55), val, 46, fill=col, anchor="rm")
 
-    # 2x2 plitkalar
-    tiles = [("STRIKE", f["strike"]), ("AKSIYA NARXI", f["spot"]),
-             ("NARXDAN YUQORI (OTM)", f["otm"]), ("ISHONCH (BUYER)", f["conf"])]
-    tw_, th_, gap = (W - 2 * M - 24) // 2, 150, 24
-    for i, (lab, val) in enumerate(tiles):
-        x0 = M + (i % 2) * (tw_ + gap)
-        y0 = 640 + (i // 2) * (th_ + gap)
-        d.rounded_rectangle([x0, y0, x0 + tw_, y0 + th_], 26, fill=(255, 255, 255, 16),
-                            outline=(255, 255, 255, 36), width=2)
-        d.text((x0 + 32, y0 + 44), lab, font=font(21), fill=MUTED, anchor="lm")
-        d.text((x0 + 32, y0 + 102), val, font=font(54), fill=LIME if i == 2 else WHITE, anchor="lm")
+    # --- o'ng: narxdan strike'gacha shkala
+    PX0, PX1 = 680, W - M
+    glass([PX0, 462, PX1, 966], 30)
+    lx, yt, yb = PX0 + 62, 540, 890
+    for y in range(yt * S, yb * S):
+        k = (y - yt * S) / ((yb - yt) * S)
+        d.line([((lx - 6) * S, y), ((lx + 6) * S, y)],
+               fill=(int(184 - 110 * k), int(241 - 70 * k), int(90 + 50 * k)))
+    d.ellipse([(lx - 15) * S, (yt - 15) * S, (lx + 15) * S, (yt + 15) * S], fill=LIME, outline=DARK, width=4 * S)
+    d.ellipse([(lx - 20) * S, (yb - 20) * S, (lx + 20) * S, (yb + 20) * S], fill=(255, 255, 255, 40))
+    d.ellipse([(lx - 13) * S, (yb - 13) * S, (lx + 13) * S, (yb + 13) * S], fill=WHITE, outline=DARK, width=4 * S)
+    T((lx + 44, yt - 20), "STRIKE", 17, fill=MUTED, track=3)
+    T((lx + 44, yt + 20), f["strike"], 38)
+    T((lx + 44, yb - 22), "NARX", 17, fill=MUTED, track=3)
+    T((lx + 44, yb + 18), f["spot"], 34, fill=LIME)
+    ym = (yt + yb) // 2
+    R([lx + 34, ym - 34, PX1 - 26, ym + 34], 18, fill=(184, 241, 90, 34), outline=(184, 241, 90, 150), width=1)
+    T(((lx + 34 + PX1 - 26) / 2, ym), "↑ " + f["otm"], 32, fill=LIME, anchor="mm")
 
-    if x["ml"]:
-        d.rounded_rectangle([W - M - 250, 388, W - M, 432], 22, outline=(255, 190, 90), width=2)
-        d.text((W - M - 125, 410), "ML · spread oyog'i", font=font(20), fill=(255, 205, 120), anchor="mm")
+    # --- 3 ta ko'rsatkich
+    stats = [(f["otm"], "NARXDAN YUQORI (OTM)"), (f"{f['dte']} kun", "MUDDATGACHA"), (x["order"], "ORDER TURI")]
+    sw = (W - 2 * M - 2 * 20) / 3
+    for i, (val, lab) in enumerate(stats):
+        x0 = M + i * (sw + 20)
+        glass([x0, 990, x0 + sw, 1096], 24)
+        T((x0 + 26, 1028), val, 36)
+        T((x0 + 26, 1068), lab, 14, fill=MUTED, track=2.2)
 
-    d.text((M, H - 48), "Trading Laboratory · OptionWhales oqimi", font=font(22, bold=False), fill=MUTED,
-           anchor="lm")
-    d.text((W - M, H - 48), "Investitsion maslahat emas", font=font(22, bold=False), fill=MUTED, anchor="rm")
+    # --- ogohlantirish
+    lime_tile([M, 1122, W - M, 1250], 30, (232, 250, 168), (176, 240, 96))
+    R([M + 28, 1152, M + 96, 1220], 18, fill=DARK)
+    T((M + 62, 1186), "!", 40, fill=LIME, anchor="mm")
+    T((M + 122, 1164), "Bu ma'lumot, savdo signali emas", 30, fill=DARK)
+    T((M + 122, 1208), "Yirik bitim o'sishni kafolatlamaydi. Qaror oldidan tahlil qiling.", 20, "regular", fill=(30, 70, 48))
+
+    T((M, 1302), "Trading Laboratory · yopiq kanal", 20, "regular", fill=MUTED)
+    T((W - M, 1302), "Investitsion maslahat emas", 20, "regular", fill=MUTED, anchor="rm")
+
     buf = io.BytesIO()
-    img.save(buf, "PNG", optimize=True)
+    img.resize((W, H), Image.LANCZOS).save(buf, "PNG", optimize=True)
     return buf.getvalue()
 
 
@@ -283,10 +352,11 @@ def send(x):
     if THREAD_ID:
         base["message_thread_id"] = THREAD_ID
     text = caption(x)
-    if SEND_MODE == "photo":
+    if SEND_MODE in ("photo", "photo_text"):
         try:
             png = card(x)
-            if tg("sendPhoto", {**base, "caption": text}, {"photo": ("call.png", png, "image/png")}):
+            data = {**base, "caption": text} if SEND_MODE == "photo_text" else base
+            if tg("sendPhoto", data, {"photo": ("call.png", png, "image/png")}):
                 return True
         except Exception as e:
             log(f"Rasm chizilmadi ({type(e).__name__}), matn yuboriladi")
