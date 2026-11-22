@@ -344,7 +344,7 @@ def card(x):
         lbl = f"Hisobot {f['earn_lbl']}"
         lw_ = d.textlength(lbl, font=font(20 * S)) / S
         R([M + wsub + 20, 390, M + wsub + 70 + lw_, 434], 22, fill=(255, 122, 104, 40), outline=RED, width=1)
-        d.ellipse([(M + wsub + 38) * S, 405 * S, (M + wsub + 50) * S, 419 * S], fill=RED)
+        d.ellipse([(M + wsub + 37) * S, 405 * S, (M + wsub + 51) * S, 419 * S], fill=RED)   # 14x14: aylana
         T((M + wsub + 58, 412), lbl, 20, fill=(255, 170, 155))
 
     # --- chap ustun
